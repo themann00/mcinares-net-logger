@@ -26,6 +26,7 @@ import { formatDistanceToNow, format } from 'date-fns'
 import {
   ChevronLeft,
   ChevronRight,
+  Home,
   ScrollText,
   X,
   RefreshCw,
@@ -307,8 +308,17 @@ export default function NetPage() {
             <Button
               size="sm"
               variant="outline"
+              onClick={() => router.push('/')}
+              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+            >
+              <Home className="w-4 h-4" />
+              <span className="hidden sm:inline">Home</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => setFullScriptOpen(true)}
-              className="border-gray-700 text-gray-300 hover:text-white gap-1"
+              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
             >
               <ScrollText className="w-4 h-4" />
               <span className="hidden sm:inline">Full Script</span>
