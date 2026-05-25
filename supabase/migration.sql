@@ -1,7 +1,7 @@
 -- Marion County ARES Net Logger — Supabase Migration
 -- Run this in the Supabase SQL Editor (jacobmann-me project)
 
-CREATE TABLE IF NOT EXISTS "MCINARES-nets" (
+CREATE TABLE IF NOT EXISTS MCINARES_nets (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   type          TEXT NOT NULL CHECK (type IN ('ares', 'skywarn', 'siren')),
   net_controller      TEXT NOT NULL,
@@ -14,9 +14,9 @@ CREATE TABLE IF NOT EXISTS "MCINARES-nets" (
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS "MCINARES-stations" (
+CREATE TABLE IF NOT EXISTS MCINARES_stations (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  net_id        UUID NOT NULL REFERENCES "MCINARES-nets"(id) ON DELETE CASCADE,
+  net_id        UUID NOT NULL REFERENCES MCINARES_nets(id) ON DELETE CASCADE,
   callsign      TEXT NOT NULL,
   first_name    TEXT,
   last_name     TEXT,
@@ -28,10 +28,10 @@ CREATE TABLE IF NOT EXISTS "MCINARES-stations" (
   checked_in_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS "MCINARES-log_entries" (
+CREATE TABLE IF NOT EXISTS MCINARES_log_entries (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  net_id        UUID NOT NULL REFERENCES "MCINARES-nets"(id) ON DELETE CASCADE,
-  station_id    UUID REFERENCES "MCINARES-stations"(id) ON DELETE SET NULL,
+  net_id        UUID NOT NULL REFERENCES MCINARES_nets(id) ON DELETE CASCADE,
+  station_id    UUID REFERENCES MCINARES_stations(id) ON DELETE SET NULL,
   entry_type    TEXT NOT NULL CHECK (entry_type IN (
     'net_open', 'checkin', 'report', 'traffic', 'announcement',
     'liaison', 'alt_nc', 'continuity', 'circle_back',
@@ -42,11 +42,11 @@ CREATE TABLE IF NOT EXISTS "MCINARES-log_entries" (
 );
 
 -- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_mcinares_stations_net_id ON "MCINARES-stations"(net_id);
-CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON "MCINARES-log_entries"(net_id);
-CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON "MCINARES-log_entries"(timestamp);
+CREATE INDEX IF NOT EXISTS idx_mcinares_stations_net_id ON MCINARES_stations(net_id);
+CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON MCINARES_log_entries(net_id);
+CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON MCINARES_log_entries(timestamp);
 
 -- Disable Row Level Security (app uses service role key on server)
-ALTER TABLE "MCINARES-nets" DISABLE ROW LEVEL SECURITY;
-ALTER TABLE "MCINARES-stations" DISABLE ROW LEVEL SECURITY;
-ALTER TABLE "MCINARES-log_entries" DISABLE ROW LEVEL SECURITY;
+ALTER TABLE MCINARES_nets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE MCINARES_stations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE MCINARES_log_entries DISABLE ROW LEVEL SECURITY;
