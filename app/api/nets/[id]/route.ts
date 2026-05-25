@@ -22,3 +22,15 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const db = getSupabase()
+
+  await db.from('mcinares_log_entries').delete().eq('net_id', id)
+  await db.from('mcinares_stations').delete().eq('net_id', id)
+  const { error } = await db.from('mcinares_nets').delete().eq('id', id)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
+}

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Radio, CloudLightning, Siren, Lock, AlertTriangle } from 'lucide-react'
+import { PastNets } from '@/components/PastNets'
 import type { Net, NetType } from '@/types'
 
 const NET_TYPES: {
@@ -49,15 +50,21 @@ export default function HomePage() {
   const [callsign, setCallsign] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [openNets, setOpenNets] = useState<Net[]>([])
+  const [allNets, setAllNets] = useState<Net[]>([])
+
+  const fetchNets = () => {
+    fetch('/api/nets')
+      .then(res => res.json())
+      .then((nets: Net[]) => setAllNets(nets))
+      .catch(() => {})
+  }
 
   useEffect(() => {
     if (!authenticated) return
-    fetch('/api/nets')
-      .then(res => res.json())
-      .then((nets: Net[]) => setOpenNets(nets.filter(n => !n.closed_at)))
-      .catch(() => {})
+    fetchNets()
   }, [authenticated])
+
+  const openNets = allNets.filter(n => !n.closed_at)
 
   async function handlePinSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -223,6 +230,8 @@ export default function HomePage() {
               </Button>
             </form>
           )}
+
+          <PastNets nets={allNets} onDelete={fetchNets} />
         </div>
       </div>
     </div>
