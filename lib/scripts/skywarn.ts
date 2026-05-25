@@ -5,16 +5,26 @@ export const skywarnSections: ScriptSection[] = [
     id: 'preamble',
     title: 'Preamble',
     type: 'read',
-    script: (ctx: NetContext) =>
-      `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
+    script: (ctx: NetContext) => {
+      const weatherLine = ctx.weather_status
+        ? ctx.weather_status === 'imminent'
+          ? 'imminent in the area.'
+          : 'approaching the area.'
+        : '[approaching the area / imminent in the area].'
 
-At this time severe weather is [approaching the area / imminent in the area].
+      const bulletinLine = ctx.nws_bulletin
+        ? ctx.nws_bulletin
+        : '[Read NWS bulletin / watch / warning if available]'
+
+      return `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
+
+At this time severe weather is ${weatherLine}
 
 Amateurs are asked to watch for signs of deteriorating conditions and provide appropriate reports to net control. This is a directed net and all stations are asked to transmit only when recognized by net control.
 
 Please remember that the 146.760 repeater requires a 151.4 PL tone and the 443.250 repeater requires a 100 PL tone. Always key up for a second before speaking to ensure your transmission is not clipped.
 
-[Read NWS bulletin / watch / warning if available — have it open in a separate window]
+${bulletinLine}
 
 The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
 
@@ -26,9 +36,12 @@ The National Weather Service is looking for reports of weather events which you 
 
 When you make your report, please give your exact location, if measurements are estimated or actual, and the time the event occurred especially if your report is delayed.
 
-At this time are there any reports that meet these criteria?`,
+At this time are there any reports that meet these criteria?
+
+{{take-reports}}`
+    },
     allowReports: true,
-    notes: 'Read the appropriate weather status (approaching or imminent). Have NWS bulletin open in a separate window to read from.',
+    notes: 'Select weather status and optionally paste NWS bulletin above before reading.',
   },
   {
     id: 'initial_reports',
@@ -37,7 +50,9 @@ At this time are there any reports that meet these criteria?`,
     allowReports: true,
     allowCheckins: true,
     script: () =>
-      `(Take any immediate reports before moving on to liaison and check-ins.)`,
+      `(Take any immediate reports before moving on to liaison and check-ins.)
+
+{{no-checkins}}`,
     notes: 'Take any early weather reports. Stations may also check in here.',
   },
   {
@@ -47,6 +62,8 @@ At this time are there any reports that meet these criteria?`,
     script: (ctx: NetContext) =>
       `Do we have a station available to take over as liaison at this time?
 
+{{input:liaison}}
+
 Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are able to listen to this net, in addition to the Central Indiana Skywarn net on 146.97 or 442.65 repeater — both of those have a 77.0 PL tone. Please check in with them to let them know you are (taking over as) the liaison for Marion County, and that we have a net up and running.`,
     inputFields: [
       {
@@ -54,6 +71,7 @@ Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are 
         label: 'Liaison Station Callsign',
         placeholder: 'e.g. W9ABC (leave blank if none)',
         type: 'text',
+        inline: true,
       },
     ],
     notes:
@@ -67,7 +85,7 @@ Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are 
     allowReports: true,
     allowCircleBack: true,
     script: (ctx: NetContext) =>
-      `I will now take check-ins by quadrants of the county. Please come 5 at a time with your callsign, and if you are base or mobile in motion. [Note: if they are not mobile then they are 'base']
+      `I will now take check-ins by quadrants of the county. Please come 5 at a time with your callsign, and if you are base or mobile in motion.
 
 I will now take check-ins from the South West corner — South of Washington and West of Meridian — please come 5 at a time.
 

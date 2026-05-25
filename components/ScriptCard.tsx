@@ -1,12 +1,109 @@
 'use client'
 
 import { Badge } from '@/components/ui/badge'
-import { Info } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Info, ChevronRight } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
 function resolveScript(section: ScriptSection, ctx: NetContext): string {
   if (typeof section.script === 'function') return section.script(ctx)
   return section.script
+}
+
+const NWS_URL = 'https://www.weather.gov/ind/hazards'
+
+interface RenderOpts {
+  onNext?: () => void
+  hideNoCheckins?: boolean
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
+}
+
+function renderScriptText(text: string, opts: RenderOpts = {}) {
+  const parts: React.ReactNode[] = []
+  const regex = /(\[[^\]]+\])|(NWS [Bb]ulletin)|(\{\{take-reports\}\})|(\{\{no-checkins\}\})|(\{\{input:(\w+)\}\})/g
+  let lastIndex = 0
+  let match: RegExpExecArray | null
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index))
+    }
+
+    if (match[1]) {
+      parts.push(
+        <em key={match.index} className="text-gray-400">
+          {match[1]}
+        </em>
+      )
+    } else if (match[2]) {
+      parts.push(
+        <a
+          key={match.index}
+          href={NWS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-400 underline underline-offset-2 hover:text-blue-300"
+        >
+          {match[2]}
+        </a>
+      )
+    } else if (match[3] && opts.onNext) {
+      parts.push(
+        <Button
+          key={match.index}
+          onClick={opts.onNext}
+          size="sm"
+          className="bg-orange-700 hover:bg-orange-600 text-white gap-1 my-1"
+        >
+          Take reports
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      )
+    } else if (match[4] && opts.onNext && !opts.hideNoCheckins) {
+      parts.push(
+        <Button
+          key={match.index}
+          onClick={opts.onNext}
+          size="sm"
+          variant="outline"
+          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 gap-1 my-1"
+        >
+          No check-ins
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      )
+    } else if (match[5] && match[6] && opts.inlineInputs?.[match[6]]) {
+      const field = opts.inlineInputs[match[6]]
+      parts.push(
+        <span key={match.index} className="flex items-center gap-2 my-2">
+          {field.label && <span className="text-gray-400 text-sm">{field.label}:</span>}
+          <Input
+            value={field.value}
+            onChange={e => field.onChange(e.target.value.toUpperCase())}
+            placeholder={field.placeholder}
+            className="bg-gray-800 border-gray-600 text-white uppercase font-mono w-40 h-8 text-sm inline-flex"
+            onKeyDown={e => { if (e.key === 'Enter') field.onSave() }}
+          />
+          <Button
+            size="sm"
+            onClick={field.onSave}
+            className="bg-blue-700 hover:bg-blue-600 h-8 text-xs"
+          >
+            Save
+          </Button>
+        </span>
+      )
+    }
+
+    lastIndex = match.index + match[0].length
+  }
+
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex))
+  }
+
+  return parts
 }
 
 const TYPE_LABELS: Record<string, { label: string; color: string }> = {
@@ -22,9 +119,12 @@ interface ScriptCardProps {
   ctx: NetContext
   sectionIndex: number
   totalSections: number
+  onNext?: () => void
+  stationCount?: number
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
 }
 
-export function ScriptCard({ section, ctx, sectionIndex, totalSections }: ScriptCardProps) {
+export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, stationCount = 0, inlineInputs }: ScriptCardProps) {
   const scriptText = resolveScript(section, ctx)
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
@@ -42,7 +142,7 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections }: Script
 
       <div className="p-5">
         <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
-          {scriptText}
+          {renderScriptText(scriptText, { onNext, hideNoCheckins: stationCount > 1, inlineInputs })}
         </div>
 
         {section.notes && (

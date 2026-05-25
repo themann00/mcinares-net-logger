@@ -56,6 +56,10 @@ export default function NetPage() {
   const [sectionInputs, setSectionInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [elapsed, setElapsed] = useState('')
+  const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
+  const [localBulletin, setLocalBulletin] = useState('')
+  const [bulletinModalOpen, setBulletinModalOpen] = useState(false)
+  const [bulletinDraft, setBulletinDraft] = useState('')
   const logBottomRef = useRef<HTMLDivElement>(null)
 
   const sections = net ? getSections(net.type) : []
@@ -65,6 +69,8 @@ export default function NetPage() {
     net_controller: net?.net_controller || '',
     alt_net_controller: net?.alt_net_controller,
     liaison: net?.liaison,
+    weather_status: localWeatherStatus,
+    nws_bulletin: localBulletin || null,
   }
 
   const fetchAll = useCallback(async () => {
@@ -357,20 +363,137 @@ export default function NetPage() {
         <div className="flex-1 min-w-0 flex flex-col gap-4">
           {sectionNav}
 
+          {net?.type === 'skywarn' && section?.id === 'preamble' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-gray-400 text-sm font-medium">Weather status:</span>
+                <button
+                  onClick={() => setLocalWeatherStatus(localWeatherStatus === 'approaching' ? null : 'approaching')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    localWeatherStatus === 'approaching'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                  }`}
+                >
+                  Approaching
+                </button>
+                <button
+                  onClick={() => setLocalWeatherStatus(localWeatherStatus === 'imminent' ? null : 'imminent')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    localWeatherStatus === 'imminent'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                  }`}
+                >
+                  Imminent
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setBulletinDraft(localBulletin)
+                    setBulletinModalOpen(true)
+                  }}
+                  className="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 gap-1"
+                >
+                  <FileText className="w-4 h-4" />
+                  {localBulletin ? 'Edit NWS Bulletin' : 'Paste current NWS Bulletin'}
+                </Button>
+                {localBulletin && (
+                  <span className="text-green-400 text-xs">Bulletin loaded</span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {bulletinModalOpen && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg p-5 space-y-4">
+                <h3 className="text-white font-semibold">
+                  NWS Bulletin
+                  <a
+                    href="https://www.weather.gov/ind/hazards"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 text-sm font-normal ml-2 underline hover:text-blue-300"
+                  >
+                    weather.gov/ind/hazards
+                  </a>
+                </h3>
+                <Textarea
+                  value={bulletinDraft}
+                  onChange={e => setBulletinDraft(e.target.value)}
+                  placeholder="Paste NWS bulletin text here..."
+                  className="bg-gray-800 border-gray-700 text-white text-sm"
+                  rows={8}
+                  autoFocus
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setBulletinModalOpen(false)}
+                    className="border-gray-600 text-gray-300"
+                  >
+                    Cancel
+                  </Button>
+                  {localBulletin && (
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setLocalBulletin('')
+                        setBulletinDraft('')
+                        setBulletinModalOpen(false)
+                      }}
+                      className="bg-red-800 hover:bg-red-700 text-white"
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setLocalBulletin(bulletinDraft.trim())
+                      setBulletinModalOpen(false)
+                    }}
+                    className="bg-blue-700 hover:bg-blue-600"
+                  >
+                    Save
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {section && (
             <ScriptCard
               section={section}
               ctx={ctx}
               sectionIndex={sectionIndex}
               totalSections={sections.length}
+              onNext={sectionIndex < sections.length - 1 ? () => setSectionIndex(i => i + 1) : undefined}
+              stationCount={stations.length}
+              inlineInputs={
+                section?.inputFields?.filter(f => f.inline).reduce((acc, field) => {
+                  acc[field.id] = {
+                    value: sectionInputs[field.id] || '',
+                    placeholder: field.placeholder,
+                    label: field.label,
+                    onChange: (v: string) => setSectionInputs(prev => ({ ...prev, [field.id]: v })),
+                    onSave: () => saveSectionInputs(),
+                  }
+                  return acc
+                }, {} as Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>)
+              }
             />
           )}
 
-          {/* Section input fields */}
-          {section?.inputFields && section.inputFields.length > 0 && (
+          {/* Section input fields (non-inline only) */}
+          {section?.inputFields && section.inputFields.filter(f => !f.inline).length > 0 && (
             <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
               <h3 className="text-white font-medium text-sm">Net Control Inputs</h3>
-              {section.inputFields.map(field => (
+              {section.inputFields.filter(f => !f.inline).map(field => (
                 <div key={field.id}>
                   <Label className="text-gray-400 text-xs mb-1 block">{field.label}</Label>
                   {field.type === 'textarea' ? (
