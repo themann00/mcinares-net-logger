@@ -41,7 +41,6 @@ At this time are there any reports that meet these criteria?
 {{take-reports}}`
     },
     allowReports: true,
-    notes: 'Select weather status and optionally paste NWS bulletin above before reading.',
   },
   {
     id: 'initial_reports',
@@ -50,10 +49,9 @@ At this time are there any reports that meet these criteria?
     allowReports: true,
     allowCheckins: true,
     script: () =>
-      `(Take any immediate reports before moving on to liaison and check-ins.)
+      `Take any immediate reports before moving on to liaison and check-ins. Log reports using the Report tab.
 
 {{no-checkins}}`,
-    notes: 'Take any early weather reports. Stations may also check in here.',
   },
   {
     id: 'liaison',
@@ -74,8 +72,6 @@ Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are 
         inline: true,
       },
     ],
-    notes:
-      'Request liaison volunteer. Give them Central Indiana Skywarn frequencies (146.97 or 442.65, 77.0 PL).',
   },
   {
     id: 'checkin_sw',
@@ -84,11 +80,10 @@ Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are 
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
+    script: () =>
       `I will now take check-ins by quadrants of the county. Please come 5 at a time with your callsign, and if you are base or mobile in motion.
 
 I will start with check-ins from the South West corner — South of Washington and West of Meridian — please come 5 at a time.`,
-    notes: 'SW = South of Washington St, West of Meridian St.',
   },
   {
     id: 'checkin_nw',
@@ -97,9 +92,8 @@ I will start with check-ins from the South West corner — South of Washington a
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
+    script: () =>
       `I will now take check-ins from the North West corner — North of Washington and West of Meridian — please come 5 at a time.`,
-    notes: 'NW = North of Washington St, West of Meridian St.',
   },
   {
     id: 'checkin_ne',
@@ -108,9 +102,8 @@ I will start with check-ins from the South West corner — South of Washington a
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
+    script: () =>
       `I will now take check-ins from the North East corner — North of Washington and East of Meridian — please come 5 at a time.`,
-    notes: 'NE = North of Washington St, East of Meridian St.',
   },
   {
     id: 'checkin_se',
@@ -119,9 +112,8 @@ I will start with check-ins from the South West corner — South of Washington a
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
+    script: () =>
       `I will now take check-ins from the South East corner — South of Washington and East of Meridian — please come 5 at a time.`,
-    notes: 'SE = South of Washington St, East of Meridian St.',
   },
   {
     id: 'reports_and_circleback',
@@ -136,8 +128,6 @@ I will start with check-ins from the South West corner — South of Washington a
 {{circle-back}}
 
 Are there any additional stations wishing to check in, with or without a report?`,
-    notes:
-      'Go through the station list calling each for reports. Circle back to fill in missing location or station type. New check-ins with reports are welcome.',
   },
   {
     id: 'closing',

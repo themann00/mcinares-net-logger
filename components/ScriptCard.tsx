@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Info, ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronRight, RefreshCw } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
 function resolveScript(section: ScriptSection, ctx: NetContext): string {
@@ -15,6 +15,7 @@ const NWS_URL = 'https://www.weather.gov/ind/hazards'
 
 interface RenderOpts {
   onNext?: () => void
+  onTakeReports?: () => void
   hideNoCheckins?: boolean
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
   onCircleBack?: () => void
@@ -49,11 +50,11 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
           {match[2]}
         </a>
       )
-    } else if (match[3] && opts.onNext) {
+    } else if (match[3] && (opts.onTakeReports || opts.onNext)) {
       parts.push(
         <Button
           key={match.index}
-          onClick={opts.onNext}
+          onClick={opts.onTakeReports || opts.onNext}
           size="sm"
           className="bg-orange-700 hover:bg-orange-600 text-white gap-1 my-1"
         >
@@ -133,12 +134,13 @@ interface ScriptCardProps {
   sectionIndex: number
   totalSections: number
   onNext?: () => void
+  onTakeReports?: () => void
   stationCount?: number
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
   onCircleBack?: () => void
 }
 
-export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, stationCount = 0, inlineInputs, onCircleBack }: ScriptCardProps) {
+export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, onTakeReports, stationCount = 0, inlineInputs, onCircleBack }: ScriptCardProps) {
   const scriptText = resolveScript(section, ctx)
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
@@ -156,15 +158,10 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
 
       <div className="p-5">
         <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
-          {renderScriptText(scriptText, { onNext, hideNoCheckins: stationCount > 1, inlineInputs, onCircleBack })}
+          {renderScriptText(scriptText, { onNext, onTakeReports, hideNoCheckins: stationCount > 1, inlineInputs, onCircleBack })}
         </div>
 
-        {section.notes && (
-          <div className="mt-4 flex gap-2 text-sm text-amber-300 bg-amber-950/40 border border-amber-800/50 rounded-lg p-3">
-            <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
-            <span>{section.notes}</span>
-          </div>
-        )}
+
       </div>
     </div>
   )

@@ -478,6 +478,10 @@ export default function NetPage() {
                   return acc
                 }, {} as Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>)
               }
+              onTakeReports={() => {
+                setSectionIndex(i => Math.min(sections.length - 1, i + 1))
+                setActiveTab('report')
+              }}
               onCircleBack={() => setActiveTab('stations')}
             />
           )}

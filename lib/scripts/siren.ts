@@ -12,8 +12,6 @@ export const sirenSections: ScriptSection[] = [
 When you make your report please provide the siren number if possible using the map at the bottom of www.mcinares.org/skywarn. If you do not have the number, the closest cross street to the siren will be fine.
 
 At this time we will take early check-ins — callsign only at this time, please call ${ctx.net_controller}.`,
-    notes:
-      'Take early check-ins (callsign only) before 11 AM. If too many come in before 11 AM, pause and announce you will take more after the sirens go off.',
   },
   {
     id: 'post_siren',
@@ -23,8 +21,6 @@ At this time we will take early check-ins — callsign only at this time, please
       `This is ${ctx.net_controller} net control for the Siren Check Net.
 
 I will take additional check-ins in a moment. First I will now go through the current list: when called upon please report the siren number using the map at the bottom of www.mcinares.org/skywarn if possible, or the siren location to the best of your knowledge, if it sounded with rotation, as well as any visual reports such as damage or repair needed.`,
-    notes:
-      'Read after the sirens go off at 11 AM. Then move to the List Review section.',
   },
   {
     id: 'list_review',
@@ -40,8 +36,6 @@ I will take additional check-ins in a moment. First I will now go through the cu
   • Siren number or nearest cross street
   • Whether it sounded with rotation
   • Any visual observations — damage or repair needed`,
-    notes:
-      'Call each station on the list. Log their siren report. Use circle-back to fill in missing location or station type.',
   },
   {
     id: 'additional_checkins',
@@ -52,8 +46,6 @@ I will take additional check-ins in a moment. First I will now go through the cu
     allowCircleBack: true,
     script: (ctx: NetContext) =>
       `Are there any additional stations wishing to check in, with or without a siren report?`,
-    notes:
-      'New stations add to unique station count and base/mobile totals.',
   },
   {
     id: 'closing',

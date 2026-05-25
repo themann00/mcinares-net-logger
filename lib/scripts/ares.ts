@@ -23,8 +23,6 @@ This net meets every Wednesday at 7:30 PM local time in order to pass formal or 
         type: 'text',
       },
     ],
-    notes:
-      'Ask for alt net control and NTS Liaison/OES. If nobody volunteers for liaison, continue without.',
   },
   {
     id: 'repeater_info',
@@ -42,7 +40,6 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
     allowCheckins: true,
     script: () =>
       `I will now take any short-time check-ins that have traffic or announcements.`,
-    notes: 'Log stations with traffic or announcements. Mark has_traffic / has_announcements.',
   },
   {
     id: 'mobile',
@@ -51,7 +48,6 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
     allowCheckins: true,
     script: (ctx: NetContext) =>
       `Are there any mobile stations in motion wishing to check in, please call ${ctx.net_controller}.`,
-    notes: 'Mobile stations in motion check in here.',
   },
   {
     id: 'roll_call',
@@ -68,7 +64,6 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
         type: 'text',
       },
     ],
-    notes: "Enter last week's count, then call roll. Check off stations as they respond.",
   },
   {
     id: 'checkin_a_h',
@@ -121,8 +116,6 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
       `(First take announcements from the check-in list then proceed with announcements from the website. Indicate to stations with traffic they will be able to pass that traffic after announcements.)
 
 This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
-    notes:
-      'Call on stations with announcements from the check-in list. Log each announcement.',
   },
   {
     id: 'late_checkins',
@@ -140,7 +133,6 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
       `Are there any questions, comments, or traffic for the net? [Allow repeater to drop]
 
 (Net control can now handle any traffic from the net.)`,
-    notes: 'Log any traffic passed. Use the "Add Note" or traffic log entries.',
   },
   {
     id: 'closing',
@@ -152,6 +144,5 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
 Please stand by while the repeater is set. [Wait for Control Op to set the repeater before clearing]
 
 This is ${ctx.net_controller} saying "73" and the frequency is now being returned to normal amateur radio use.`,
-    notes: 'Wait for Control Op to set the repeater before clearing.',
   },
 ]
