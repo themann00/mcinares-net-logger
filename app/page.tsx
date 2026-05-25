@@ -1,14 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Radio, CloudLightning, Siren, Lock } from 'lucide-react'
-import type { NetType } from '@/types'
+import { Radio, CloudLightning, Siren, Lock, AlertTriangle } from 'lucide-react'
+import type { Net, NetType } from '@/types'
 
 const NET_TYPES: {
   type: NetType
@@ -49,6 +49,15 @@ export default function HomePage() {
   const [callsign, setCallsign] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [openNets, setOpenNets] = useState<Net[]>([])
+
+  useEffect(() => {
+    if (!authenticated) return
+    fetch('/api/nets')
+      .then(res => res.json())
+      .then((nets: Net[]) => setOpenNets(nets.filter(n => !n.closed_at)))
+      .catch(() => {})
+  }, [authenticated])
 
   async function handlePinSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -135,6 +144,33 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-6">
+          {openNets.length > 0 && (
+            <div className="space-y-3">
+              {openNets.map(net => {
+                const netInfo = NET_TYPES.find(n => n.type === net.type)
+                return (
+                  <button
+                    key={net.id}
+                    onClick={() => router.push(`/net/${net.id}`)}
+                    className="w-full flex items-center gap-4 p-5 rounded-xl border-2 border-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-all text-left"
+                  >
+                    <div className="bg-amber-600 p-3 rounded-lg text-white flex-shrink-0">
+                      <AlertTriangle className="w-7 h-7" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-amber-400 font-bold text-lg">
+                        RESUME: {netInfo?.label || net.type.toUpperCase()}
+                      </div>
+                      <div className="text-gray-400 text-sm">
+                        NC: {net.net_controller} &middot; Started {new Date(net.started_at).toLocaleString()}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           <div>
             <h2 className="text-gray-300 font-medium mb-3">Select Net Type</h2>
             <div className="grid gap-3">

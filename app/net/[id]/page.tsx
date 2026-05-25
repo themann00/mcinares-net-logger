@@ -63,8 +63,6 @@ export default function NetPage() {
     net_controller: net?.net_controller || '',
     alt_net_controller: net?.alt_net_controller,
     liaison: net?.liaison,
-    weather_status: net?.weather_status,
-    nws_bulletin: net?.nws_bulletin,
   }
 
   const fetchAll = useCallback(async () => {
@@ -115,10 +113,6 @@ export default function NetPage() {
       } else if (field.id === 'liaison') {
         patch.liaison = val
         logItems.push({ entry_type: 'liaison', content: `Liaison station: ${val}` })
-      } else if (field.id === 'weather_status') {
-        patch.weather_status = val
-      } else if (field.id === 'nws_bulletin') {
-        patch.nws_bulletin = val
       }
     })
 

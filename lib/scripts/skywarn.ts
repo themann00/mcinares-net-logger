@@ -8,11 +8,13 @@ export const skywarnSections: ScriptSection[] = [
     script: (ctx: NetContext) =>
       `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
 
-At this time severe weather is ${ctx.weather_status === 'imminent' ? 'imminent in the area.' : 'approaching the area.'}
+At this time severe weather is [approaching the area / imminent in the area].
 
 Amateurs are asked to watch for signs of deteriorating conditions and provide appropriate reports to net control. This is a directed net and all stations are asked to transmit only when recognized by net control.
 
-Please remember that the 146.760 repeater requires a 151.4 PL tone and the 443.250 repeater requires a 100 PL tone. Always key up for a second before speaking to ensure your transmission is not clipped.${ctx.nws_bulletin ? `\n\n[NWS Bulletin]\n${ctx.nws_bulletin}` : ''}
+Please remember that the 146.760 repeater requires a 151.4 PL tone and the 443.250 repeater requires a 100 PL tone. Always key up for a second before speaking to ensure your transmission is not clipped.
+
+[Read NWS bulletin / watch / warning if available — have it open in a separate window]
 
 The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
 
@@ -26,25 +28,7 @@ When you make your report, please give your exact location, if measurements are 
 
 At this time are there any reports that meet these criteria?`,
     allowReports: true,
-    inputFields: [
-      {
-        id: 'weather_status',
-        label: 'Severe Weather Status',
-        type: 'select',
-        options: [
-          { value: 'approaching', label: 'Approaching the area' },
-          { value: 'imminent', label: 'Imminent in the area' },
-        ],
-        required: true,
-      },
-      {
-        id: 'nws_bulletin',
-        label: 'NWS Bulletin / Watch / Warning (optional)',
-        placeholder: 'Paste NWS bulletin text here if available...',
-        type: 'textarea',
-      },
-    ],
-    notes: 'Select weather status and paste NWS bulletin if available before reading.',
+    notes: 'Read the appropriate weather status (approaching or imminent). Have NWS bulletin open in a separate window to read from.',
   },
   {
     id: 'initial_reports',
@@ -152,14 +136,18 @@ Are there any additional stations wishing to check in, with or without a report?
     title: 'Closing',
     type: 'closenet',
     script: (ctx: NetContext) =>
-      `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn Severe Weather net. At this time we are closing the net and would like to thank all amateurs who have participated today.${ctx.nws_bulletin ? '\n\n[Read any NWS Bulletin or Watch still in effect]' : ''}
+      `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn Severe Weather net. At this time we are closing the net and would like to thank all amateurs who have participated today.
+
+[Read any NWS bulletin or watch still in effect, if applicable]
 
 We would like to also thank the Central Indiana Repeater Club, and KM9E repeater for the use of the repeaters for this net. This net is now closed at ______ local time. This is ${ctx.net_controller} clear.`,
   },
 ]
 
 export const skywarnContinuityScript = (ctx: NetContext) =>
-  `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn net.${ctx.nws_bulletin ? `\n\n[NWS Bulletin]\n${ctx.nws_bulletin}` : ''}
+  `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn net.
+
+[Read NWS bulletin update if available]
 
 The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
 
