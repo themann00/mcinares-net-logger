@@ -3,7 +3,7 @@ import type { ScriptSection, NetContext } from '@/types'
 export const sirenSections: ScriptSection[] = [
   {
     id: 'preamble',
-    title: 'Preamble & Early Check-ins (~10:55 AM)',
+    title: 'Preamble (~10:55)',
     type: 'checkin',
     allowCheckins: true,
     script: (ctx: NetContext) =>
@@ -15,12 +15,13 @@ At this time we will take early check-ins — callsign only at this time, please
   },
   {
     id: 'post_siren',
-    title: 'Post-Siren (11:00 AM)',
+    title: 'Post-Siren (11:00)',
     type: 'read',
-    script: (ctx: NetContext) =>
-      `This is ${ctx.net_controller} net control for the Siren Check Net.
+    allowReports: true,
+    script: () =>
+      `I will take additional check-ins in a moment. First I will go through the current list: when called upon please report the siren number using the map at the bottom of www.mcinares.org/skywarn if possible, or the siren location to the best of your knowledge, if it sounded with rotation, as well as any visual reports such as damage or repair needed.
 
-I will take additional check-ins in a moment. First I will now go through the current list: when called upon please report the siren number using the map at the bottom of www.mcinares.org/skywarn if possible, or the siren location to the best of your knowledge, if it sounded with rotation, as well as any visual reports such as damage or repair needed.`,
+Log reports using the Report tab.`,
   },
   {
     id: 'list_review',
@@ -29,23 +30,25 @@ I will take additional check-ins in a moment. First I will now go through the cu
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
-      `This is ${ctx.net_controller} net control for the Siren Net.
-
-(Go through each station on the check-in list. When called upon, each station should report:)
+    script: () =>
+      `Go through each station on the check-in list. When called upon, each station should report:
   • Siren number or nearest cross street
   • Whether it sounded with rotation
-  • Any visual observations — damage or repair needed`,
+  • Any visual observations — damage or repair needed
+
+{{circle-back}}`,
   },
   {
     id: 'additional_checkins',
-    title: 'Additional Check-ins & Reports',
+    title: 'Additional',
     type: 'checkin',
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
-      `Are there any additional stations wishing to check in, with or without a siren report?`,
+    script: () =>
+      `Are there any additional stations wishing to check in, with or without a siren report?
+
+{{no-checkins}}`,
   },
   {
     id: 'closing',
