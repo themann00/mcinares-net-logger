@@ -77,8 +77,8 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim() }),
       })
-      if (!res.ok) throw new Error('Failed to create net')
       const net = await res.json()
+      if (!res.ok) throw new Error(net.error || 'Failed to create net')
       router.push(`/net/${net.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error starting net')

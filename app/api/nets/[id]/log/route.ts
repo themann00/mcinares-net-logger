@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import type { LogEntryType } from '@/types'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('MCINARES_log_entries')
     .select('*')
     .eq('net_id', id)
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: 'entry_type and content are required' }, { status: 400 })
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('MCINARES_log_entries')
     .insert({ net_id: id, entry_type, content, station_id: station_id || null })
     .select()

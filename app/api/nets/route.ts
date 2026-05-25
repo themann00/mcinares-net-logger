@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 import type { NetType } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -10,18 +10,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'type and net_controller are required' }, { status: 400 })
   }
 
-  const { data: net, error: netError } = await supabase
+  const { data: net, error: netError } = await getSupabase()
     .from('MCINARES_nets')
     .insert({ type, net_controller })
     .select()
     .single()
 
   if (netError) {
+    console.error('Supabase insert MCINARES_nets failed:', netError)
     return NextResponse.json({ error: netError.message }, { status: 500 })
   }
 
-  // Log net open event
-  await supabase.from('MCINARES_log_entries').insert({
+  await getSupabase().from('MCINARES_log_entries').insert({
     net_id: net.id,
     entry_type: 'net_open',
     content: `Net opened by ${net_controller}`,
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('MCINARES_nets')
     .select('*')
     .order('started_at', { ascending: false })

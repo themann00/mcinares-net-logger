@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabase } from '@/lib/supabase'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { data, error } = await supabase.from('MCINARES_nets').select('*').eq('id', id).single()
+  const { data, error } = await getSupabase().from('MCINARES_nets').select('*').eq('id', id).single()
   if (error) return NextResponse.json({ error: error.message }, { status: 404 })
   return NextResponse.json(data)
 }
@@ -12,7 +12,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params
   const body = await request.json()
 
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('MCINARES_nets')
     .update(body)
     .eq('id', id)
