@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: net, error: netError } = await supabase
-    .from('nets')
+    .from('MCINARES-nets')
     .insert({ type, net_controller })
     .select()
     .single()
@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Log net open event
-  await supabase.from('log_entries').insert({
+  await supabase.from('MCINARES-log_entries').insert({
     net_id: net.id,
     entry_type: 'net_open',
     content: `Net opened by ${net_controller}`,
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET() {
   const { data, error } = await supabase
-    .from('nets')
+    .from('MCINARES-nets')
     .select('*')
     .order('started_at', { ascending: false })
     .limit(20)

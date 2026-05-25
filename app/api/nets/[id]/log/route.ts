@@ -5,7 +5,7 @@ import type { LogEntryType } from '@/types'
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { data, error } = await supabase
-    .from('log_entries')
+    .from('MCINARES-log_entries')
     .select('*')
     .eq('net_id', id)
     .order('timestamp', { ascending: true })
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { data, error } = await supabase
-    .from('log_entries')
+    .from('MCINARES-log_entries')
     .insert({ net_id: id, entry_type, content, station_id: station_id || null })
     .select()
     .single()

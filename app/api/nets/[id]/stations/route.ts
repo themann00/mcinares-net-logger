@@ -5,7 +5,7 @@ import type { StationType, Quadrant } from '@/types'
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { data, error } = await supabase
-    .from('stations')
+    .from('MCINARES-stations')
     .select('*')
     .eq('net_id', id)
     .order('checked_in_at', { ascending: true })
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { data: station, error: stationError } = await supabase
-    .from('stations')
+    .from('MCINARES-stations')
     .insert({
       net_id: id,
       callsign: callsign.toUpperCase().trim(),
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (has_traffic) parts.push('— has traffic')
   if (has_announcements) parts.push('— has announcement')
 
-  await supabase.from('log_entries').insert({
+  await supabase.from('MCINARES-log_entries').insert({
     net_id: id,
     station_id: station.id,
     entry_type: 'checkin',
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   // If a report was provided at check-in, log it too
   if (report?.trim()) {
-    await supabase.from('log_entries').insert({
+    await supabase.from('MCINARES-log_entries').insert({
       net_id: id,
       station_id: station.id,
       entry_type: 'report',
@@ -99,7 +99,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const { data: station, error } = await supabase
-    .from('stations')
+    .from('MCINARES-stations')
     .update({ station_type, location, ...rest })
     .eq('id', station_id)
     .eq('net_id', id)
@@ -114,7 +114,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (location) updates.push(`location: ${location}`)
 
   if (updates.length > 0) {
-    await supabase.from('log_entries').insert({
+    await supabase.from('MCINARES-log_entries').insert({
       net_id: id,
       station_id,
       entry_type: 'circle_back',
