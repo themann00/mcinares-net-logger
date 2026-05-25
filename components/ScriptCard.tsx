@@ -3,7 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Info, ChevronRight } from 'lucide-react'
+import { Info, ChevronRight, RefreshCw } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
 function resolveScript(section: ScriptSection, ctx: NetContext): string {
@@ -17,11 +17,12 @@ interface RenderOpts {
   onNext?: () => void
   hideNoCheckins?: boolean
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
+  onCircleBack?: () => void
 }
 
 function renderScriptText(text: string, opts: RenderOpts = {}) {
   const parts: React.ReactNode[] = []
-  const regex = /(\[[^\]]+\])|(NWS [Bb]ulletin)|(\{\{take-reports\}\})|(\{\{no-checkins\}\})|(\{\{input:(\w+)\}\})/g
+  const regex = /(\[[^\]]+\])|(NWS [Bb]ulletin)|(\{\{take-reports\}\})|(\{\{no-checkins\}\})|(\{\{input:(\w+)\}\})|(\{\{circle-back\}\})/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
@@ -94,6 +95,18 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
           </Button>
         </span>
       )
+    } else if (match[7] && opts.onCircleBack) {
+      parts.push(
+        <Button
+          key={match.index}
+          onClick={opts.onCircleBack}
+          size="sm"
+          className="bg-amber-700 hover:bg-amber-600 text-white gap-1 my-1"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Circle back
+        </Button>
+      )
     }
 
     lastIndex = match.index + match[0].length
@@ -122,9 +135,10 @@ interface ScriptCardProps {
   onNext?: () => void
   stationCount?: number
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
+  onCircleBack?: () => void
 }
 
-export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, stationCount = 0, inlineInputs }: ScriptCardProps) {
+export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, stationCount = 0, inlineInputs, onCircleBack }: ScriptCardProps) {
   const scriptText = resolveScript(section, ctx)
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
@@ -142,7 +156,7 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
 
       <div className="p-5">
         <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
-          {renderScriptText(scriptText, { onNext, hideNoCheckins: stationCount > 1, inlineInputs })}
+          {renderScriptText(scriptText, { onNext, hideNoCheckins: stationCount > 1, inlineInputs, onCircleBack })}
         </div>
 
         {section.notes && (

@@ -133,6 +133,8 @@ I will start with check-ins from the South West corner — South of Washington a
     script: () =>
       `I will now go around to each station for their weather reports. When called upon, please provide your location and any observations that meet the criteria previously stated.
 
+{{circle-back}}
+
 Are there any additional stations wishing to check in, with or without a report?`,
     notes:
       'Go through the station list calling each for reports. Circle back to fill in missing location or station type. New check-ins with reports are welcome.',

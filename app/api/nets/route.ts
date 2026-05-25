@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
     .insert({
       net_id: net.id,
       callsign: net_controller,
+      station_type: 'base',
+      location: 'N/A',
       checked_in_at: checkinTime.toISOString(),
     })
 
