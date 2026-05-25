@@ -104,6 +104,8 @@ export default function NetPage() {
     const patch: Record<string, string> = {}
     const logItems: { entry_type: string; content: string }[] = []
 
+    const autoCheckins: string[] = []
+
     section.inputFields.forEach(field => {
       const val = sectionInputs[field.id]?.trim()
       if (!val) return
@@ -111,9 +113,11 @@ export default function NetPage() {
       if (field.id === 'alt_nc') {
         patch.alt_net_controller = val
         logItems.push({ entry_type: 'alt_nc', content: `Alternate net control: ${val}` })
+        autoCheckins.push(val)
       } else if (field.id === 'liaison') {
         patch.liaison = val
         logItems.push({ entry_type: 'liaison', content: `Liaison station: ${val}` })
+        autoCheckins.push(val)
       }
     })
 
@@ -131,6 +135,19 @@ export default function NetPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(item),
       })
+    }
+
+    for (const callsign of autoCheckins) {
+      const already = stations.some(
+        s => s.callsign.toUpperCase() === callsign.toUpperCase()
+      )
+      if (!already) {
+        await fetch(`/api/nets/${netId}/stations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ callsign }),
+        })
+      }
     }
 
     setSaving(false)
