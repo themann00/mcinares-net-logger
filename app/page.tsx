@@ -54,10 +54,20 @@ export default function HomePage() {
 
   const fetchNets = () => {
     fetch('/api/nets')
-      .then(res => res.json())
+      .then(res => {
+        if (res.ok) {
+          setAuthenticated(true)
+          return res.json()
+        }
+        return []
+      })
       .then((nets: Net[]) => setAllNets(nets))
       .catch(() => {})
   }
+
+  useEffect(() => {
+    fetchNets()
+  }, [])
 
   useEffect(() => {
     if (!authenticated) return
