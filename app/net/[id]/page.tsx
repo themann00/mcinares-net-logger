@@ -183,6 +183,43 @@ export default function NetPage() {
     (net.type === 'skywarn' || net.type === 'siren') &&
     (section?.allowCircleBack ?? false)
 
+  const sectionNav = (
+    <div className="flex items-center justify-between">
+      <Button
+        onClick={() => setSectionIndex(i => Math.max(0, i - 1))}
+        disabled={sectionIndex === 0}
+        variant="outline"
+        className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+      >
+        <ChevronLeft className="w-4 h-4" />
+        Previous
+      </Button>
+
+      <span className="text-gray-500 text-sm">
+        {sectionIndex + 1} / {sections.length}
+      </span>
+
+      {section?.type === 'closenet' ? (
+        <Button
+          onClick={closeNet}
+          disabled={closing}
+          className="bg-red-700 hover:bg-red-600 font-semibold px-8"
+        >
+          {closing ? 'Closing...' : 'Close Net & Generate Report'}
+        </Button>
+      ) : (
+        <Button
+          onClick={() => setSectionIndex(i => Math.min(sections.length - 1, i + 1))}
+          disabled={sectionIndex === sections.length - 1}
+          className="bg-blue-700 hover:bg-blue-600 gap-1"
+        >
+          Next
+          <ChevronRight className="w-4 h-4" />
+        </Button>
+      )}
+    </div>
+  )
+
   const tabs: { id: TabId; label: string; icon: React.ReactNode; show: boolean }[] = [
     {
       id: 'checkin',
@@ -290,6 +327,8 @@ export default function NetPage() {
       <div className="flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Script */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {sectionNav}
+
           {section && (
             <ScriptCard
               section={section}
@@ -358,37 +397,7 @@ export default function NetPage() {
             </div>
           )}
 
-          {/* Section navigation */}
-          <div className="flex items-center justify-between">
-            <Button
-              onClick={() => setSectionIndex(i => Math.max(0, i - 1))}
-              disabled={sectionIndex === 0}
-              variant="outline"
-              className="border-gray-700 text-gray-300 hover:text-white gap-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Previous
-            </Button>
-
-            {section?.type === 'closenet' ? (
-              <Button
-                onClick={closeNet}
-                disabled={closing}
-                className="bg-red-700 hover:bg-red-600 font-semibold px-8"
-              >
-                {closing ? 'Closing...' : 'Close Net & Generate Report'}
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setSectionIndex(i => Math.min(sections.length - 1, i + 1))}
-                disabled={sectionIndex === sections.length - 1}
-                className="bg-blue-700 hover:bg-blue-600 gap-1"
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
+          {sectionNav}
         </div>
 
         {/* Right: Tabs panel */}

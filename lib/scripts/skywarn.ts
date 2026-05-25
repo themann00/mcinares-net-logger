@@ -37,9 +37,7 @@ At this time are there any reports that meet these criteria?`,
     allowReports: true,
     allowCheckins: true,
     script: () =>
-      `At this time are there any reports that meet these criteria?
-
-(Take any immediate reports before moving on to liaison and check-ins.)`,
+      `(Take any immediate reports before moving on to liaison and check-ins.)`,
     notes: 'Take any early weather reports. Stations may also check in here.',
   },
   {
@@ -84,9 +82,7 @@ This is ${ctx.net_controller} for the Marion County Skywarn net.`,
     allowReports: true,
     allowCircleBack: true,
     script: (ctx: NetContext) =>
-      `I will now take check-ins from the North West corner — North of Washington and West of Meridian — please come 5 at a time.
-
-This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+      `I will now take check-ins from the North West corner — North of Washington and West of Meridian — please come 5 at a time.`,
     notes: 'NW = North of Washington St, West of Meridian St.',
   },
   {
@@ -97,9 +93,7 @@ This is ${ctx.net_controller} for the Marion County Skywarn net.`,
     allowReports: true,
     allowCircleBack: true,
     script: (ctx: NetContext) =>
-      `I will now take check-ins from the North East corner — North of Washington and East of Meridian — please come 5 at a time.
-
-This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+      `I will now take check-ins from the North East corner — North of Washington and East of Meridian — please come 5 at a time.`,
     notes: 'NE = North of Washington St, East of Meridian St.',
   },
   {
@@ -110,9 +104,7 @@ This is ${ctx.net_controller} for the Marion County Skywarn net.`,
     allowReports: true,
     allowCircleBack: true,
     script: (ctx: NetContext) =>
-      `I will now take check-ins from the South East corner — South of Washington and East of Meridian — please come 5 at a time.
-
-This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+      `I will now take check-ins from the South East corner — South of Washington and East of Meridian — please come 5 at a time.`,
     notes: 'SE = South of Washington St, East of Meridian St.',
   },
   {
@@ -122,10 +114,8 @@ This is ${ctx.net_controller} for the Marion County Skywarn net.`,
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
-    script: (ctx: NetContext) =>
-      `This is ${ctx.net_controller} for the Marion County Skywarn net.
-
-I will now go around to each station for their weather reports. When called upon, please provide your location and any observations that meet the criteria previously stated.
+    script: () =>
+      `I will now go around to each station for their weather reports. When called upon, please provide your location and any observations that meet the criteria previously stated.
 
 Are there any additional stations wishing to check in, with or without a report?`,
     notes:
