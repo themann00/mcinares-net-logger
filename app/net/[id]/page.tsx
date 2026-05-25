@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -17,7 +17,6 @@ import {
 import { ScriptCard } from '@/components/ScriptCard'
 import { CheckinForm } from '@/components/CheckinForm'
 import { StationList } from '@/components/StationList'
-import { LogFeed } from '@/components/LogFeed'
 import { ReportForm } from '@/components/ReportForm'
 import { FullScriptModal } from '@/components/FullScriptModal'
 import { RecentLog } from '@/components/RecentLog'
@@ -60,7 +59,7 @@ export default function NetPage() {
   const [localBulletin, setLocalBulletin] = useState('')
   const [bulletinModalOpen, setBulletinModalOpen] = useState(false)
   const [bulletinDraft, setBulletinDraft] = useState('')
-  const logBottomRef = useRef<HTMLDivElement>(null)
+  const [fullLogOpen, setFullLogOpen] = useState(false)
 
   const sections = net ? getSections(net.type) : []
   const section = sections[sectionIndex]
@@ -97,13 +96,6 @@ export default function NetPage() {
     const interval = setInterval(tick, 30000)
     return () => clearInterval(interval)
   }, [net?.started_at])
-
-  // Auto-scroll log to bottom
-  useEffect(() => {
-    if (activeTab === 'log') {
-      logBottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [logEntries, activeTab])
 
   async function saveSectionInputs() {
     if (!net || !section?.inputFields) return
@@ -551,7 +543,7 @@ export default function NetPage() {
 
           {sectionNav}
 
-          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} />
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed />
         </div>
 
         {/* Right: Tabs panel */}
@@ -612,8 +604,22 @@ export default function NetPage() {
 
             {activeTab === 'log' && (
               <div>
-                <LogFeed entries={logEntries} />
-                <div ref={logBottomRef} />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setFullLogOpen(true)}
+                  className="w-full mb-3 border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 gap-1"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  View full log
+                </Button>
+                <RecentLog
+                  entries={logEntries}
+                  netId={netId}
+                  onUpdate={fetchAll}
+                  limit={50}
+                  reversed
+                />
               </div>
             )}
           </div>
@@ -626,6 +632,28 @@ export default function NetPage() {
         sections={sections}
         ctx={ctx}
       />
+
+      {fullLogOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+              <h3 className="text-white font-semibold">Full Net Log</h3>
+              <button onClick={() => setFullLogOpen(false)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              <RecentLog
+                entries={logEntries}
+                netId={netId}
+                onUpdate={fetchAll}
+                limit={logEntries.length}
+                reversed
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

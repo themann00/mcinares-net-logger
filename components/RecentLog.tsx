@@ -24,14 +24,17 @@ interface RecentLogProps {
   entries: LogEntry[]
   netId: string
   onUpdate: () => void
+  limit?: number
+  reversed?: boolean
 }
 
-export function RecentLog({ entries, netId, onUpdate }: RecentLogProps) {
+export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false }: RecentLogProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [saving, setSaving] = useState(false)
 
-  const recent = entries.slice(-10)
+  const sliced = entries.slice(-limit)
+  const recent = reversed ? [...sliced].reverse() : sliced
 
   async function handleSave(entryId: string) {
     if (!editContent.trim()) return
