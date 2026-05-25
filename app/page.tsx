@@ -1,65 +1,194 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { Radio, CloudLightning, Siren, Lock } from 'lucide-react'
+import type { NetType } from '@/types'
+
+const NET_TYPES: {
+  type: NetType
+  label: string
+  description: string
+  icon: React.ReactNode
+  color: string
+}[] = [
+  {
+    type: 'ares',
+    label: 'Weekly ARES Net',
+    description: 'Every Wednesday at 7:30 PM',
+    icon: <Radio className="w-6 h-6" />,
+    color: 'bg-blue-600',
+  },
+  {
+    type: 'skywarn',
+    label: 'Skywarn Net',
+    description: 'Severe weather activation',
+    icon: <CloudLightning className="w-6 h-6" />,
+    color: 'bg-orange-600',
+  },
+  {
+    type: 'siren',
+    label: 'Siren Test Net',
+    description: 'First Friday of the month at 11 AM',
+    icon: <Siren className="w-6 h-6" />,
+    color: 'bg-red-600',
+  },
+]
+
+export default function HomePage() {
+  const router = useRouter()
+  const [pin, setPin] = useState('')
+  const [authenticated, setAuthenticated] = useState(false)
+  const [pinError, setPinError] = useState('')
+  const [selectedNet, setSelectedNet] = useState<NetType | null>(null)
+  const [callsign, setCallsign] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handlePinSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setPinError('')
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    })
+    if (res.ok) {
+      setAuthenticated(true)
+    } else {
+      setPinError('Incorrect PIN. Try again.')
+      setPin('')
+    }
+  }
+
+  async function handleStartNet(e: React.FormEvent) {
+    e.preventDefault()
+    if (!selectedNet || !callsign.trim()) return
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/nets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim() }),
+      })
+      if (!res.ok) throw new Error('Failed to create net')
+      const net = await res.json()
+      router.push(`/net/${net.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error starting net')
+      setLoading(false)
+    }
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm bg-gray-900 border-gray-800">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-2">
+              <div className="bg-blue-600 p-3 rounded-full">
+                <Lock className="w-6 h-6 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-white text-xl">Marion County ARES</CardTitle>
+            <p className="text-gray-400 text-sm">Net Logger</p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePinSubmit} className="space-y-4">
+              <div>
+                <Label htmlFor="pin" className="text-gray-300">
+                  Access PIN
+                </Label>
+                <Input
+                  id="pin"
+                  type="password"
+                  value={pin}
+                  onChange={e => setPin(e.target.value)}
+                  placeholder="Enter PIN"
+                  className="bg-gray-800 border-gray-700 text-white mt-1"
+                  autoFocus
+                />
+                {pinError && <p className="text-red-400 text-sm mt-1">{pinError}</p>}
+              </div>
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
+                Enter
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-gray-950 p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-white">Marion County ARES</h1>
+          <p className="text-gray-400 mt-1">Net Logger</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-gray-300 font-medium mb-3">Select Net Type</h2>
+            <div className="grid gap-3">
+              {NET_TYPES.map(({ type, label, description, icon, color }) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedNet(type)}
+                  className={`flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
+                    selectedNet === type
+                      ? 'border-blue-500 bg-blue-500/10'
+                      : 'border-gray-700 bg-gray-900 hover:border-gray-500'
+                  }`}
+                >
+                  <div className={`${color} p-2 rounded-lg text-white flex-shrink-0`}>{icon}</div>
+                  <div>
+                    <div className="text-white font-medium">{label}</div>
+                    <div className="text-gray-400 text-sm">{description}</div>
+                  </div>
+                  {selectedNet === type && (
+                    <Badge className="ml-auto bg-blue-600 text-white">Selected</Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {selectedNet && (
+            <form onSubmit={handleStartNet} className="space-y-4">
+              <div>
+                <Label htmlFor="callsign" className="text-gray-300">
+                  Net Controller Callsign
+                </Label>
+                <Input
+                  id="callsign"
+                  value={callsign}
+                  onChange={e => setCallsign(e.target.value.toUpperCase())}
+                  placeholder="e.g. W9ABC"
+                  className="bg-gray-800 border-gray-700 text-white mt-1 uppercase"
+                  autoFocus
+                  required
+                />
+              </div>
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+              <Button
+                type="submit"
+                disabled={loading || !callsign.trim()}
+                className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
+              >
+                {loading ? 'Starting...' : 'Open Net'}
+              </Button>
+            </form>
+          )}
         </div>
-      </main>
+      </div>
     </div>
-  );
+  )
 }

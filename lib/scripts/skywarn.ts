@@ -1,0 +1,174 @@
+import type { ScriptSection, NetContext } from '@/types'
+
+export const skywarnSections: ScriptSection[] = [
+  {
+    id: 'preamble',
+    title: 'Preamble',
+    type: 'read',
+    script: (ctx: NetContext) =>
+      `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
+
+At this time severe weather is ${ctx.weather_status === 'imminent' ? 'imminent in the area.' : 'approaching the area.'}
+
+Amateurs are asked to watch for signs of deteriorating conditions and provide appropriate reports to net control. This is a directed net and all stations are asked to transmit only when recognized by net control.
+
+Please remember that the 146.760 repeater requires a 151.4 PL tone and the 443.250 repeater requires a 100 PL tone. Always key up for a second before speaking to ensure your transmission is not clipped.${ctx.nws_bulletin ? `\n\n[NWS Bulletin]\n${ctx.nws_bulletin}` : ''}
+
+The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
+
+  • Tornadoes, funnel clouds, or rotating wall clouds
+  • Hail including the size of the hail
+  • Winds in excess of 50 miles per hour
+  • Flooding of creeks, streams, rivers, roads, or streets
+  • Damage to trees, power lines, or structures caused by wind
+
+When you make your report, please give your exact location, if measurements are estimated or actual, and the time the event occurred especially if your report is delayed.
+
+At this time are there any reports that meet these criteria?`,
+    allowReports: true,
+    inputFields: [
+      {
+        id: 'weather_status',
+        label: 'Severe Weather Status',
+        type: 'select',
+        options: [
+          { value: 'approaching', label: 'Approaching the area' },
+          { value: 'imminent', label: 'Imminent in the area' },
+        ],
+        required: true,
+      },
+      {
+        id: 'nws_bulletin',
+        label: 'NWS Bulletin / Watch / Warning (optional)',
+        placeholder: 'Paste NWS bulletin text here if available...',
+        type: 'textarea',
+      },
+    ],
+    notes: 'Select weather status and paste NWS bulletin if available before reading.',
+  },
+  {
+    id: 'initial_reports',
+    title: 'Initial Reports',
+    type: 'report',
+    allowReports: true,
+    allowCheckins: true,
+    script: () =>
+      `At this time are there any reports that meet these criteria?
+
+(Take any immediate reports before moving on to liaison and check-ins.)`,
+    notes: 'Take any early weather reports. Stations may also check in here.',
+  },
+  {
+    id: 'liaison',
+    title: 'Liaison',
+    type: 'input',
+    script: (ctx: NetContext) =>
+      `Do we have a station available to take over as liaison at this time?
+
+Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are able to listen to this net, in addition to the Central Indiana Skywarn net on 146.97 or 442.65 repeater — both of those have a 77.0 PL tone. Please check in with them to let them know you are (taking over as) the liaison for Marion County, and that we have a net up and running.`,
+    inputFields: [
+      {
+        id: 'liaison',
+        label: 'Liaison Station Callsign',
+        placeholder: 'e.g. W9ABC (leave blank if none)',
+        type: 'text',
+      },
+    ],
+    notes:
+      'Request liaison volunteer. Give them Central Indiana Skywarn frequencies (146.97 or 442.65, 77.0 PL).',
+  },
+  {
+    id: 'checkin_sw',
+    title: 'Check-ins: SW Quadrant',
+    type: 'checkin',
+    allowCheckins: true,
+    allowReports: true,
+    allowCircleBack: true,
+    script: (ctx: NetContext) =>
+      `I will now take check-ins by quadrants of the county. Please come 5 at a time with your callsign, and if you are base or mobile in motion. [Note: if they are not mobile then they are 'base']
+
+I will now take check-ins from the South West corner — South of Washington and West of Meridian — please come 5 at a time.
+
+This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+    notes: 'SW = South of Washington St, West of Meridian St.',
+  },
+  {
+    id: 'checkin_nw',
+    title: 'Check-ins: NW Quadrant',
+    type: 'checkin',
+    allowCheckins: true,
+    allowReports: true,
+    allowCircleBack: true,
+    script: (ctx: NetContext) =>
+      `I will now take check-ins from the North West corner — North of Washington and West of Meridian — please come 5 at a time.
+
+This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+    notes: 'NW = North of Washington St, West of Meridian St.',
+  },
+  {
+    id: 'checkin_ne',
+    title: 'Check-ins: NE Quadrant',
+    type: 'checkin',
+    allowCheckins: true,
+    allowReports: true,
+    allowCircleBack: true,
+    script: (ctx: NetContext) =>
+      `I will now take check-ins from the North East corner — North of Washington and East of Meridian — please come 5 at a time.
+
+This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+    notes: 'NE = North of Washington St, East of Meridian St.',
+  },
+  {
+    id: 'checkin_se',
+    title: 'Check-ins: SE Quadrant',
+    type: 'checkin',
+    allowCheckins: true,
+    allowReports: true,
+    allowCircleBack: true,
+    script: (ctx: NetContext) =>
+      `I will now take check-ins from the South East corner — South of Washington and East of Meridian — please come 5 at a time.
+
+This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+    notes: 'SE = South of Washington St, East of Meridian St.',
+  },
+  {
+    id: 'reports_and_circleback',
+    title: 'Reports & Circle-Back',
+    type: 'report',
+    allowCheckins: true,
+    allowReports: true,
+    allowCircleBack: true,
+    script: (ctx: NetContext) =>
+      `This is ${ctx.net_controller} for the Marion County Skywarn net.
+
+I will now go around to each station for their weather reports. When called upon, please provide your location and any observations that meet the criteria previously stated.
+
+Are there any additional stations wishing to check in, with or without a report?`,
+    notes:
+      'Go through the station list calling each for reports. Circle back to fill in missing location or station type. New check-ins with reports are welcome.',
+  },
+  {
+    id: 'closing',
+    title: 'Closing',
+    type: 'closenet',
+    script: (ctx: NetContext) =>
+      `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn Severe Weather net. At this time we are closing the net and would like to thank all amateurs who have participated today.${ctx.nws_bulletin ? '\n\n[Read any NWS Bulletin or Watch still in effect]' : ''}
+
+We would like to also thank the Central Indiana Repeater Club, and KM9E repeater for the use of the repeaters for this net. This net is now closed at ______ local time. This is ${ctx.net_controller} clear.`,
+  },
+]
+
+export const skywarnContinuityScript = (ctx: NetContext) =>
+  `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn net.${ctx.nws_bulletin ? `\n\n[NWS Bulletin]\n${ctx.nws_bulletin}` : ''}
+
+The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
+
+  • Tornadoes, funnel clouds, or rotating wall clouds
+  • Hail including the size of the hail
+  • Winds in excess of 50 miles per hour
+  • Flooding of creeks, streams, rivers, roads, or streets
+  • Damage to trees, power lines, or structures caused by wind
+
+When you make your report, please give your exact location, if measurements are estimated or actual, and the time the event occurred especially if your report is delayed.
+
+At this time are there any reports that meet these criteria?`
