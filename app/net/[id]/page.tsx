@@ -20,6 +20,7 @@ import { StationList } from '@/components/StationList'
 import { LogFeed } from '@/components/LogFeed'
 import { ReportForm } from '@/components/ReportForm'
 import { FullScriptModal } from '@/components/FullScriptModal'
+import { RecentLog } from '@/components/RecentLog'
 import { getSections } from '@/lib/scripts'
 import { formatDistanceToNow, format } from 'date-fns'
 import {
@@ -398,6 +399,8 @@ export default function NetPage() {
           )}
 
           {sectionNav}
+
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} />
         </div>
 
         {/* Right: Tabs panel */}

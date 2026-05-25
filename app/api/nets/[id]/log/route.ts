@@ -36,3 +36,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data, { status: 201 })
 }
+
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { entry_id, content } = await request.json() as { entry_id: string; content: string }
+
+  if (!entry_id || !content?.trim()) {
+    return NextResponse.json({ error: 'entry_id and content are required' }, { status: 400 })
+  }
+
+  const { data, error } = await getSupabase()
+    .from('mcinares_log_entries')
+    .update({ content: content.trim() })
+    .eq('id', entry_id)
+    .eq('net_id', id)
+    .select()
+    .single()
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json(data)
+}
