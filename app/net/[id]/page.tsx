@@ -353,6 +353,35 @@ export default function NetPage() {
       <div className="flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4">
         {/* Left: Script */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
+          {sections.length > 1 && (
+            <div className="flex flex-wrap gap-1">
+              {sections.map((s, i) => {
+                const shortLabel = s.title
+                  .replace('Check-ins: ', '')
+                  .replace(' Quadrant', '')
+                  .replace('Reports & ', '')
+                  .replace('Initial Reports', 'Reports')
+                  .replace('Circle-Back', 'Circle-Back')
+                  .replace('Closing', 'Close')
+                return (
+                  <button
+                    key={s.id}
+                    onClick={() => setSectionIndex(i)}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      i === sectionIndex
+                        ? 'bg-blue-600 text-white font-semibold'
+                        : i < sectionIndex
+                        ? 'bg-gray-800 text-gray-400 hover:text-white'
+                        : 'bg-gray-900 text-gray-600 hover:text-gray-400'
+                    }`}
+                  >
+                    {shortLabel}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+
           {sectionNav}
 
           {net?.type === 'skywarn' && section?.id === 'preamble' && (

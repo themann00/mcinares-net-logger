@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { format, differenceInMinutes } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Printer, Download, ArrowLeft } from 'lucide-react'
+import { Printer, Download, Home } from 'lucide-react'
 import Link from 'next/link'
 import type { Net, Station, LogEntry } from '@/types'
 
@@ -112,10 +112,10 @@ export default function ReportPage() {
     <div className="min-h-screen bg-gray-100 print:bg-white">
       {/* Print toolbar — hidden when printing */}
       <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 print:hidden">
-        <Link href={`/net/${netId}`}>
-          <Button size="sm" variant="outline" className="border-gray-700 text-gray-300 gap-1">
-            <ArrowLeft className="w-4 h-4" />
-            Back to Net
+        <Link href="/">
+          <Button size="sm" variant="outline" className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1">
+            <Home className="w-4 h-4" />
+            Home
           </Button>
         </Link>
         <div className="flex-1" />
