@@ -87,9 +87,7 @@ Thank you ${ctx.liaison || '________'} for volunteering. Please be sure you are 
     script: (ctx: NetContext) =>
       `I will now take check-ins by quadrants of the county. Please come 5 at a time with your callsign, and if you are base or mobile in motion.
 
-I will now take check-ins from the South West corner — South of Washington and West of Meridian — please come 5 at a time.
-
-This is ${ctx.net_controller} for the Marion County Skywarn net.`,
+I will start with check-ins from the South West corner — South of Washington and West of Meridian — please come 5 at a time.`,
     notes: 'SW = South of Washington St, West of Meridian St.',
   },
   {
