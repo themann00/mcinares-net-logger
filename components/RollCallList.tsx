@@ -8,6 +8,7 @@ interface RollCallListProps {
   currentStations: Station[]
   onUpdate: () => void
   onSkip?: () => void
+  sortBySuffix?: boolean
 }
 
 interface RollState {
@@ -17,7 +18,12 @@ interface RollState {
   tickedAt: number | null
 }
 
-export function RollCallList({ netId, currentStations, onUpdate, onSkip }: RollCallListProps) {
+function getSuffix(callsign: string) {
+  const match = callsign.match(/\d([A-Z]+)$/)
+  return match ? match[1] : callsign
+}
+
+export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortBySuffix = true }: RollCallListProps) {
   const [prevNet, setPrevNet] = useState<Net | null>(null)
   const [prevStations, setPrevStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
@@ -44,7 +50,10 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip }: RollC
       const stRes = await fetch(`/api/nets/${prev.id}/stations`)
       if (stRes.ok) {
         const stations: Station[] = await stRes.json()
-        stations.sort((a, b) => a.callsign.localeCompare(b.callsign))
+        stations.sort((a, b) => sortBySuffix
+          ? getSuffix(a.callsign).localeCompare(getSuffix(b.callsign))
+          : a.callsign.localeCompare(b.callsign)
+        )
         setPrevStations(stations)
         setLastWeekCount(stations.length)
 

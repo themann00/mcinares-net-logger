@@ -68,6 +68,7 @@ export default function NetPage() {
   const [rollCallSkipped, setRollCallSkipped] = useState(false)
   const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null; checklistUrl: string | null } | null>(null)
   const [elapsed, setElapsed] = useState('')
+  const [sortBySuffix, setSortBySuffix] = useState(true)
   const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
   const [localBulletin, setLocalBulletin] = useState('')
   const [bulletinModalOpen, setBulletinModalOpen] = useState(false)
@@ -409,6 +410,17 @@ export default function NetPage() {
                 Open: {elapsed}
               </span>
             )}
+            <button
+              onClick={() => setSortBySuffix(!sortBySuffix)}
+              className={`text-xs px-2 py-1 rounded border transition-colors hidden sm:block ${
+                sortBySuffix
+                  ? 'bg-blue-600/20 border-blue-600 text-blue-300'
+                  : 'bg-gray-800 border-gray-700 text-gray-400'
+              }`}
+              title="Toggle callsign sort order"
+            >
+              {sortBySuffix ? 'Suffix' : 'Call'}
+            </button>
             <div className="flex gap-1 text-xs text-gray-400">
               <span className="bg-gray-800 px-2 py-1 rounded">{stations.length} stns</span>
               {net.type !== 'ares' && (
@@ -797,6 +809,7 @@ export default function NetPage() {
                   currentStations={stations}
                   onUpdate={fetchAll}
                   onSkip={() => setRollCallSkipped(true)}
+                  sortBySuffix={sortBySuffix}
                 />
               ) : (
                 <>
