@@ -590,6 +590,17 @@ export default function NetPage() {
             </div>
           )}
 
+          {net.type === 'ares' && section?.id === 'announcements' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4">
+              <TrafficList
+                stations={stations}
+                logEntries={logEntries}
+                netId={netId}
+                onUpdate={fetchAll}
+              />
+            </div>
+          )}
+
           {sectionNav}
 
           <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} />

@@ -152,7 +152,7 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
     type: 'input',
     allowCheckins: true,
     script: () =>
-      `(Take announcements from the check-in list, then proceed with announcements from the website. Stations with traffic will pass after announcements.)`,
+      `Take announcements from stations below, then any from the website. Stations with traffic will pass after announcements.`,
   },
   {
     id: 'late_checkins',
@@ -170,9 +170,7 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
     type: 'input',
     allowCheckins: true,
     script: () =>
-      `Are there any questions, comments, or traffic for the net?
-
-[Allow repeater to drop]`,
+      `Are there any questions, comments, or traffic for the net?`,
   },
   {
     id: 'closing',
