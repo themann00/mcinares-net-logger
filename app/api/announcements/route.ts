@@ -25,28 +25,22 @@ export async function GET() {
 
     const html = await res.text()
 
-    const annMatches = [...html.matchAll(ANNOUNCEMENT_PATTERN)]
-    const announcements = annMatches.map(m => {
-      const { date, label } = parseDate(m[1])
-      return {
-        filename: m[0],
-        url: `${PDF_BASE}${m[0]}`,
-        date,
-        label,
-      }
-    })
+    const annSeen = new Set<string>()
+    const announcements = [...html.matchAll(ANNOUNCEMENT_PATTERN)]
+      .filter(m => { if (annSeen.has(m[1])) return false; annSeen.add(m[1]); return true })
+      .map(m => {
+        const { date, label } = parseDate(m[1])
+        return { filename: m[0], url: `${PDF_BASE}${m[0]}`, date, label }
+      })
     announcements.sort((a, b) => b.date.localeCompare(a.date))
 
-    const clMatches = [...html.matchAll(CHECKLIST_PATTERN)]
-    const checklists = clMatches.map(m => {
-      const { date, label } = parseDate(m[1])
-      return {
-        filename: m[0],
-        url: `${XLSX_BASE}${encodeURIComponent(m[0])}`,
-        date,
-        label,
-      }
-    })
+    const clSeen = new Set<string>()
+    const checklists = [...html.matchAll(CHECKLIST_PATTERN)]
+      .filter(m => { if (clSeen.has(m[1])) return false; clSeen.add(m[1]); return true })
+      .map(m => {
+        const { date, label } = parseDate(m[1])
+        return { filename: m[0], url: `${XLSX_BASE}${encodeURIComponent(m[0])}`, date, label }
+      })
     checklists.sort((a, b) => b.date.localeCompare(a.date))
 
     return NextResponse.json({ announcements, checklists })
