@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
-import { ChevronRight, RefreshCw } from 'lucide-react'
+import { ChevronRight, RefreshCw, Info, ArrowRight } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
 function resolveScript(section: ScriptSection, ctx: NetContext): string {
@@ -176,15 +176,18 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
         </div>
 
         {section.notes === 'checkin-hint' && (
-          <p className="mt-3 text-gray-500 text-sm">
-            Use the Check-in tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.
-          </p>
+          <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>Use the Check-in tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.</span>
+            <ArrowRight className="w-5 h-5 hidden lg:block ml-auto flex-shrink-0" />
+          </div>
         )}
 
         {section.notes === 'repeater-hint' && (
-          <p className="mt-3 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+          <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <Info className="w-4 h-4 flex-shrink-0" />
             Remember to set the repeater back to normal mode, or have the Designated Button Pusher do this task.
-          </p>
+          </div>
         )}
       </div>
     </div>
