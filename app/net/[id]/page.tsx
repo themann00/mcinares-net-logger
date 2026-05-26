@@ -34,12 +34,14 @@ import {
   BookOpen,
   FileText,
   Megaphone,
+  Plus,
 } from 'lucide-react'
 import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
 import { SetupNet } from '@/components/SetupNet'
 import { AnnouncementsSection } from '@/components/AnnouncementsSection'
 import { TrafficSection } from '@/components/TrafficSection'
+import { AddToLogModal } from '@/components/AddToLogModal'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -70,6 +72,7 @@ export default function NetPage() {
   const [bulletinModalOpen, setBulletinModalOpen] = useState(false)
   const [bulletinDraft, setBulletinDraft] = useState('')
   const [fullLogOpen, setFullLogOpen] = useState(false)
+  const [addToLogOpen, setAddToLogOpen] = useState(false)
 
   const sections = net ? getSections(net.type) : []
   const section = sections[sectionIndex]
@@ -662,6 +665,13 @@ export default function NetPage() {
                   {tab.label}
                 </button>
               ))}
+            <button
+              onClick={() => setAddToLogOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 border-transparent text-green-400 hover:text-green-300 ml-auto"
+            >
+              <Plus className="w-4 h-4" />
+              Add to Log
+            </button>
           </div>
 
           {/* Tab content */}
@@ -774,6 +784,16 @@ export default function NetPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {addToLogOpen && (
+        <AddToLogModal
+          netId={netId}
+          stations={stations}
+          roster={roster}
+          onSave={() => { setAddToLogOpen(false); fetchAll() }}
+          onClose={() => setAddToLogOpen(false)}
+        />
       )}
     </div>
   )
