@@ -19,7 +19,7 @@ interface RosterEntry {
 
 type SortKey = 'callsign' | 'first_name' | 'last_name' | 'email' | 'checkin_count' | 'last_checkin'
 
-export function Roster() {
+export function Roster({ superAdmin = false }: { superAdmin?: boolean }) {
   const [entries, setEntries] = useState<RosterEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('callsign')
@@ -95,7 +95,7 @@ export function Roster() {
   }
 
   async function handleDelete() {
-    if (!editing || deleteInput !== 'DELETE') return
+    if (!editing || (!superAdmin && deleteInput !== 'DELETE')) return
     setDeleting(true)
     await fetch('/api/roster', {
       method: 'DELETE',
@@ -282,11 +282,12 @@ export function Roster() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => setDeleteConfirm(true)}
+                    onClick={() => superAdmin ? handleDelete() : setDeleteConfirm(true)}
+                    disabled={deleting}
                     className="border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300 gap-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    Delete
+                    {deleting ? '...' : 'Delete'}
                   </Button>
                 )}
               </div>

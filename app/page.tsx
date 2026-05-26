@@ -183,6 +183,11 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-950">
+      {superAdmin && (
+        <div className="bg-red-700 text-white text-center text-sm font-semibold py-2 px-4">
+          SUPER ADMIN MODE. DELETIONS ARE PERMANENT AND CANNOT BE UNDONE.
+        </div>
+      )}
       {testingMode && (
         <div className="bg-yellow-600 text-black text-center text-sm font-semibold py-2 px-4">
           TESTING MODE ON. NET LOGS WILL NOT BE SAVED TO THE DATABASE AFTER CLOSING.
@@ -386,7 +391,7 @@ export default function HomePage() {
 
           <PastNets nets={allNets} onDelete={fetchNets} superAdmin={superAdmin} />
 
-          <Roster />
+          <Roster superAdmin={superAdmin} />
         </div>
       </div>
       </div>
