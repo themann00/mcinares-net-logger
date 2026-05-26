@@ -31,9 +31,19 @@ export const aresSections: ScriptSection[] = [
 
 This net meets every Wednesday at 7:30 PM local time in order to pass formal or informal traffic, test our equipment, practice our operating skills, and learn how to properly check into a net. It also allows the local amateur community the opportunity to exchange news and information about ham radio. Membership in any group is not required for participation and check-ins from all licensed amateurs are welcome. When you check in to the net this evening, please indicate whether or not you have traffic or announcements. Remember, this is a directed net and all traffic should be routed through net control.
 
+Do we have an alternate net control for this session?
+
 {{input:alt_nc}}
 
-{{input:liaison}}`
+Thank you ${ctx.alt_net_controller || '________'} for volunteering.
+
+Do we have an NTS Liaison or OES station?
+
+{{input:nts_liaison}}
+
+{{input:oes_station}}
+
+Thank you for volunteering.`
     },
     inputFields: [
       {
@@ -44,9 +54,16 @@ This net meets every Wednesday at 7:30 PM local time in order to pass formal or 
         inline: true,
       },
       {
-        id: 'liaison',
-        label: 'NTS Liaison / OES',
+        id: 'nts_liaison',
+        label: 'NTS Liaison',
         placeholder: 'e.g. K9XYZ',
+        type: 'text',
+        inline: true,
+      },
+      {
+        id: 'oes_station',
+        label: 'OES Station',
+        placeholder: 'e.g. W9DEF',
         type: 'text',
         inline: true,
       },

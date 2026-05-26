@@ -117,6 +117,13 @@ export default function NetPage() {
         patch.liaison = val
         logItems.push({ entry_type: 'liaison', content: `Liaison station: ${val}` })
         autoCheckins.push(val)
+      } else if (field.id === 'nts_liaison') {
+        patch.liaison = val
+        logItems.push({ entry_type: 'liaison', content: `NTS Liaison: ${val}` })
+        autoCheckins.push(val)
+      } else if (field.id === 'oes_station') {
+        logItems.push({ entry_type: 'liaison', content: `OES Station: ${val}` })
+        autoCheckins.push(val)
       }
     })
 
