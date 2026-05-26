@@ -242,7 +242,7 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
                               setDeleteConfirmId(null)
                               setDeleteInput('')
                             }}
-                            className="border-gray-600 text-gray-300"
+                            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
                           >
                             Cancel
                           </Button>
