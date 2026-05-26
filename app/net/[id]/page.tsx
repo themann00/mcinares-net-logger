@@ -295,8 +295,11 @@ export default function NetPage() {
                   : 'bg-red-700'
               }`}
             >
-              {net.type.toUpperCase()}
+              {net.testing ? 'TEST' : net.type.toUpperCase()}
             </Badge>
+            {net.testing && (
+              <Badge className="bg-yellow-600 text-white flex-shrink-0">TESTING</Badge>
+            )}
             <span className="text-white font-semibold truncate">{net.net_controller}</span>
             <span className="text-gray-500 text-sm hidden sm:block">NC</span>
           </div>

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import { format, differenceInMinutes } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Printer, Download, Home } from 'lucide-react'
@@ -44,11 +44,14 @@ const LOG_TYPE_LABELS: Record<string, string> = {
 
 export default function ReportPage() {
   const params = useParams()
+  const router = useRouter()
   const netId = params.id as string
+  const deletedRef = useRef(false)
 
   const [net, setNet] = useState<Net | null>(null)
   const [stations, setStations] = useState<Station[]>([])
   const [log, setLog] = useState<LogEntry[]>([])
+  const [testingDeleted, setTestingDeleted] = useState(false)
 
   const fetchAll = useCallback(async () => {
     const [netRes, stationsRes, logRes] = await Promise.all([
@@ -56,9 +59,16 @@ export default function ReportPage() {
       fetch(`/api/nets/${netId}/stations`),
       fetch(`/api/nets/${netId}/log`),
     ])
-    setNet(await netRes.json())
+    const netData = await netRes.json()
+    setNet(netData)
     setStations(await stationsRes.json())
     setLog(await logRes.json())
+
+    if (netData.testing && !deletedRef.current) {
+      deletedRef.current = true
+      await fetch(`/api/nets/${netId}`, { method: 'DELETE' })
+      setTestingDeleted(true)
+    }
   }, [netId])
 
   useEffect(() => {
@@ -135,6 +145,12 @@ export default function ReportPage() {
           </Button>
         </Link>
       </div>
+
+      {testingDeleted && (
+        <div className="bg-yellow-900 border-b border-yellow-700 px-4 py-2 text-yellow-200 text-sm text-center print:hidden">
+          TESTING net data has been automatically deleted. This report is for review only.
+        </div>
+      )}
 
       {/* Report content */}
       <div className="max-w-3xl mx-auto p-6 print:p-0 print:max-w-none">

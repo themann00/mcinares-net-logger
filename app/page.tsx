@@ -50,6 +50,10 @@ export default function HomePage() {
   const [callsign, setCallsign] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [testingMode, setTestingMode] = useState(false)
+  const [superAdmin, setSuperAdmin] = useState(false)
+  const [superAdminConfirm, setSuperAdminConfirm] = useState(false)
+  const [superAdminInput, setSuperAdminInput] = useState('')
   const [allNets, setAllNets] = useState<Net[]>([])
 
   const fetchNets = () => {
@@ -101,7 +105,7 @@ export default function HomePage() {
       const res = await fetch('/api/nets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim() }),
+        body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim(), testing: testingMode }),
       })
       const net = await res.json()
       if (!res.ok) throw new Error(net.error || 'Failed to create net')
@@ -161,6 +165,81 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-6">
+          <div className="flex justify-end gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className={`text-sm ${testingMode ? 'text-yellow-400' : 'text-gray-600'}`}>Testing Mode</span>
+              <button
+                onClick={() => setTestingMode(!testingMode)}
+                className={`relative w-10 h-5 rounded-full transition-colors ${testingMode ? 'bg-yellow-600' : 'bg-gray-700'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${testingMode ? 'translate-x-5' : ''}`} />
+              </button>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <span className={`text-sm ${superAdmin ? 'text-red-400' : 'text-gray-600'}`}>Super Admin</span>
+              <button
+                onClick={() => {
+                  if (superAdmin) {
+                    setSuperAdmin(false)
+                  } else {
+                    setSuperAdminConfirm(true)
+                    setSuperAdminInput('')
+                  }
+                }}
+                className={`relative w-10 h-5 rounded-full transition-colors ${superAdmin ? 'bg-red-600' : 'bg-gray-700'}`}
+              >
+                <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${superAdmin ? 'translate-x-5' : ''}`} />
+              </button>
+            </label>
+          </div>
+
+          {superAdminConfirm && (
+            <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+              <div className="bg-gray-900 border border-red-700 rounded-xl w-full max-w-md p-5 space-y-4">
+                <p className="text-red-400 font-semibold text-sm uppercase">
+                  Super Admins can delete previous nets with no confirmation. If you proceed, there is no way to recover lost data. Do you understand?
+                </p>
+                <Input
+                  value={superAdminInput}
+                  onChange={e => setSuperAdminInput(e.target.value.toUpperCase())}
+                  placeholder="Type YES I UNDERSTAND"
+                  className="bg-gray-800 border-gray-700 text-white font-mono"
+                  autoFocus
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && superAdminInput === 'YES I UNDERSTAND') {
+                      setSuperAdmin(true)
+                      setSuperAdminConfirm(false)
+                    }
+                    if (e.key === 'Escape') setSuperAdminConfirm(false)
+                  }}
+                />
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSuperAdminConfirm(false)}
+                    className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      if (superAdminInput === 'YES I UNDERSTAND') {
+                        setSuperAdmin(true)
+                        setSuperAdminConfirm(false)
+                      }
+                    }}
+                    disabled={superAdminInput !== 'YES I UNDERSTAND'}
+                    className="bg-red-700 hover:bg-red-600 text-white"
+                  >
+                    Enable
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {openNets.length > 0 && (
             <div className="space-y-3">
               {openNets.map(net => {
@@ -169,14 +248,18 @@ export default function HomePage() {
                   <button
                     key={net.id}
                     onClick={() => router.push(`/net/${net.id}`)}
-                    className="w-full flex items-center gap-4 p-5 rounded-xl border-2 border-amber-500 bg-amber-500/10 hover:bg-amber-500/20 transition-all text-left"
+                    className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${
+                      net.testing
+                        ? 'border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20'
+                        : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/20'
+                    }`}
                   >
-                    <div className="bg-amber-600 p-3 rounded-lg text-white flex-shrink-0">
+                    <div className={`${net.testing ? 'bg-yellow-600' : 'bg-amber-600'} p-3 rounded-lg text-white flex-shrink-0`}>
                       <AlertTriangle className="w-7 h-7" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-amber-400 font-bold text-lg">
-                        RESUME: {netInfo?.label || net.type.toUpperCase()}
+                      <div className={`${net.testing ? 'text-yellow-400' : 'text-amber-400'} font-bold text-lg`}>
+                        RESUME: {net.testing ? 'TESTING - ' : ''}{netInfo?.label || net.type.toUpperCase()}
                       </div>
                       <div className="text-gray-400 text-sm">
                         NC: {net.net_controller} &middot; Started {new Date(net.started_at).toLocaleString()}
@@ -241,7 +324,7 @@ export default function HomePage() {
             </form>
           )}
 
-          <PastNets nets={allNets} onDelete={fetchNets} />
+          <PastNets nets={allNets} onDelete={fetchNets} superAdmin={superAdmin} />
         </div>
       </div>
     </div>

@@ -24,6 +24,7 @@ export interface Net {
   liaison: string | null
   weather_status: 'approaching' | 'imminent' | null
   nws_bulletin: string | null
+  testing: boolean
   started_at: string
   closed_at: string | null
   created_at: string

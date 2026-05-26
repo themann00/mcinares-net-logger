@@ -1,7 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -32,13 +31,13 @@ const NET_LABELS: Record<string, string> = {
 interface PastNetsProps {
   nets: Net[]
   onDelete: () => void
+  superAdmin?: boolean
 }
 
-export function PastNets({ nets, onDelete }: PastNetsProps) {
-  const searchParams = useSearchParams()
-  const isSuperAdmin = searchParams.get('superadmin') === 'yes'
-  const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) {
+  const isSuperAdmin = superAdmin
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
+  const [logCache, setLogCache] = useState<Record<string, LogEntry[]>>({})
   const [loadingLog, setLoadingLog] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
@@ -47,19 +46,45 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
 
-  const closedNets = nets.filter(n => n.closed_at)
+  const closedNets = nets.filter(n => n.closed_at && !n.testing)
   if (closedNets.length === 0) return null
 
   async function toggleExpand(net: Net) {
-    if (expandedId === net.id) {
-      setExpandedId(null)
+    const next = new Set(expandedIds)
+    if (next.has(net.id)) {
+      next.delete(net.id)
+      setExpandedIds(next)
       return
     }
-    setExpandedId(net.id)
-    setLoadingLog(true)
-    const res = await fetch(`/api/nets/${net.id}/log`)
-    if (res.ok) setLogEntries(await res.json())
-    setLoadingLog(false)
+    next.add(net.id)
+    setExpandedIds(next)
+    if (!logCache[net.id]) {
+      setLoadingLog(true)
+      const res = await fetch(`/api/nets/${net.id}/log`)
+      if (res.ok) {
+        const entries = await res.json()
+        setLogCache(prev => ({ ...prev, [net.id]: entries }))
+      }
+      setLoadingLog(false)
+    }
+  }
+
+  function expandAll() {
+    const allIds = new Set(closedNets.map(n => n.id))
+    setExpandedIds(allIds)
+    closedNets.forEach(async net => {
+      if (!logCache[net.id]) {
+        const res = await fetch(`/api/nets/${net.id}/log`)
+        if (res.ok) {
+          const entries = await res.json()
+          setLogCache(prev => ({ ...prev, [net.id]: entries }))
+        }
+      }
+    })
+  }
+
+  function collapseAll() {
+    setExpandedIds(new Set())
   }
 
   async function saveEdit(netId: string, entryId: string) {
@@ -73,7 +98,10 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
     setSaving(false)
     setEditingId(null)
     const res = await fetch(`/api/nets/${netId}/log`)
-    if (res.ok) setLogEntries(await res.json())
+    if (res.ok) {
+      const entries = await res.json()
+      setLogCache(prev => ({ ...prev, [netId]: entries }))
+    }
   }
 
   function getDeletePhrase(net: Net) {
@@ -87,16 +115,27 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
     setDeleting(false)
     setDeleteConfirmId(null)
     setDeleteInput('')
-    setExpandedId(null)
+    setExpandedIds(prev => { const next = new Set(prev); next.delete(net.id); return next })
     onDelete()
   }
 
   return (
     <div>
-      <h2 className="text-gray-300 font-medium mb-3">Previous Nets</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-gray-300 font-medium">Previous Nets</h2>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={expandedIds.size > 0 ? collapseAll : expandAll}
+          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white text-xs"
+        >
+          {expandedIds.size > 0 ? 'Collapse All' : 'Expand All'}
+        </Button>
+      </div>
       <div className="space-y-2">
         {closedNets.map(net => {
-          const isExpanded = expandedId === net.id
+          const isExpanded = expandedIds.has(net.id)
+          const logEntries = logCache[net.id] || []
           const isDeleting = deleteConfirmId === net.id
           const typeColor =
             net.type === 'ares' ? 'bg-blue-700' :
@@ -104,28 +143,40 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
 
           return (
             <div key={net.id} className="rounded-lg border border-gray-700 bg-gray-900 overflow-hidden">
-              <button
-                onClick={() => toggleExpand(net)}
-                className="w-full flex items-center gap-3 p-3 text-left hover:bg-gray-800/50 transition-colors"
-              >
-                <span className={`${typeColor} text-white text-xs font-semibold px-2 py-0.5 rounded`}>
-                  {net.type.toUpperCase()}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-white text-sm font-medium">
-                    {NET_LABELS[net.type] || net.type}
+              <div className="flex items-center">
+                <button
+                  onClick={() => toggleExpand(net)}
+                  className="flex-1 flex items-center gap-3 p-3 text-left hover:bg-gray-800/50 transition-colors"
+                >
+                  <span className={`${typeColor} text-white text-xs font-semibold px-2 py-0.5 rounded`}>
+                    {net.type.toUpperCase()}
                   </span>
-                  <span className="text-gray-500 text-sm ml-2">
-                    {format(new Date(net.started_at), 'MMM d, yyyy h:mm a')}
-                  </span>
-                </div>
-                <span className="text-gray-500 text-xs">{net.net_controller}</span>
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                )}
-              </button>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-white text-sm font-medium">
+                      {NET_LABELS[net.type] || net.type}
+                    </span>
+                    <span className="text-gray-500 text-sm ml-2">
+                      {format(new Date(net.started_at), 'MMM d, yyyy h:mm a')}
+                    </span>
+                  </div>
+                  <span className="text-gray-500 text-xs">{net.net_controller}</span>
+                  {isExpanded ? (
+                    <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  )}
+                </button>
+                <button
+                  onClick={e => {
+                    e.stopPropagation()
+                    isSuperAdmin ? handleDelete(net) : setDeleteConfirmId(net.id)
+                  }}
+                  className="p-3 text-gray-700 hover:text-red-400 transition-colors flex-shrink-0"
+                  title="Delete net"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
               {isExpanded && (
                 <div className="border-t border-gray-800 p-3">

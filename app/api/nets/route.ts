@@ -4,7 +4,7 @@ import type { NetType } from '@/types'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { type, net_controller } = body as { type: NetType; net_controller: string }
+  const { type, net_controller, testing } = body as { type: NetType; net_controller: string; testing?: boolean }
 
   if (!type || !net_controller) {
     return NextResponse.json({ error: 'type and net_controller are required' }, { status: 400 })
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
 
   const { data: net, error: netError } = await getSupabase()
     .from('mcinares_nets')
-    .insert({ type, net_controller })
+    .insert({ type, net_controller, testing: testing || false })
     .select()
     .single()
 
