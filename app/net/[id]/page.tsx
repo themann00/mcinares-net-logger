@@ -66,7 +66,7 @@ export default function NetPage() {
   const [saving, setSaving] = useState(false)
   const [setupComplete, setSetupComplete] = useState(false)
   const [rollCallSkipped, setRollCallSkipped] = useState(false)
-  const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null } | null>(null)
+  const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null; checklistUrl: string | null } | null>(null)
   const [elapsed, setElapsed] = useState('')
   const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
   const [localBulletin, setLocalBulletin] = useState('')
@@ -632,6 +632,28 @@ export default function NetPage() {
               announcementUrl={setupConfig?.announcementUrl || null}
               onUpdate={fetchAll}
             />
+          )}
+
+          {net.type === 'ares' && section?.id === 'roll_call' && setupConfig?.checklistUrl && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-2">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 text-sm font-medium">Website Check-in List</span>
+                <a
+                  href={setupConfig.checklistUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-xs underline"
+                >
+                  Open in new tab
+                </a>
+              </div>
+              <iframe
+                src={`https://docs.google.com/gview?url=${encodeURIComponent(setupConfig.checklistUrl)}&embedded=true`}
+                className="w-full rounded-lg border border-gray-700 bg-white"
+                style={{ height: '50vh', minHeight: '300px' }}
+                title="Check-in List"
+              />
+            </div>
           )}
 
           {net.type === 'ares' && section?.id === 'traffic' && (

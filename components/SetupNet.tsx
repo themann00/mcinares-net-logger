@@ -14,8 +14,8 @@ interface DocFile {
 
 interface SetupNetProps {
   netId: string
-  onComplete: (config: { prevNetId: string | null; announcementUrl: string | null }) => void
-  initialConfig?: { prevNetId: string | null; announcementUrl: string | null } | null
+  onComplete: (config: { prevNetId: string | null; announcementUrl: string | null; checklistUrl: string | null }) => void
+  initialConfig?: { prevNetId: string | null; announcementUrl: string | null; checklistUrl: string | null } | null
   isResuming?: boolean
 }
 
@@ -24,6 +24,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
   const [autoNet, setAutoNet] = useState<Net | null>(null)
 
   const [selectedPrevNet, setSelectedPrevNet] = useState<string | null>(initialConfig?.prevNetId ?? null)
+  const [selectedChecklistUrl, setSelectedChecklistUrl] = useState<string | null>(initialConfig?.checklistUrl ?? null)
   const [prevNetChoice, setPrevNetChoice] = useState<'auto' | 'other' | 'web' | 'skip'>('auto')
   const [showPrevOptions, setShowPrevOptions] = useState(true)
 
@@ -104,8 +105,9 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
 
   function handleStart() {
     onComplete({
-      prevNetId: prevNetChoice === 'skip' ? null : selectedPrevNet,
+      prevNetId: prevNetChoice === 'skip' ? null : (prevNetChoice === 'web' ? null : selectedPrevNet),
       announcementUrl: pdfChoice === 'skip' ? null : selectedPdf,
+      checklistUrl: prevNetChoice === 'web' ? selectedChecklistUrl : null,
     })
   }
 
@@ -134,8 +136,11 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
             Using selected list
           </div>
         )}
-        {prevNetChoice === 'web' && (
-          <div className="text-gray-500 text-sm">Using website checklist</div>
+        {prevNetChoice === 'web' && selectedChecklistUrl && (
+          <div className="flex items-center gap-2 text-green-400 text-sm">
+            <Check className="w-4 h-4" />
+            Using website checklist (will display inline)
+          </div>
         )}
 
 
@@ -163,17 +168,18 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
                 <span className="text-gray-500 text-xs">From mcinares.org:</span>
                 <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
                   {checklists.map(cl => (
-                    <a
+                    <button
                       key={cl.filename}
-                      href={cl.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => { setPrevNetChoice('web'); setShowPrevOptions(false) }}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm bg-gray-800 text-gray-300 hover:bg-gray-700"
+                      onClick={() => { setSelectedChecklistUrl(cl.url); setPrevNetChoice('web') }}
+                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-left transition-colors ${
+                        prevNetChoice === 'web' && selectedChecklistUrl === cl.url
+                          ? 'bg-blue-600/20 text-blue-300'
+                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                      }`}
                     >
                       <Download className="w-3 h-3 flex-shrink-0" />
                       {cl.label} — {cl.filename}
-                    </a>
+                    </button>
                   ))}
                 </div>
               </div>
