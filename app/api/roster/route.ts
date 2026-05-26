@@ -29,11 +29,19 @@ export async function GET() {
     }
   }
 
-  const result = (roster || []).map(r => ({
-    ...r,
-    checkin_count: checkinMap[r.callsign.toUpperCase()]?.count || 0,
-    last_checkin: checkinMap[r.callsign.toUpperCase()]?.last || null,
-  }))
+  const result = (roster || []).map(r => {
+    const systemLast = checkinMap[r.callsign.toUpperCase()]?.last || null
+    const externalLast = r.last_external_participation || null
+    let last_checkin = systemLast
+    if (externalLast && (!systemLast || externalLast > systemLast)) {
+      last_checkin = externalLast
+    }
+    return {
+      ...r,
+      checkin_count: checkinMap[r.callsign.toUpperCase()]?.count || 0,
+      last_checkin,
+    }
+  })
 
   return NextResponse.json(result)
 }
