@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { Check, FileText, SkipForward, ChevronRight, ChevronDown, Download } from 'lucide-react'
+import { Check, FileText, SkipForward, ChevronRight, Download } from 'lucide-react'
 import type { Net } from '@/types'
 
 interface DocFile {
@@ -26,13 +26,11 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
   const [selectedPrevNet, setSelectedPrevNet] = useState<string | null>(initialConfig?.prevNetId ?? null)
   const [selectedChecklistUrl, setSelectedChecklistUrl] = useState<string | null>(initialConfig?.checklistUrl ?? null)
   const [prevNetChoice, setPrevNetChoice] = useState<'auto' | 'other' | 'web' | 'skip'>('auto')
-  const [showPrevOptions, setShowPrevOptions] = useState(true)
 
   const [announcements, setAnnouncements] = useState<DocFile[]>([])
   const [checklists, setChecklists] = useState<DocFile[]>([])
   const [selectedPdf, setSelectedPdf] = useState<string | null>(initialConfig?.announcementUrl ?? null)
   const [pdfChoice, setPdfChoice] = useState<'auto' | 'other' | 'skip'>('auto')
-  const [showPdfOptions, setShowPdfOptions] = useState(true)
   const [todayPdf, setTodayPdf] = useState<DocFile | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -84,7 +82,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
           setPrevNetChoice('skip')
         }
 
-        const annList = docs?.announcements || []
+        const annList = docs.announcements || []
         if (foundPdf) {
           setSelectedPdf(foundPdf.url)
           setPdfChoice('auto')
@@ -115,129 +113,94 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
     return <div className="text-gray-500 text-sm py-4 text-center">Loading setup...</div>
   }
 
+  const selectedStyle = 'bg-green-900/30 border border-green-600 text-green-300'
+  const unselectedStyle = 'bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700'
+
   return (
     <div className="space-y-4">
       {/* Previous Check-in List */}
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-3">
-        <h3 className="text-white font-semibold">Previous Check-in List</h3>
+      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-2">
+        <h3 className="text-white font-semibold mb-3">Previous Check-in List</h3>
 
-        {prevNetChoice === 'auto' && autoNet && (
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Check className="w-4 h-4" />
-            Using list from {new Date(autoNet.started_at).toLocaleDateString()}
-          </div>
-        )}
-        {prevNetChoice === 'skip' && (
-          <div className="text-gray-500 text-sm">Skipped — manual roll call</div>
-        )}
-        {prevNetChoice === 'other' && selectedPrevNet && (
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Check className="w-4 h-4" />
-            Using selected list
-          </div>
-        )}
-        {prevNetChoice === 'web' && selectedChecklistUrl && (
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Check className="w-4 h-4" />
-            Using website checklist (will display inline)
-          </div>
+        {autoNet && (
+          <button
+            onClick={() => { setSelectedPrevNet(autoNet.id); setPrevNetChoice('auto') }}
+            className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'auto' ? selectedStyle : unselectedStyle}`}
+          >
+            {prevNetChoice === 'auto' && <Check className="w-4 h-4 flex-shrink-0" />}
+            Use list from {new Date(autoNet.started_at).toLocaleDateString()} (auto-detected)
+          </button>
         )}
 
+        {recentNets.filter(n => n.id !== autoNet?.id).map(net => (
+          <button
+            key={net.id}
+            onClick={() => { setSelectedPrevNet(net.id); setPrevNetChoice('other') }}
+            className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'other' && selectedPrevNet === net.id ? selectedStyle : unselectedStyle}`}
+          >
+            {prevNetChoice === 'other' && selectedPrevNet === net.id && <Check className="w-4 h-4 flex-shrink-0" />}
+            {new Date(net.started_at).toLocaleDateString()} — {net.net_controller}
+          </button>
+        ))}
 
-        {showPrevOptions && (
-          <div className="space-y-2 pt-2 border-t border-gray-800">
-            {autoNet && (
-              <button
-                onClick={() => { setSelectedPrevNet(autoNet.id); setPrevNetChoice('auto'); setShowPrevOptions(false) }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'auto' ? 'bg-blue-600/20 text-blue-300' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-              >
-                Use list from {new Date(autoNet.started_at).toLocaleDateString()} (auto-detected)
-              </button>
-            )}
-            {recentNets.filter(n => n.id !== autoNet?.id).map(net => (
-              <button
-                key={net.id}
-                onClick={() => { setSelectedPrevNet(net.id); setPrevNetChoice('other'); setShowPrevOptions(false) }}
-                className="w-full text-left px-3 py-2 rounded-lg text-sm bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
-              >
-                {new Date(net.started_at).toLocaleDateString()} — {net.net_controller}
-              </button>
-            ))}
-            {checklists.length > 0 && (
-              <div className="pt-1">
-                <span className="text-gray-500 text-xs">From mcinares.org:</span>
-                <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
-                  {checklists.map(cl => (
-                    <button
-                      key={cl.filename}
-                      onClick={() => { setSelectedChecklistUrl(cl.url); setPrevNetChoice('web') }}
-                      className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-left transition-colors ${
-                        prevNetChoice === 'web' && selectedChecklistUrl === cl.url
-                          ? 'bg-blue-600/20 text-blue-300'
-                          : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                      }`}
-                    >
-                      <Download className="w-3 h-3 flex-shrink-0" />
-                      {cl.label} — {cl.filename}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <button
-              onClick={() => { setSelectedPrevNet(null); setPrevNetChoice('skip'); setShowPrevOptions(false) }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'skip' ? 'bg-blue-600/20 text-blue-300' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-            >
-              <SkipForward className="w-3 h-3 inline mr-1" />
-              Skip — read manually
-            </button>
+        {checklists.length > 0 && (
+          <div className="pt-1">
+            <span className="text-gray-500 text-xs">From mcinares.org:</span>
+            <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
+              {checklists.map(cl => (
+                <button
+                  key={cl.filename}
+                  onClick={() => { setSelectedChecklistUrl(cl.url); setPrevNetChoice('web') }}
+                  className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-left transition-colors ${
+                    prevNetChoice === 'web' && selectedChecklistUrl === cl.url ? selectedStyle : unselectedStyle
+                  }`}
+                >
+                  {prevNetChoice === 'web' && selectedChecklistUrl === cl.url && <Check className="w-4 h-4 flex-shrink-0" />}
+                  <Download className="w-3 h-3 flex-shrink-0" />
+                  {cl.label} — {cl.filename}
+                </button>
+              ))}
+            </div>
           </div>
         )}
+
+        <button
+          onClick={() => { setSelectedPrevNet(null); setPrevNetChoice('skip') }}
+          className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'skip' ? selectedStyle : unselectedStyle}`}
+        >
+          {prevNetChoice === 'skip' && <Check className="w-4 h-4 flex-shrink-0" />}
+          <SkipForward className="w-3 h-3 flex-shrink-0" />
+          Skip — read manually
+        </button>
       </div>
 
       {/* Announcements */}
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-3">
-        <h3 className="text-white font-semibold">Announcements</h3>
+      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-2">
+        <h3 className="text-white font-semibold mb-3">Announcements</h3>
 
-        {pdfChoice === 'auto' && todayPdf && (
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Check className="w-4 h-4" />
-            Using PDF from {todayPdf.label}
-          </div>
-        )}
-        {pdfChoice === 'other' && selectedPdf && (
-          <div className="flex items-center gap-2 text-green-400 text-sm">
-            <Check className="w-4 h-4" />
-            Using selected PDF
-          </div>
-        )}
-        {pdfChoice === 'skip' && (
-          <div className="text-gray-500 text-sm">Skipped — read manually</div>
-        )}
+        {announcements.map(pdf => (
+          <button
+            key={pdf.filename}
+            onClick={() => { setSelectedPdf(pdf.url); setPdfChoice(pdf === todayPdf ? 'auto' : 'other') }}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+              selectedPdf === pdf.url && pdfChoice !== 'skip' ? selectedStyle : unselectedStyle
+            }`}
+          >
+            {selectedPdf === pdf.url && pdfChoice !== 'skip' && <Check className="w-4 h-4 flex-shrink-0" />}
+            <FileText className="w-3 h-3 flex-shrink-0" />
+            {pdf.label}
+            {pdf === todayPdf && <span className="text-green-500 text-xs">(this week)</span>}
+          </button>
+        ))}
 
-
-        {showPdfOptions && (
-          <div className="space-y-2 pt-2 border-t border-gray-800">
-            {announcements.map(pdf => (
-              <button
-                key={pdf.filename}
-                onClick={() => { setSelectedPdf(pdf.url); setPdfChoice(pdf === todayPdf ? 'auto' : 'other'); setShowPdfOptions(false) }}
-                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm bg-gray-800 text-gray-300 hover:bg-gray-700 text-left transition-colors"
-              >
-                <FileText className="w-3 h-3 flex-shrink-0" />
-                {pdf.label}
-                {pdf === todayPdf && <span className="text-green-500 text-xs">(this week)</span>}
-              </button>
-            ))}
-            <button
-              onClick={() => { setSelectedPdf(null); setPdfChoice('skip'); setShowPdfOptions(false) }}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${pdfChoice === 'skip' ? 'bg-blue-600/20 text-blue-300' : 'bg-gray-800 text-gray-300 hover:bg-gray-700'}`}
-            >
-              <SkipForward className="w-3 h-3 inline mr-1" />
-              Skip — read manually
-            </button>
-          </div>
-        )}
+        <button
+          onClick={() => { setSelectedPdf(null); setPdfChoice('skip') }}
+          className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${pdfChoice === 'skip' ? selectedStyle : unselectedStyle}`}
+        >
+          {pdfChoice === 'skip' && <Check className="w-4 h-4 flex-shrink-0" />}
+          <SkipForward className="w-3 h-3 flex-shrink-0" />
+          Skip — read manually
+        </button>
       </div>
 
       {/* Start button */}
