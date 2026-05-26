@@ -77,17 +77,55 @@ export default function ReportPage() {
 
   function downloadCsv() {
     if (!net) return
-    const headers = ['Timestamp', 'Type', 'Callsign', 'Content']
-    const rows = log.map(e => {
-      const station = stations.find(s => s.id === e.station_id)
-      return [
-        format(new Date(e.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-        LOG_TYPE_LABELS[e.entry_type] || e.entry_type.toUpperCase(),
-        station?.callsign || '',
-        `"${e.content.replace(/"/g, '""')}"`,
-      ].join(',')
-    })
-    const csv = [headers.join(','), ...rows].join('\n')
+
+    const startedAt = new Date(net.started_at)
+    const closedAt = net.closed_at ? new Date(net.closed_at) : null
+    const duration = closedAt
+      ? `${differenceInMinutes(closedAt, startedAt)} minutes`
+      : 'Net still open'
+    const baseCount = stations.filter(s => s.station_type === 'base').length
+    const mobileCount = stations.filter(s => s.station_type === 'mobile').length
+    const reports = log.filter(e => e.entry_type === 'report').length
+
+    const summary = [
+      'NET SUMMARY',
+      `Net Type,${NET_LABELS[net.type] || net.type}`,
+      `Net Controller,${net.net_controller}`,
+      `Alt Net Control,${net.alt_net_controller || ''}`,
+      `Liaison,${net.liaison || ''}`,
+      `Opened,"${format(startedAt, 'yyyy-MM-dd HH:mm')}"`,
+      `Closed,"${closedAt ? format(closedAt, 'yyyy-MM-dd HH:mm') : 'Still open'}"`,
+      `Duration,${duration}`,
+      `Total Stations,${stations.length}`,
+      `Base Stations,${baseCount}`,
+      `Mobile Stations,${mobileCount}`,
+      `Reports,${reports}`,
+      '',
+      'STATIONS',
+      'Callsign,Name,Type,Location,Quadrant,Check-in Time',
+      ...stations.map(s => [
+        s.callsign,
+        `"${[s.first_name, s.last_name].filter(Boolean).join(' ')}"`,
+        s.station_type || '',
+        `"${s.location || ''}"`,
+        s.quadrant || '',
+        format(new Date(s.checked_in_at), 'HH:mm'),
+      ].join(',')),
+      '',
+      'DETAILED LOG',
+      'Timestamp,Type,Callsign,Content',
+      ...log.map(e => {
+        const station = stations.find(s => s.id === e.station_id)
+        return [
+          format(new Date(e.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+          LOG_TYPE_LABELS[e.entry_type] || e.entry_type.toUpperCase(),
+          station?.callsign || '',
+          `"${e.content.replace(/"/g, '""')}"`,
+        ].join(',')
+      }),
+    ]
+
+    const csv = summary.join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
