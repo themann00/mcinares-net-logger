@@ -224,17 +224,29 @@ export default function NetPage() {
     (net.type === 'skywarn' || net.type === 'siren') &&
     (section?.allowCircleBack ?? false)
 
-  const sectionNav = (
+  const sectionNav = (position: 'top' | 'bottom' = 'bottom') => (
     <div className="flex items-center justify-between">
-      <Button
-        onClick={() => setSectionIndex(i => Math.max(0, i - 1))}
-        disabled={sectionIndex === 0}
-        variant="outline"
-        className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
-      >
-        <ChevronLeft className="w-4 h-4" />
-        Previous
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          onClick={() => setSectionIndex(i => Math.max(0, i - 1))}
+          disabled={sectionIndex === 0}
+          variant="outline"
+          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          Previous
+        </Button>
+        {position === 'top' && net?.type === 'ares' && (
+          <Button
+            onClick={() => setSetupComplete(false)}
+            size="sm"
+            variant="outline"
+            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white text-xs"
+          >
+            Change Setup
+          </Button>
+        )}
+      </div>
 
       <span className="text-gray-500 text-sm">
         {sectionIndex + 1} / {sections.length}
@@ -387,10 +399,14 @@ export default function NetPage() {
         <div className="max-w-2xl mx-auto w-full p-4">
           <SetupNet
             netId={netId}
+            initialConfig={setupConfig}
+            isResuming={logEntries.length > 0}
             onComplete={async config => {
               setSetupConfig(config)
-              await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
-              await fetchAll()
+              if (logEntries.length === 0) {
+                await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
+                await fetchAll()
+              }
               setSetupComplete(true)
             }}
           />
@@ -430,7 +446,7 @@ export default function NetPage() {
 
         {/* Center: Script */}
         <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {sectionNav}
+          {sectionNav('top')}
 
           {net?.type === 'skywarn' && section?.id === 'preamble' && (
             <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
@@ -643,7 +659,7 @@ export default function NetPage() {
             </div>
           )}
 
-          {sectionNav}
+          {sectionNav('bottom')}
 
           <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} />
         </div>

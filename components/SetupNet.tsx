@@ -15,9 +15,11 @@ interface DocFile {
 interface SetupNetProps {
   netId: string
   onComplete: (config: { prevNetId: string | null; announcementUrl: string | null }) => void
+  initialConfig?: { prevNetId: string | null; announcementUrl: string | null } | null
+  isResuming?: boolean
 }
 
-export function SetupNet({ netId, onComplete }: SetupNetProps) {
+export function SetupNet({ netId, onComplete, initialConfig, isResuming = false }: SetupNetProps) {
   const [step, setStep] = useState<'checklist' | 'announcements'>('checklist')
 
   const [recentNets, setRecentNets] = useState<Net[]>([])
@@ -340,7 +342,7 @@ export function SetupNet({ netId, onComplete }: SetupNetProps) {
             onClick={finishSetup}
             className="bg-blue-700 hover:bg-blue-600 gap-1"
           >
-            Start Net
+            {isResuming ? 'Resume Net' : 'Start Net'}
             <ChevronRight className="w-4 h-4" />
           </Button>
         </>
