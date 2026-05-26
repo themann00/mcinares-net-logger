@@ -182,6 +182,19 @@ export function Roster() {
                     <td className="px-3 py-1.5 text-gray-500 text-xs">
                       {entry.last_checkin ? format(new Date(entry.last_checkin), 'MMM d, yyyy') : ''}
                     </td>
+                    <td className="px-1 py-1.5">
+                      {(!entry.first_name || !entry.last_name) && (
+                        <a
+                          href={`https://www.qrz.com/db/${entry.callsign}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
+                          className="text-blue-500 hover:text-blue-400 text-xs"
+                        >
+                          QRZ
+                        </a>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
