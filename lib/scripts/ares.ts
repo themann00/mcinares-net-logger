@@ -169,8 +169,8 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
     title: 'Traffic',
     type: 'input',
     allowCheckins: true,
-    script: () =>
-      `Are there any questions, comments, or traffic for the net?`,
+    allowReports: true,
+    script: () => `{{traffic-section}}`,
   },
   {
     id: 'closing',
@@ -179,8 +179,7 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
     script: (ctx: NetContext) =>
       `I will now close the net by thanking the Indianapolis Repeater Association for the use of the repeater. I also would like to thank${ctx.alt_net_controller ? ` my alternate net control, ${ctx.alt_net_controller}${ctx.liaison ? ` and our OES station/NTS Liaison ${ctx.liaison},` : ','} as well as` : ''} all of you who participated tonight. We look forward to hearing from you again next week.
 
-[Wait for Control Op to set the repeater before clearing]
-
 This is ${ctx.net_controller} saying "73" and the frequency is now being returned to normal amateur radio use.`,
+    notes: 'repeater-hint',
   },
 ]

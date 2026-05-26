@@ -39,6 +39,7 @@ import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
 import { SetupNet } from '@/components/SetupNet'
 import { AnnouncementsSection } from '@/components/AnnouncementsSection'
+import { TrafficSection } from '@/components/TrafficSection'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -537,7 +538,17 @@ export default function NetPage() {
             />
           )}
 
-          {section && !(net.type === 'ares' && section.id === 'announcements') && (
+          {net.type === 'ares' && section?.id === 'traffic' && (
+            <TrafficSection
+              stations={stations}
+              logEntries={logEntries}
+              netId={netId}
+              roster={roster}
+              onUpdate={fetchAll}
+            />
+          )}
+
+          {section && !(net.type === 'ares' && (section.id === 'announcements' || section.id === 'traffic')) && (
             <ScriptCard
               section={section}
               ctx={ctx}

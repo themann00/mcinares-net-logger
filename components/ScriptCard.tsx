@@ -166,6 +166,12 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
             Use the Check-in tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.
           </p>
         )}
+
+        {section.notes === 'repeater-hint' && (
+          <p className="mt-3 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            Remember to set the repeater back to normal mode, or have the Designated Button Pusher do this task.
+          </p>
+        )}
       </div>
     </div>
   )
