@@ -36,6 +36,7 @@ import {
   Megaphone,
 } from 'lucide-react'
 import { TrafficList } from '@/components/TrafficList'
+import { RollCallList } from '@/components/RollCallList'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -619,19 +620,27 @@ export default function NetPage() {
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === 'checkin' && section?.allowCheckins && (
-              <CheckinForm
-                netId={netId}
-                netType={net.type}
-                onCheckin={fetchAll}
-                requireStationType={false}
-                showQuadrant={net.type === 'skywarn'}
-                callsignOnly={
-                  net.type === 'siren' && section.id === 'preamble'
-                }
-                showTrafficInputs={
-                  net.type === 'ares' && section.id === 'short_time'
-                }
-              />
+              net.type === 'ares' && section.id === 'roll_call' ? (
+                <RollCallList
+                  netId={netId}
+                  currentStations={stations}
+                  onUpdate={fetchAll}
+                />
+              ) : (
+                <CheckinForm
+                  netId={netId}
+                  netType={net.type}
+                  onCheckin={fetchAll}
+                  requireStationType={false}
+                  showQuadrant={net.type === 'skywarn'}
+                  callsignOnly={
+                    net.type === 'siren' && section.id === 'preamble'
+                  }
+                  showTrafficInputs={
+                    net.type === 'ares' && section.id === 'short_time'
+                  }
+                />
+              )
             )}
 
             {activeTab === 'report' && section?.allowReports && (

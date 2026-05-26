@@ -104,20 +104,11 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
     type: 'checkin',
     allowCheckins: true,
     script: (ctx: NetContext) =>
-      `I will now call roll by using last week's call list. We had {{input:last_week_count}} check-ins.
+      `I will now call roll by using last week's call list.
 
-(Read from last week's list.)
+Use the check-in panel to mark stations as they respond.
 
 This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
-    inputFields: [
-      {
-        id: 'last_week_count',
-        label: 'Last week',
-        placeholder: '0',
-        type: 'text',
-        inline: true,
-      },
-    ],
   },
   {
     id: 'checkin_a_h',
