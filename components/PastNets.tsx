@@ -166,16 +166,18 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                     <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
                   )}
                 </button>
-                <button
-                  onClick={e => {
-                    e.stopPropagation()
-                    isSuperAdmin ? handleDelete(net) : setDeleteConfirmId(net.id)
-                  }}
-                  className="p-3 text-gray-700 hover:text-red-400 transition-colors flex-shrink-0"
-                  title="Delete net"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {isSuperAdmin && (
+                  <button
+                    onClick={e => {
+                      e.stopPropagation()
+                      handleDelete(net)
+                    }}
+                    className="p-3 text-gray-700 hover:text-red-400 transition-colors flex-shrink-0"
+                    title="Delete net"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
 
               {isExpanded && (

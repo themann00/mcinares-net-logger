@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Radio, CloudLightning, Siren, Lock, AlertTriangle } from 'lucide-react'
 import { PastNets } from '@/components/PastNets'
+import { Roster } from '@/components/Roster'
 import type { Net, NetType } from '@/types'
 
 const NET_TYPES: {
@@ -325,6 +326,8 @@ export default function HomePage() {
           )}
 
           <PastNets nets={allNets} onDelete={fetchNets} superAdmin={superAdmin} />
+
+          <Roster />
         </div>
       </div>
     </div>

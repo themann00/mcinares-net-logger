@@ -121,7 +121,14 @@ export default function ReportPage() {
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
       {/* Print toolbar — hidden when printing */}
-      <div className="bg-gray-900 px-4 py-3 flex items-center justify-end gap-3 print:hidden">
+      <div className="bg-gray-900 px-4 py-3 flex items-center gap-3 print:hidden">
+        <Link href="/">
+          <Button size="sm" variant="outline" className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1">
+            <Home className="w-4 h-4" />
+            Home
+          </Button>
+        </Link>
+        <div className="flex-1" />
         <Button
           size="sm"
           onClick={downloadCsv}
@@ -138,12 +145,6 @@ export default function ReportPage() {
           <Printer className="w-4 h-4" />
           Print / Save PDF
         </Button>
-        <Link href="/">
-          <Button size="sm" variant="outline" className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1">
-            <Home className="w-4 h-4" />
-            Home
-          </Button>
-        </Link>
       </div>
 
       {testingDeleted && (

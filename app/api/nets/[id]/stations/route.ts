@@ -61,6 +61,17 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (stationError) return NextResponse.json({ error: stationError.message }, { status: 500 })
 
+  await getSupabase()
+    .from('mcinares_roster')
+    .upsert(
+      {
+        callsign: station.callsign,
+        first_name: first_name || null,
+        last_name: last_name || null,
+      },
+      { onConflict: 'callsign', ignoreDuplicates: false }
+    )
+
   // Build check-in log content
   const parts: string[] = [`${station.callsign} checked in`]
   if (station_type) parts.push(`(${station_type})`)
