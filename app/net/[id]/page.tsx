@@ -42,6 +42,7 @@ import { SetupNet } from '@/components/SetupNet'
 import { AnnouncementsSection } from '@/components/AnnouncementsSection'
 import { TrafficSection } from '@/components/TrafficSection'
 import { AddToLogModal } from '@/components/AddToLogModal'
+import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -73,6 +74,8 @@ export default function NetPage() {
   const [bulletinDraft, setBulletinDraft] = useState('')
   const [fullLogOpen, setFullLogOpen] = useState(false)
   const [addToLogOpen, setAddToLogOpen] = useState(false)
+  const [checkinQueue, setCheckinQueue] = useState<QueuedCheckin[]>([])
+  const [committing, setCommitting] = useState(false)
 
   const sections = net ? getSections(net.type) : []
   const section = sections[sectionIndex]
@@ -186,6 +189,76 @@ export default function NetPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry_type: 'continuity', content: 'Continuity announcement made' }),
     })
+    fetchAll()
+  }
+
+  const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining']
+  const useQueue = net?.type === 'ares' && queueSections.includes(section?.id || '')
+
+  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string }) {
+    setCheckinQueue(prev => [...prev, {
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      callsign: entry.callsign,
+      firstName: entry.firstName,
+      lastName: entry.lastName,
+      stationType: entry.stationType as QueuedCheckin['stationType'],
+      location: entry.location,
+      quadrant: entry.quadrant as QueuedCheckin['quadrant'],
+      hasTraffic: entry.hasTraffic,
+      hasAnnouncement: entry.hasAnnouncement,
+      trafficText: entry.trafficText,
+      announcementText: entry.announcementText,
+      timestamp: new Date().toISOString(),
+    }])
+  }
+
+  async function commitQueue() {
+    if (checkinQueue.length === 0) return
+    setCommitting(true)
+    for (const item of checkinQueue) {
+      const res = await fetch(`/api/nets/${netId}/stations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          callsign: item.callsign,
+          first_name: item.firstName || undefined,
+          last_name: item.lastName || undefined,
+          station_type: item.stationType || undefined,
+          location: item.location || undefined,
+          quadrant: item.quadrant || undefined,
+          has_traffic: item.hasTraffic,
+          has_announcements: item.hasAnnouncement,
+        }),
+      })
+      if (item.hasTraffic && item.trafficText) {
+        const station = res.ok ? await res.json() : null
+        await fetch(`/api/nets/${netId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entry_type: 'traffic',
+            content: `${item.callsign}: ${item.trafficText}`,
+            station_id: station?.id || null,
+          }),
+        })
+      }
+      if (item.hasAnnouncement && item.announcementText) {
+        const stationsRes = await fetch(`/api/nets/${netId}/stations`)
+        const allStations = stationsRes.ok ? await stationsRes.json() : []
+        const station = allStations.find((s: { callsign: string }) => s.callsign === item.callsign)
+        await fetch(`/api/nets/${netId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entry_type: 'announcement',
+            content: `${item.callsign}: ${item.announcementText}`,
+            station_id: station?.id || null,
+          }),
+        })
+      }
+    }
+    setCheckinQueue([])
+    setCommitting(false)
     fetchAll()
   }
 
@@ -704,20 +777,32 @@ export default function NetPage() {
                   onSkip={() => setRollCallSkipped(true)}
                 />
               ) : (
-                <CheckinForm
-                  netId={netId}
-                  netType={net.type}
-                  onCheckin={fetchAll}
-                  requireStationType={false}
-                  showQuadrant={net.type === 'skywarn'}
-                  callsignOnly={
-                    net.type === 'siren' && section.id === 'preamble'
-                  }
-                  showTrafficInputs={
-                    net.type === 'ares' && section.id === 'short_time'
-                  }
-                  roster={roster}
-                />
+                <>
+                  <CheckinForm
+                    netId={netId}
+                    netType={net.type}
+                    onCheckin={fetchAll}
+                    requireStationType={false}
+                    showQuadrant={net.type === 'skywarn'}
+                    callsignOnly={
+                      net.type === 'siren' && section.id === 'preamble'
+                    }
+                    showTrafficInputs={
+                      net.type === 'ares' && section.id === 'short_time'
+                    }
+                    roster={roster}
+                    onQueue={useQueue ? addToQueue : undefined}
+                  />
+                  {useQueue && (
+                    <CheckinQueue
+                      queue={checkinQueue}
+                      onUpdate={setCheckinQueue}
+                      onCommit={commitQueue}
+                      committing={committing}
+                      showTrafficInputs={net.type === 'ares' && section.id === 'short_time'}
+                    />
+                  )}
+                </>
               )
             )}
 

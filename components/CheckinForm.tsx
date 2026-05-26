@@ -32,6 +32,7 @@ interface CheckinFormProps {
   callsignOnly?: boolean
   showTrafficInputs?: boolean
   roster?: RosterEntry[]
+  onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string }) => void
 }
 
 export function CheckinForm({
@@ -43,6 +44,7 @@ export function CheckinForm({
   callsignOnly = false,
   showTrafficInputs = false,
   roster = [],
+  onQueue,
 }: CheckinFormProps) {
   const [callsign, setCallsign] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -61,6 +63,20 @@ export function CheckinForm({
   const isAres = netType === 'ares'
   const isSkywarn = netType === 'skywarn'
 
+  function resetForm() {
+    setCallsign('')
+    setFirstName('')
+    setLastName('')
+    setStationType('')
+    setLocation('')
+    setQuadrant('')
+    setReport('')
+    setHasTraffic(false)
+    setHasAnnouncement(false)
+    setTrafficText('')
+    setAnnouncementText('')
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!callsign.trim()) return
@@ -68,6 +84,24 @@ export function CheckinForm({
       setError('Please select Base or Mobile.')
       return
     }
+
+    if (onQueue) {
+      onQueue({
+        callsign: callsign.trim().toUpperCase(),
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        stationType: stationType,
+        location: location.trim(),
+        quadrant: quadrant,
+        hasTraffic,
+        hasAnnouncement,
+        trafficText: trafficText.trim(),
+        announcementText: announcementText.trim(),
+      })
+      resetForm()
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
