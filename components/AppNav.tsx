@@ -25,7 +25,7 @@ export function AppNav() {
 
       <div className="bg-gray-900/80 border-b border-gray-800 px-4 py-1.5 flex items-center justify-end gap-3">
         <label className="flex items-center gap-1.5 cursor-pointer">
-          <span className={`text-xs ${testingMode ? 'text-yellow-400' : 'text-gray-600'}`}>Testing</span>
+          <span className={`text-xs ${testingMode ? 'text-yellow-400' : 'text-gray-300'}`}>Testing</span>
           <button
             onClick={() => setTestingMode(!testingMode)}
             className={`relative w-8 h-4 rounded-full transition-colors ${testingMode ? 'bg-yellow-600' : 'bg-gray-700'}`}
@@ -34,7 +34,7 @@ export function AppNav() {
           </button>
         </label>
         <label className="flex items-center gap-1.5 cursor-pointer">
-          <span className={`text-xs ${superAdmin ? 'text-red-400' : 'text-gray-600'}`}>Super Admin</span>
+          <span className={`text-xs ${superAdmin ? 'text-red-400' : 'text-gray-300'}`}>Super Admin</span>
           <button
             onClick={() => {
               if (superAdmin) {
