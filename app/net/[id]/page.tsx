@@ -378,7 +378,7 @@ export default function NetPage() {
       )}
 
       {/* Setup step for ARES */}
-      {net.type === 'ares' && !setupComplete && (
+      {net.type === 'ares' && !setupComplete && logEntries.length <= 2 && (
         <div className="max-w-2xl mx-auto w-full p-4">
           <SetupNet
             netId={netId}
@@ -391,7 +391,7 @@ export default function NetPage() {
       )}
 
       {/* Main content */}
-      <div className={`flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4${net.type === 'ares' && !setupComplete ? ' hidden' : ''}`}>
+      <div className={`flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4${net.type === 'ares' && !setupComplete && logEntries.length <= 2 ? ' hidden' : ''}`}>
         {/* Left: Section jump nav */}
         {sections.length > 1 && (
           <div className="hidden lg:flex flex-col gap-0.5 w-32 flex-shrink-0 pt-1">
