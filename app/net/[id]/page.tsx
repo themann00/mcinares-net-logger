@@ -367,12 +367,12 @@ export default function NetPage() {
                   <button
                     key={s.id}
                     onClick={() => setSectionIndex(i)}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                    className={`px-2.5 py-1 text-xs rounded border transition-colors ${
                       i === sectionIndex
-                        ? 'bg-blue-600 text-white font-semibold'
+                        ? 'bg-blue-600 border-blue-500 text-white font-semibold'
                         : i < sectionIndex
-                        ? 'bg-gray-800 text-gray-400 hover:text-white'
-                        : 'bg-gray-900 text-gray-600 hover:text-gray-400'
+                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700'
+                        : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300 hover:bg-gray-800'
                     }`}
                   >
                     {shortLabel}
