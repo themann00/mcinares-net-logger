@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
 import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -34,6 +35,8 @@ interface PastNetsProps {
 }
 
 export function PastNets({ nets, onDelete }: PastNetsProps) {
+  const searchParams = useSearchParams()
+  const isSuperAdmin = searchParams.get('superadmin') === 'yes'
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [loadingLog, setLoadingLog] = useState(false)
@@ -78,7 +81,7 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
   }
 
   async function handleDelete(net: Net) {
-    if (deleteInput !== getDeletePhrase(net)) return
+    if (!isSuperAdmin && deleteInput !== getDeletePhrase(net)) return
     setDeleting(true)
     await fetch(`/api/nets/${net.id}`, { method: 'DELETE' })
     setDeleting(false)
@@ -252,11 +255,12 @@ export function PastNets({ nets, onDelete }: PastNetsProps) {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => setDeleteConfirmId(net.id)}
+                        onClick={() => isSuperAdmin ? handleDelete(net) : setDeleteConfirmId(net.id)}
+                        disabled={deleting}
                         className="border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300 gap-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Delete Net
+                        {deleting ? 'Deleting...' : 'Delete Net'}
                       </Button>
                     )}
                   </div>
