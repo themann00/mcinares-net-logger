@@ -25,7 +25,6 @@ import { formatDistanceToNow, format } from 'date-fns'
 import {
   ChevronLeft,
   ChevronRight,
-  Home,
   ScrollText,
   X,
   RefreshCw,
@@ -433,15 +432,6 @@ export default function NetPage() {
                 <span className="bg-orange-900/50 px-2 py-1 rounded">{reportEntries}R</span>
               )}
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => router.push('/')}
-              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
-            >
-              <Home className="w-4 h-4" />
-              <span className="hidden sm:inline">Home</span>
-            </Button>
             <Button
               size="sm"
               variant="outline"

@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Home } from 'lucide-react'
 import { useAppState } from '@/components/AppContext'
+import Link from 'next/link'
 
 export function AppNav() {
   const { testingMode, setTestingMode, superAdmin, setSuperAdmin } = useAppState()
@@ -23,7 +25,11 @@ export function AppNav() {
         </div>
       )}
 
-      <div className="bg-gray-900/80 border-b border-gray-800 px-4 py-1.5 flex items-center justify-end gap-3">
+      <div className="bg-gray-900/80 border-b border-gray-800 px-4 py-1.5 flex items-center gap-3">
+        <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+          <Home className="w-4 h-4" />
+        </Link>
+        <div className="flex-1" />
         <label className="flex items-center gap-1.5 cursor-pointer">
           <span className={`text-xs ${testingMode ? 'text-yellow-400' : 'text-gray-300'}`}>Testing</span>
           <button
