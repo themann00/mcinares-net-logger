@@ -24,6 +24,7 @@ export function Roster() {
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('callsign')
   const [sortAsc, setSortAsc] = useState(true)
+  const [pageSize, setPageSize] = useState(10)
   const [editing, setEditing] = useState<RosterEntry | null>(null)
   const [editCallsign, setEditCallsign] = useState('')
   const [editFirst, setEditFirst] = useState('')
@@ -61,6 +62,8 @@ export function Roster() {
     const cmp = String(av).localeCompare(String(bv))
     return sortAsc ? cmp : -cmp
   })
+
+  const visible = pageSize === 0 ? sorted : sorted.slice(0, pageSize)
 
   function openEdit(entry: RosterEntry) {
     setEditing(entry)
@@ -123,7 +126,20 @@ export function Roster() {
 
   return (
     <div>
-      <h2 className="text-gray-300 font-medium mb-3">Roster ({entries.length})</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-gray-300 font-medium">Roster ({entries.length})</h2>
+        <select
+          value={pageSize}
+          onChange={e => setPageSize(Number(e.target.value))}
+          className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
+        >
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
+          <option value={100}>100</option>
+          <option value={0}>All</option>
+        </select>
+      </div>
 
       {entries.length === 0 ? (
         <p className="text-gray-500 text-sm">No operators in roster yet.</p>
@@ -142,7 +158,7 @@ export function Roster() {
                 </tr>
               </thead>
               <tbody>
-                {sorted.map(entry => (
+                {visible.map(entry => (
                   <tr
                     key={entry.id}
                     onClick={() => openEdit(entry)}
