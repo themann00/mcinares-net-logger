@@ -160,8 +160,8 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
               Open in new tab
             </a>
             <iframe
-              src={announcementUrl}
-              className="w-full rounded-lg border border-gray-700"
+              src={`https://docs.google.com/gview?url=${encodeURIComponent(announcementUrl)}&embedded=true`}
+              className="w-full rounded-lg border border-gray-700 bg-white"
               style={{ height: '70vh', minHeight: '400px' }}
               title="Announcements PDF"
             />
