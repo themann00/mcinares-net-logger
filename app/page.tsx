@@ -108,6 +108,10 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim(), testing: testingMode }),
       })
+      if (res.redirected || !res.headers.get('content-type')?.includes('application/json')) {
+        setAuthenticated(false)
+        throw new Error('Session expired. Please re-enter PIN.')
+      }
       const net = await res.json()
       if (!res.ok) throw new Error(net.error || 'Failed to create net')
       router.push(`/net/${net.id}`)
