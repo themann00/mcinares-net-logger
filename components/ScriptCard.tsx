@@ -161,7 +161,11 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
           {renderScriptText(scriptText, { onNext, onTakeReports, hideNoCheckins: stationCount > 1, inlineInputs, onCircleBack })}
         </div>
 
-
+        {section.notes === 'checkin-hint' && (
+          <p className="mt-3 text-gray-500 text-sm">
+            Use the Check-in tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.
+          </p>
+        )}
       </div>
     </div>
   )

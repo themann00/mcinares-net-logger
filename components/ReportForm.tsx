@@ -1,32 +1,34 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FileText } from 'lucide-react'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import type { NetType, Station } from '@/types'
+
+interface RosterEntry {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+}
 
 interface ReportFormProps {
   netId: string
   netType: NetType
   stations: Station[]
   onReport: () => void
+  roster?: RosterEntry[]
 }
 
-export function ReportForm({ netId, netType, stations, onReport }: ReportFormProps) {
+export function ReportForm({ netId, netType, stations, onReport, roster = [] }: ReportFormProps) {
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    const match = stations.find(s => s.callsign === callsign.toUpperCase().trim())
-    if (match?.location && match.location !== 'N/A') {
-      setLocation(match.location)
-    }
-  }, [callsign, stations])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -81,18 +83,19 @@ export function ReportForm({ netId, netType, stations, onReport }: ReportFormPro
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
         <Label className="text-gray-400 text-xs mb-1 block">Station Callsign</Label>
-        <Input
+        <CallsignAutocomplete
           value={callsign}
-          onChange={e => setCallsign(e.target.value.toUpperCase())}
-          placeholder="W9ABC"
-          list="station-calls"
-          className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+          onChange={setCallsign}
+          onSelect={s => {
+            setCallsign(s.callsign)
+            const station = stations.find(st => st.callsign.toUpperCase() === s.callsign.toUpperCase())
+            if (station?.location && station.location !== 'N/A') {
+              setLocation(station.location)
+            }
+          }}
+          stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+          roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
         />
-        <datalist id="station-calls">
-          {stations.map(s => (
-            <option key={s.id} value={s.callsign} />
-          ))}
-        </datalist>
       </div>
       <div>
         <Label className="text-gray-400 text-xs mb-1 block">Location</Label>

@@ -87,6 +87,7 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
       `I will now take any short-time check-ins that have traffic or announcements. Please call net control.
 
 {{no-checkins}}`,
+    notes: 'checkin-hint',
   },
   {
     id: 'mobile',

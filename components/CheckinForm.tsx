@@ -13,7 +13,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { UserPlus } from 'lucide-react'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import type { NetType, Quadrant, StationType } from '@/types'
+
+interface RosterEntry {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+}
 
 interface CheckinFormProps {
   netId: string
@@ -23,6 +31,7 @@ interface CheckinFormProps {
   showQuadrant?: boolean
   callsignOnly?: boolean
   showTrafficInputs?: boolean
+  roster?: RosterEntry[]
 }
 
 export function CheckinForm({
@@ -33,6 +42,7 @@ export function CheckinForm({
   showQuadrant = false,
   callsignOnly = false,
   showTrafficInputs = false,
+  roster = [],
 }: CheckinFormProps) {
   const [callsign, setCallsign] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -131,12 +141,15 @@ export function CheckinForm({
       <div className="flex gap-2">
         <div className="flex-1">
           <Label className="text-gray-400 text-xs mb-1 block">Callsign *</Label>
-          <Input
+          <CallsignAutocomplete
             value={callsign}
-            onChange={e => setCallsign(e.target.value.toUpperCase())}
-            placeholder="W9ABC"
-            className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
-            required
+            onChange={setCallsign}
+            onSelect={s => {
+              setCallsign(s.callsign)
+              if (s.first_name) setFirstName(s.first_name)
+              if (s.last_name) setLastName(s.last_name)
+            }}
+            roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
             autoFocus
           />
         </div>

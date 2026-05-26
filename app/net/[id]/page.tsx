@@ -51,6 +51,7 @@ export default function NetPage() {
   const [net, setNet] = useState<Net | null>(null)
   const [stations, setStations] = useState<Station[]>([])
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
+  const [roster, setRoster] = useState<{ callsign: string; first_name: string | null; last_name: string | null; email: string | null }[]>([])
   const [sectionIndex, setSectionIndex] = useState(0)
   const [activeTab, setActiveTab] = useState<TabId>('checkin')
   const [fullScriptOpen, setFullScriptOpen] = useState(false)
@@ -79,15 +80,17 @@ export default function NetPage() {
   }
 
   const fetchAll = useCallback(async () => {
-    const [netRes, stationsRes, logRes] = await Promise.all([
+    const [netRes, stationsRes, logRes, rosterRes] = await Promise.all([
       fetch(`/api/nets/${netId}`),
       fetch(`/api/nets/${netId}/stations`),
       fetch(`/api/nets/${netId}/log`),
+      fetch('/api/roster'),
     ])
     if (!netRes.ok) return
     setNet(await netRes.json())
     setStations(await stationsRes.json())
     setLogEntries(await logRes.json())
+    if (rosterRes.ok) setRoster(await rosterRes.json())
   }, [netId])
 
   useEffect(() => {
@@ -681,6 +684,7 @@ export default function NetPage() {
                   showTrafficInputs={
                     net.type === 'ares' && section.id === 'short_time'
                   }
+                  roster={roster}
                 />
               )
             )}
@@ -691,6 +695,7 @@ export default function NetPage() {
                 netType={net.type}
                 stations={stations}
                 onReport={fetchAll}
+                roster={roster}
               />
             )}
 

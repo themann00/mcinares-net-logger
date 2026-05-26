@@ -1,0 +1,160 @@
+'use client'
+
+import { useState, useRef, useEffect } from 'react'
+import { Input } from '@/components/ui/input'
+
+interface Suggestion {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+  source: 'station' | 'roster'
+}
+
+interface CallsignAutocompleteProps {
+  value: string
+  onChange: (value: string) => void
+  onSelect: (suggestion: Suggestion) => void
+  stations?: Suggestion[]
+  roster?: Suggestion[]
+  placeholder?: string
+  className?: string
+  autoFocus?: boolean
+}
+
+export function CallsignAutocomplete({
+  value,
+  onChange,
+  onSelect,
+  stations = [],
+  roster = [],
+  placeholder = 'W9ABC',
+  className = '',
+  autoFocus = false,
+}: CallsignAutocompleteProps) {
+  const [open, setOpen] = useState(false)
+  const [highlightIndex, setHighlightIndex] = useState(0)
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const query = value.toUpperCase().trim()
+
+  function getMatches(): Suggestion[] {
+    if (!query) return []
+
+    function score(cs: string): number {
+      const upper = cs.toUpperCase()
+      if (upper === query) return 0
+      if (upper.startsWith(query)) return 1
+      if (upper.includes(query)) return 2
+      return -1
+    }
+
+    const seen = new Set<string>()
+    const results: { suggestion: Suggestion; rank: number }[] = []
+
+    for (const s of stations) {
+      const sc = score(s.callsign)
+      if (sc >= 0 && !seen.has(s.callsign.toUpperCase())) {
+        seen.add(s.callsign.toUpperCase())
+        results.push({ suggestion: s, rank: sc })
+      }
+    }
+
+    for (const r of roster) {
+      const sc = score(r.callsign)
+      if (sc >= 0 && !seen.has(r.callsign.toUpperCase())) {
+        seen.add(r.callsign.toUpperCase())
+        results.push({ suggestion: r, rank: sc + 10 })
+      }
+    }
+
+    results.sort((a, b) => a.rank - b.rank)
+    return results.slice(0, 8).map(r => r.suggestion)
+  }
+
+  const matches = getMatches()
+
+  useEffect(() => {
+    setHighlightIndex(0)
+  }, [value])
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  function selectMatch(suggestion: Suggestion) {
+    onChange(suggestion.callsign)
+    onSelect(suggestion)
+    setOpen(false)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (!open || matches.length === 0) return
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightIndex(i => Math.min(i + 1, matches.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Tab' || e.key === 'Enter') {
+      if (matches[highlightIndex]) {
+        e.preventDefault()
+        selectMatch(matches[highlightIndex])
+      }
+    } else if (e.key === 'Escape') {
+      setOpen(false)
+    }
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <Input
+        ref={inputRef}
+        value={value}
+        onChange={e => {
+          onChange(e.target.value.toUpperCase())
+          setOpen(true)
+        }}
+        onFocus={() => { if (query) setOpen(true) }}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className={`bg-gray-800 border-gray-700 text-white uppercase font-mono ${className}`}
+        autoFocus={autoFocus}
+        autoComplete="off"
+      />
+
+      {open && matches.length > 0 && (
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+          {matches.map((m, i) => (
+            <button
+              key={`${m.callsign}-${m.source}`}
+              onMouseDown={e => { e.preventDefault(); selectMatch(m) }}
+              onMouseEnter={() => setHighlightIndex(i)}
+              className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
+                i === highlightIndex ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+              }`}
+            >
+              <span className="font-mono font-semibold">{m.callsign}</span>
+              {(m.first_name || m.last_name) && (
+                <span className="text-gray-400 text-xs">
+                  {[m.first_name, m.last_name].filter(Boolean).join(' ')}
+                </span>
+              )}
+              <span className={`ml-auto text-xs ${m.source === 'station' ? 'text-green-500' : 'text-gray-600'}`}>
+                {m.source === 'station' ? 'checked in' : 'roster'}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
