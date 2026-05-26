@@ -26,6 +26,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   const [sortAsc, setSortAsc] = useState(true)
   const [pageSize, setPageSize] = useState(fullPage ? 0 : 10)
   const [page, setPage] = useState(0)
+  const [search, setSearch] = useState('')
   const [editing, setEditing] = useState<RosterEntry | null>(null)
   const [editCallsign, setEditCallsign] = useState('')
   const [editFirst, setEditFirst] = useState('')
@@ -53,7 +54,16 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
     }
   }
 
-  const sorted = [...entries].sort((a, b) => {
+  const filtered = search.trim()
+    ? entries.filter(e => {
+        const q = search.toUpperCase()
+        return e.callsign.toUpperCase().includes(q) ||
+          (e.first_name || '').toUpperCase().includes(q) ||
+          (e.last_name || '').toUpperCase().includes(q)
+      })
+    : entries
+
+  const sorted = [...filtered].sort((a, b) => {
     if (sortKey === 'qrz') {
       const aMissing = !a.first_name || !a.last_name ? 0 : 1
       const bMissing = !b.first_name || !b.last_name ? 0 : 1
@@ -141,13 +151,19 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           {fullPage ? (
-            <h2 className="text-gray-300 font-medium">Roster — {showingFrom}-{showingTo} of {entries.length}</h2>
+            <h2 className="text-gray-300 font-medium">Roster — {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</h2>
           ) : (
             <h2 className="text-gray-300 font-medium">
               <a href="/roster" className="hover:text-white underline underline-offset-2">Roster</a>
-              {' '}<span className="text-gray-500">— {showingFrom}-{showingTo} of {entries.length}</span>
+              {' '}<span className="text-gray-500">— {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</span>
             </h2>
           )}
+          <input
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0) }}
+            placeholder="Search..."
+            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1 w-28"
+          />
         </div>
         <div className="flex items-center gap-2">
           {totalPages > 1 && (
