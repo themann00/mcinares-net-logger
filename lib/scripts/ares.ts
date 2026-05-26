@@ -1,18 +1,40 @@
 import type { ScriptSection, NetContext } from '@/types'
 
+const PHONETIC: Record<string, string> = {
+  A: 'Alpha', B: 'Bravo', C: 'Charlie', D: 'Delta', E: 'Echo',
+  F: 'Foxtrot', G: 'Golf', H: 'Hotel', I: 'India', J: 'Juliet',
+  K: 'Kilo', L: 'Lima', M: 'Mike', N: 'November', O: 'Oscar',
+  P: 'Papa', Q: 'Quebec', R: 'Romeo', S: 'Sierra', T: 'Tango',
+  U: 'Uniform', V: 'Victor', W: 'Whiskey', X: 'X-ray', Y: 'Yankee',
+  Z: 'Zulu', '0': 'Zero', '1': 'One', '2': 'Two', '3': 'Three',
+  '4': 'Four', '5': 'Five', '6': 'Six', '7': 'Seven', '8': 'Eight',
+  '9': 'Nine',
+}
+
+function toPhonetic(callsign: string): string {
+  return callsign
+    .toUpperCase()
+    .split('')
+    .map(c => PHONETIC[c] || c)
+    .join('-')
+}
+
 export const aresSections: ScriptSection[] = [
   {
     id: 'preamble',
     title: 'Preamble',
     type: 'read',
-    script: (ctx: NetContext) =>
-      `CQ net, CQ net, CQ net. This is ${ctx.net_controller} (phonetically) activating the Marion County Amateur Radio Emergency Service Net. Net control for this session is ${ctx.net_controller} and the operator is ${ctx.net_controller}.
+    script: (ctx: NetContext) => {
+      const cs = ctx.net_controller
+      const phonetic = cs ? `${cs}, ${toPhonetic(cs)},` : '[your callsign] (phonetically)'
+      return `CQ net, CQ net, CQ net. This is ${phonetic} activating the Marion County Amateur Radio Emergency Service Net. Net control for this session is ${cs || '[your callsign]'} and the operator is ${cs || '[your callsign]'}.
 
 This net meets every Wednesday at 7:30 PM local time in order to pass formal or informal traffic, test our equipment, practice our operating skills, and learn how to properly check into a net. It also allows the local amateur community the opportunity to exchange news and information about ham radio. Membership in any group is not required for participation and check-ins from all licensed amateurs are welcome. When you check in to the net this evening, please indicate whether or not you have traffic or announcements. Remember, this is a directed net and all traffic should be routed through net control.
 
 {{input:alt_nc}}
 
-{{input:liaison}}`,
+{{input:liaison}}`
+    },
     inputFields: [
       {
         id: 'alt_nc',
