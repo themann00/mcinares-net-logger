@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { FileText, X, Check } from 'lucide-react'
+import { FileText, X, Check, Maximize2 } from 'lucide-react'
 import type { Station, LogEntry } from '@/types'
 
 interface AnnouncementsSectionProps {
@@ -31,6 +31,8 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
       .filter(e => e.entry_type === 'announcement' && e.station_id)
       .map(e => e.station_id)
   )
+
+  const [pdfZoom, setPdfZoom] = useState(false)
 
   const [annState, setAnnState] = useState<Record<string, AnnState>>(() => {
     const initial: Record<string, AnnState> = {}
@@ -87,6 +89,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
   }
 
   return (
+    <>
     <div className="space-y-4">
       {hasAnnouncements && (
         <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-4">
@@ -150,15 +153,24 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
 
         {announcementUrl ? (
           <div className="space-y-2">
-            <a
-              href={announcementUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2"
-            >
-              <FileText className="w-4 h-4" />
-              Open in new tab
-            </a>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setPdfZoom(true)}
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2"
+              >
+                <Maximize2 className="w-4 h-4" />
+                Zoom in
+              </button>
+              <a
+                href={announcementUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2"
+              >
+                <FileText className="w-4 h-4" />
+                Open in new tab
+              </a>
+            </div>
             <iframe
               src={`https://docs.google.com/gview?url=${encodeURIComponent(announcementUrl)}&embedded=true`}
               className="w-full rounded-lg border border-gray-700 bg-white"
@@ -171,5 +183,32 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
         )}
       </div>
     </div>
+
+      {pdfZoom && announcementUrl && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
+          <div className="flex items-center justify-end gap-3 p-3 bg-gray-900">
+            <a
+              href={announcementUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-400 hover:text-blue-300 text-sm underline"
+            >
+              Open in new tab
+            </a>
+            <button
+              onClick={() => setPdfZoom(false)}
+              className="text-gray-400 hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+          <iframe
+            src={`https://docs.google.com/gview?url=${encodeURIComponent(announcementUrl)}&embedded=true`}
+            className="flex-1 w-full bg-white"
+            title="Announcements PDF (fullscreen)"
+          />
+        </div>
+      )}
+    </>
   )
 }
