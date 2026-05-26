@@ -648,7 +648,7 @@ export default function NetPage() {
                 </a>
               </div>
               <iframe
-                src={`https://docs.google.com/gview?url=${encodeURIComponent(setupConfig.checklistUrl)}&embedded=true`}
+                src={`https://docs.google.com/gview?url=${encodeURIComponent(window.location.origin + '/api/proxy?url=' + encodeURIComponent(setupConfig.checklistUrl))}&embedded=true`}
                 className="w-full rounded-lg border border-gray-700 bg-white"
                 style={{ height: '50vh', minHeight: '300px' }}
                 title="Check-in List"
