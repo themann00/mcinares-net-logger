@@ -7,6 +7,7 @@ interface RollCallListProps {
   netId: string
   currentStations: Station[]
   onUpdate: () => void
+  onSkip?: () => void
 }
 
 interface RollState {
@@ -168,7 +169,19 @@ export function RollCallList({ netId, currentStations, onUpdate }: RollCallListP
   if (loading) return <p className="text-gray-500 text-sm py-2">Loading last week...</p>
 
   if (!prevNet || prevStations.length === 0) {
-    return <p className="text-gray-500 text-sm py-2">No previous ARES net found within 8 days.</p>
+    return (
+      <div className="space-y-2 py-2">
+        <p className="text-gray-500 text-sm">No previous ARES net found within 8 days.</p>
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2"
+          >
+            Acknowledge: Read from external source and enter manually
+          </button>
+        )}
+      </div>
+    )
   }
 
   const checkedCount = Object.values(rollState).filter(r => r.checkedIn).length

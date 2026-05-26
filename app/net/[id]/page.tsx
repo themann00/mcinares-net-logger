@@ -60,6 +60,7 @@ export default function NetPage() {
   const [sectionInputs, setSectionInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const [setupComplete, setSetupComplete] = useState(false)
+  const [rollCallSkipped, setRollCallSkipped] = useState(false)
   const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null } | null>(null)
   const [elapsed, setElapsed] = useState('')
   const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
@@ -665,11 +666,12 @@ export default function NetPage() {
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === 'checkin' && section?.allowCheckins && (
-              net.type === 'ares' && section.id === 'roll_call' ? (
+              net.type === 'ares' && section.id === 'roll_call' && !rollCallSkipped ? (
                 <RollCallList
                   netId={netId}
                   currentStations={stations}
                   onUpdate={fetchAll}
+                  onSkip={() => setRollCallSkipped(true)}
                 />
               ) : (
                 <CheckinForm
