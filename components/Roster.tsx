@@ -207,7 +207,17 @@ export function Roster({ superAdmin = false }: { superAdmin?: boolean }) {
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-white font-semibold">Edit Operator</span>
+              <div className="flex items-center gap-3">
+                <span className="text-white font-semibold">Edit Operator</span>
+                <a
+                  href={`https://www.qrz.com/db/${editing.callsign}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-xs underline"
+                >
+                  QRZ
+                </a>
+              </div>
               <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
