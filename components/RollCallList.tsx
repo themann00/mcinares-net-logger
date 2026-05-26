@@ -17,7 +17,7 @@ interface RollState {
   tickedAt: number | null
 }
 
-export function RollCallList({ netId, currentStations, onUpdate }: RollCallListProps) {
+export function RollCallList({ netId, currentStations, onUpdate, onSkip }: RollCallListProps) {
   const [prevNet, setPrevNet] = useState<Net | null>(null)
   const [prevStations, setPrevStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
