@@ -45,6 +45,8 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [pageSize, setPageSize] = useState(5)
+  const [page, setPage] = useState(0)
 
   const closedNets = nets.filter(n => n.closed_at && !n.testing)
   if (closedNets.length === 0) return null
@@ -67,24 +69,6 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
       }
       setLoadingLog(false)
     }
-  }
-
-  function expandAll() {
-    const allIds = new Set(closedNets.map(n => n.id))
-    setExpandedIds(allIds)
-    closedNets.forEach(async net => {
-      if (!logCache[net.id]) {
-        const res = await fetch(`/api/nets/${net.id}/log`)
-        if (res.ok) {
-          const entries = await res.json()
-          setLogCache(prev => ({ ...prev, [net.id]: entries }))
-        }
-      }
-    })
-  }
-
-  function collapseAll() {
-    setExpandedIds(new Set())
   }
 
   async function saveEdit(netId: string, entryId: string) {
@@ -119,21 +103,52 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     onDelete()
   }
 
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(closedNets.length / pageSize)
+  const start = pageSize === 0 ? 0 : page * pageSize
+  const visible = pageSize === 0 ? closedNets : closedNets.slice(start, start + pageSize)
+  const showingFrom = closedNets.length === 0 ? 0 : start + 1
+  const showingTo = Math.min(start + (pageSize || closedNets.length), closedNets.length)
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-gray-300 font-medium">Previous Nets</h2>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={expandedIds.size > 0 ? collapseAll : expandAll}
-          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white text-xs"
-        >
-          {expandedIds.size > 0 ? 'Collapse All' : 'Expand All'}
-        </Button>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 className="text-gray-300 font-medium">
+          Previous Nets <span className="text-gray-500">— {showingFrom}-{showingTo} of {closedNets.length}</span>
+        </h2>
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500 text-xs">{page + 1}/{totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+              >
+                Next
+              </button>
+            </>
+          )}
+          <select
+            value={pageSize}
+            onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}
+            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={0}>All</option>
+          </select>
+        </div>
       </div>
       <div className="space-y-2">
-        {closedNets.map(net => {
+        {visible.map(net => {
           const isExpanded = expandedIds.has(net.id)
           const logEntries = logCache[net.id] || []
           const isDeleting = deleteConfirmId === net.id
