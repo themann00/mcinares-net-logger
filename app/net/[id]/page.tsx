@@ -571,9 +571,10 @@ export default function NetPage() {
                     label: field.label,
                     onChange: (v: string) => setSectionInputs(prev => ({ ...prev, [field.id]: v })),
                     onSave: () => saveSectionInputs(),
+                    roster: roster.map(r => ({ callsign: r.callsign, first_name: r.first_name, last_name: r.last_name, source: 'roster' as const })),
                   }
                   return acc
-                }, {} as Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>)
+                }, {} as Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>)
               }
               onTakeReports={() => {
                 setSectionIndex(i => Math.min(sections.length - 1, i + 1))

@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { ChevronRight, RefreshCw } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
@@ -17,7 +18,7 @@ interface RenderOpts {
   onNext?: () => void
   onTakeReports?: () => void
   hideNoCheckins?: boolean
-  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
 }
 
@@ -80,13 +81,26 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
       parts.push(
         <span key={match.index} className="flex items-center gap-2 my-2">
           {field.label && <span className="text-gray-400 text-sm">{field.label}:</span>}
-          <Input
-            value={field.value}
-            onChange={e => field.onChange(e.target.value.toUpperCase())}
-            placeholder={field.placeholder}
-            className="bg-gray-800 border-gray-600 text-white uppercase font-mono w-40 h-8 text-sm inline-flex"
-            onKeyDown={e => { if (e.key === 'Enter') field.onSave() }}
-          />
+          {field.roster ? (
+            <div className="w-40">
+              <CallsignAutocomplete
+                value={field.value}
+                onChange={field.onChange}
+                onSelect={s => field.onChange(s.callsign)}
+                roster={field.roster}
+                placeholder={field.placeholder}
+                className="h-8 text-sm"
+              />
+            </div>
+          ) : (
+            <Input
+              value={field.value}
+              onChange={e => field.onChange(e.target.value.toUpperCase())}
+              placeholder={field.placeholder}
+              className="bg-gray-800 border-gray-600 text-white uppercase font-mono w-40 h-8 text-sm inline-flex"
+              onKeyDown={e => { if (e.key === 'Enter') field.onSave() }}
+            />
+          )}
           <Button
             size="sm"
             onClick={field.onSave}
@@ -136,7 +150,7 @@ interface ScriptCardProps {
   onNext?: () => void
   onTakeReports?: () => void
   stationCount?: number
-  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void }>
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
 }
 

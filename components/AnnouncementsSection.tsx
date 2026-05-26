@@ -204,7 +204,8 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
           </div>
           <iframe
             src={`https://docs.google.com/gview?url=${encodeURIComponent(announcementUrl)}&embedded=true`}
-            className="flex-1 w-full bg-white"
+            className="w-full bg-white"
+            style={{ height: 'calc(100vh - 52px)' }}
             title="Announcements PDF (fullscreen)"
           />
         </div>
