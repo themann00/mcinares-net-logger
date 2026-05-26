@@ -387,8 +387,10 @@ export default function NetPage() {
         <div className="max-w-2xl mx-auto w-full p-4">
           <SetupNet
             netId={netId}
-            onComplete={config => {
+            onComplete={async config => {
               setSetupConfig(config)
+              await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
+              await fetchAll()
               setSetupComplete(true)
             }}
           />

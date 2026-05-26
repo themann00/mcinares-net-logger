@@ -4,7 +4,9 @@ import type { NetType } from '@/types'
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
-  const { type, net_controller, testing } = body as { type: NetType; net_controller: string; testing?: boolean }
+  const { type, net_controller, testing, defer_start } = body as {
+    type: NetType; net_controller: string; testing?: boolean; defer_start?: boolean
+  }
 
   if (!type || !net_controller) {
     return NextResponse.json({ error: 'type and net_controller are required' }, { status: 400 })
@@ -21,32 +23,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: netError.message }, { status: 500 })
   }
 
-  const openTime = new Date(net.started_at)
-  const checkinTime = new Date(openTime.getTime() + 1000)
+  if (!defer_start) {
+    const openTime = new Date(net.started_at)
+    const checkinTime = new Date(openTime.getTime() + 1000)
 
-  await getSupabase().from('mcinares_log_entries').insert({
-    net_id: net.id,
-    entry_type: 'net_open',
-    content: `Net opened by ${net_controller}`,
-    timestamp: openTime.toISOString(),
-  })
-
-  await getSupabase()
-    .from('mcinares_stations')
-    .insert({
+    await getSupabase().from('mcinares_log_entries').insert({
       net_id: net.id,
-      callsign: net_controller,
-      station_type: 'base',
-      location: 'N/A',
-      checked_in_at: checkinTime.toISOString(),
+      entry_type: 'net_open',
+      content: `Net opened by ${net_controller}`,
+      timestamp: openTime.toISOString(),
     })
 
-  await getSupabase().from('mcinares_log_entries').insert({
-    net_id: net.id,
-    entry_type: 'checkin',
-    content: `${net_controller} checked in (net control)`,
-    timestamp: checkinTime.toISOString(),
-  })
+    await getSupabase()
+      .from('mcinares_stations')
+      .insert({
+        net_id: net.id,
+        callsign: net_controller,
+        station_type: 'base',
+        location: 'N/A',
+        checked_in_at: checkinTime.toISOString(),
+      })
+
+    await getSupabase().from('mcinares_log_entries').insert({
+      net_id: net.id,
+      entry_type: 'checkin',
+      content: `${net_controller} checked in (net control)`,
+      timestamp: checkinTime.toISOString(),
+    })
+  }
 
   return NextResponse.json(net, { status: 201 })
 }

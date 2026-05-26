@@ -66,7 +66,22 @@ export default function HomePage() {
         }
         return []
       })
-      .then((nets: Net[]) => setAllNets(nets))
+      .then(async (nets: Net[]) => {
+        const staleNets = nets.filter(n => !n.closed_at && n.type === 'ares')
+        for (const sn of staleNets) {
+          const logRes = await fetch(`/api/nets/${sn.id}/log`)
+          if (logRes.ok) {
+            const logs = await logRes.json()
+            if (logs.length === 0) {
+              await fetch(`/api/nets/${sn.id}`, { method: 'DELETE' })
+              continue
+            }
+          }
+        }
+        const freshRes = await fetch('/api/nets')
+        if (freshRes.ok) setAllNets(await freshRes.json())
+        else setAllNets(nets)
+      })
       .catch(() => {})
   }
 
@@ -106,7 +121,12 @@ export default function HomePage() {
       const res = await fetch('/api/nets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: selectedNet, net_controller: callsign.toUpperCase().trim(), testing: testingMode }),
+        body: JSON.stringify({
+          type: selectedNet,
+          net_controller: callsign.toUpperCase().trim(),
+          testing: testingMode,
+          defer_start: selectedNet === 'ares',
+        }),
       })
       if (res.redirected || !res.headers.get('content-type')?.includes('application/json')) {
         setAuthenticated(false)
