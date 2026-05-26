@@ -138,7 +138,7 @@ export function Roster() {
                   <th className="px-3 py-2 text-left"><SortHeader label="Last" field="last_name" /></th>
                   <th className="px-3 py-2 text-left"><SortHeader label="Email" field="email" /></th>
                   <th className="px-3 py-2 text-right"><SortHeader label="#" field="checkin_count" /></th>
-                  <th className="px-3 py-2 text-left"><SortHeader label="Last In" field="last_checkin" /></th>
+                  <th className="px-3 py-2 text-left"><SortHeader label="Last Check-In" field="last_checkin" /></th>
                 </tr>
               </thead>
               <tbody>
