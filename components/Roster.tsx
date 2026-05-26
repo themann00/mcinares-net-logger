@@ -256,6 +256,22 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                       >
                         <Pencil className="w-3 h-3 inline" />
                       </button>
+                      {superAdmin && (
+                        <button
+                          onClick={async () => {
+                            await fetch('/api/roster', {
+                              method: 'DELETE',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ id: entry.id }),
+                            })
+                            fetchRoster()
+                          }}
+                          className="ml-1 text-gray-700 hover:text-red-400 transition-colors align-middle"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3 h-3 inline" />
+                        </button>
+                      )}
                     </td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>
