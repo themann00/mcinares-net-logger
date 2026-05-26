@@ -37,6 +37,7 @@ import {
 } from 'lucide-react'
 import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
+import { SetupNet } from '@/components/SetupNet'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -57,6 +58,8 @@ export default function NetPage() {
   const [closing, setClosing] = useState(false)
   const [sectionInputs, setSectionInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
+  const [setupComplete, setSetupComplete] = useState(false)
+  const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null } | null>(null)
   const [elapsed, setElapsed] = useState('')
   const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
   const [localBulletin, setLocalBulletin] = useState('')
@@ -368,8 +371,21 @@ export default function NetPage() {
         </div>
       )}
 
+      {/* Setup step for ARES */}
+      {net.type === 'ares' && !setupComplete && (
+        <div className="max-w-2xl mx-auto w-full p-4">
+          <SetupNet
+            netId={netId}
+            onComplete={config => {
+              setSetupConfig(config)
+              setSetupComplete(true)
+            }}
+          />
+        </div>
+      )}
+
       {/* Main content */}
-      <div className="flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4">
+      <div className={`flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4${net.type === 'ares' && !setupComplete ? ' hidden' : ''}`}>
         {/* Left: Section jump nav */}
         {sections.length > 1 && (
           <div className="hidden lg:flex flex-col gap-0.5 w-32 flex-shrink-0 pt-1">
@@ -591,6 +607,18 @@ export default function NetPage() {
                 {saving ? 'Saving...' : 'Save'}
               </Button>
             </div>
+          )}
+
+          {net.type === 'ares' && section?.id === 'announcements' && setupConfig?.announcementUrl && (
+            <a
+              href={setupConfig.announcementUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 bg-blue-900/30 border border-blue-700 rounded-xl px-4 py-3 text-blue-300 hover:text-blue-200 hover:bg-blue-900/50 transition-colors"
+            >
+              <FileText className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm font-medium">View Announcements PDF</span>
+            </a>
           )}
 
           {net.type === 'ares' && section?.id === 'announcements' && (
