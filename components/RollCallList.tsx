@@ -44,6 +44,7 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip }: RollC
       const stRes = await fetch(`/api/nets/${prev.id}/stations`)
       if (stRes.ok) {
         const stations: Station[] = await stRes.json()
+        stations.sort((a, b) => a.callsign.localeCompare(b.callsign))
         setPrevStations(stations)
         setLastWeekCount(stations.length)
 
