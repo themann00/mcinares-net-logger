@@ -84,7 +84,7 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
     type: 'checkin',
     allowCheckins: true,
     script: () =>
-      `I will now take any short-time check-ins that have traffic or announcements.
+      `I will now take any short-time check-ins that have traffic or announcements. Please call net control.
 
 {{no-checkins}}`,
   },
