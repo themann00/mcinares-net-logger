@@ -19,12 +19,13 @@ interface RosterEntry {
 
 type SortKey = 'callsign' | 'first_name' | 'last_name' | 'email' | 'checkin_count' | 'last_checkin'
 
-export function Roster({ superAdmin = false }: { superAdmin?: boolean }) {
+export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: boolean; fullPage?: boolean }) {
   const [entries, setEntries] = useState<RosterEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [sortKey, setSortKey] = useState<SortKey>('callsign')
   const [sortAsc, setSortAsc] = useState(true)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(fullPage ? 0 : 10)
+  const [page, setPage] = useState(0)
   const [editing, setEditing] = useState<RosterEntry | null>(null)
   const [editCallsign, setEditCallsign] = useState('')
   const [editFirst, setEditFirst] = useState('')
@@ -63,7 +64,11 @@ export function Roster({ superAdmin = false }: { superAdmin?: boolean }) {
     return sortAsc ? cmp : -cmp
   })
 
-  const visible = pageSize === 0 ? sorted : sorted.slice(0, pageSize)
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(sorted.length / pageSize)
+  const start = pageSize === 0 ? 0 : page * pageSize
+  const visible = pageSize === 0 ? sorted : sorted.slice(start, start + pageSize)
+  const showingFrom = sorted.length === 0 ? 0 : start + 1
+  const showingTo = Math.min(start + (pageSize || sorted.length), sorted.length)
 
   function openEdit(entry: RosterEntry) {
     setEditing(entry)
@@ -126,19 +131,49 @@ export function Roster({ superAdmin = false }: { superAdmin?: boolean }) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-gray-300 font-medium">Roster ({entries.length})</h2>
-        <select
-          value={pageSize}
-          onChange={e => setPageSize(Number(e.target.value))}
-          className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
-        >
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-          <option value={100}>100</option>
-          <option value={0}>All</option>
-        </select>
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          {fullPage ? (
+            <h2 className="text-gray-300 font-medium">Roster — {showingFrom}-{showingTo} of {entries.length}</h2>
+          ) : (
+            <h2 className="text-gray-300 font-medium">
+              <a href="/roster" className="hover:text-white underline underline-offset-2">Roster</a>
+              {' '}<span className="text-gray-500">— {showingFrom}-{showingTo} of {entries.length}</span>
+            </h2>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {totalPages > 1 && (
+            <>
+              <button
+                onClick={() => setPage(p => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <span className="text-gray-500 text-xs">{page + 1}/{totalPages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={page >= totalPages - 1}
+                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+              >
+                Next
+              </button>
+            </>
+          )}
+          <select
+            value={pageSize}
+            onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}
+            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={0}>All</option>
+          </select>
+        </div>
       </div>
 
       {entries.length === 0 ? (
