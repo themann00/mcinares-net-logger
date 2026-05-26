@@ -221,15 +221,20 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                             <div className="text-gray-400 text-xs mb-2">
                               {netStations.length} station{netStations.length !== 1 ? 's' : ''} checked in
                             </div>
-                            {netStations.length > 0 && (
-                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 mb-3">
-                                {netStations.map(s => (
-                                  <span key={s.id} className="font-mono text-xs text-gray-300 truncate">
-                                    {s.callsign}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                            {netStations.length > 0 && (() => {
+                              const count = netStations.length
+                              const cols = count <= 5 ? 1 : count <= 10 ? 2 : count <= 15 ? 3 : count <= 20 ? 4 : 5
+                              const colClass = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-5'][cols - 1]
+                              return (
+                                <div className={`grid ${colClass} gap-1 mb-3`}>
+                                  {netStations.map(s => (
+                                    <span key={s.id} className="font-mono text-xs text-gray-300 truncate">
+                                      {s.callsign}
+                                    </span>
+                                  ))}
+                                </div>
+                              )
+                            })()}
                           </>
                         )
                       })()}
