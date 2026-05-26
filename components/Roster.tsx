@@ -17,7 +17,7 @@ interface RosterEntry {
   last_checkin: string | null
 }
 
-type SortKey = 'callsign' | 'first_name' | 'last_name' | 'email' | 'checkin_count' | 'last_checkin'
+type SortKey = 'callsign' | 'first_name' | 'last_name' | 'email' | 'checkin_count' | 'last_checkin' | 'qrz'
 
 export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: boolean; fullPage?: boolean }) {
   const [entries, setEntries] = useState<RosterEntry[]>([])
@@ -54,6 +54,13 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   }
 
   const sorted = [...entries].sort((a, b) => {
+    if (sortKey === 'qrz') {
+      const aMissing = !a.first_name || !a.last_name ? 0 : 1
+      const bMissing = !b.first_name || !b.last_name ? 0 : 1
+      const cmp = aMissing - bMissing
+      if (cmp !== 0) return sortAsc ? cmp : -cmp
+      return a.callsign.localeCompare(b.callsign)
+    }
     const av = a[sortKey]
     const bv = b[sortKey]
     if (av == null && bv == null) return 0
@@ -190,6 +197,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                   <th className="px-3 py-2 text-left"><SortHeader label="Email" field="email" /></th>
                   <th className="px-3 py-2 text-right"><SortHeader label="#" field="checkin_count" /></th>
                   <th className="px-3 py-2 text-left"><SortHeader label="Last Check-In" field="last_checkin" /></th>
+                  <th className="px-1 py-2"><SortHeader label="QRZ" field="qrz" /></th>
                 </tr>
               </thead>
               <tbody>
