@@ -82,8 +82,13 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
           setPrevNetChoice('skip')
         }
 
+        const allPdfs = docs.announcements || []
         if (foundPdf) {
           setSelectedPdf(foundPdf.url)
+          setPdfChoice('auto')
+        } else if (allPdfs.length > 0) {
+          setSelectedPdf(allPdfs[0].url)
+          setTodayPdf(allPdfs[0])
           setPdfChoice('auto')
         } else {
           setSelectedPdf(null)
