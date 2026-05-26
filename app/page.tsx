@@ -162,7 +162,13 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-950">
+      {testingMode && (
+        <div className="bg-yellow-600 text-black text-center text-sm font-semibold py-2 px-4">
+          TESTING MODE ON. NET LOGS WILL NOT BE SAVED TO THE DATABASE AFTER CLOSING.
+        </div>
+      )}
+      <div className="p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white">Marion County ARES</h1>
@@ -362,6 +368,7 @@ export default function HomePage() {
 
           <Roster />
         </div>
+      </div>
       </div>
     </div>
   )
