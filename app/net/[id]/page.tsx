@@ -351,37 +351,37 @@ export default function NetPage() {
 
       {/* Main content */}
       <div className="flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4">
-        {/* Left: Script */}
-        <div className="flex-1 min-w-0 flex flex-col gap-4">
-          {sections.length > 1 && (
-            <div className="flex flex-wrap gap-1">
-              {sections.map((s, i) => {
-                const shortLabel = s.title
-                  .replace('Check-ins: ', '')
-                  .replace(' Quadrant', '')
-                  .replace('Reports & ', '')
-                  .replace('Initial Reports', 'Reports')
-                  .replace('Circle-Back', 'Circle-Back')
-                  .replace('Closing', 'Close')
-                return (
-                  <button
-                    key={s.id}
-                    onClick={() => setSectionIndex(i)}
-                    className={`px-2.5 py-1 text-xs rounded border transition-colors ${
-                      i === sectionIndex
-                        ? 'bg-blue-600 border-blue-500 text-white font-semibold'
-                        : i < sectionIndex
-                        ? 'bg-gray-800 border-gray-700 text-gray-300 hover:text-white hover:bg-gray-700'
-                        : 'bg-gray-800/50 border-gray-700 text-gray-500 hover:text-gray-300 hover:bg-gray-800'
-                    }`}
-                  >
-                    {shortLabel}
-                  </button>
-                )
-              })}
-            </div>
-          )}
+        {/* Left: Section jump nav */}
+        {sections.length > 1 && (
+          <div className="hidden lg:flex flex-col gap-0.5 w-32 flex-shrink-0 pt-1">
+            {sections.map((s, i) => {
+              const shortLabel = s.title
+                .replace('Check-ins: ', '')
+                .replace(' Quadrant', '')
+                .replace('Reports & ', '')
+                .replace('Initial Reports', 'Reports')
+                .replace('Closing', 'Close')
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => setSectionIndex(i)}
+                  className={`text-left px-2 py-1 text-xs rounded transition-colors truncate ${
+                    i === sectionIndex
+                      ? 'bg-blue-600 text-white font-semibold'
+                      : i < sectionIndex
+                      ? 'text-gray-300 hover:text-white hover:bg-gray-800'
+                      : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                  }`}
+                >
+                  {shortLabel}
+                </button>
+              )
+            })}
+          </div>
+        )}
 
+        {/* Center: Script */}
+        <div className="flex-1 min-w-0 flex flex-col gap-4">
           {sectionNav}
 
           {net?.type === 'skywarn' && section?.id === 'preamble' && (
