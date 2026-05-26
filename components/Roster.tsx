@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ChevronUp, ChevronDown, X, Trash2 } from 'lucide-react'
+import { ChevronUp, ChevronDown, X, Trash2, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 
 interface RosterEntry {
@@ -204,24 +204,28 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                 {visible.map(entry => (
                   <tr
                     key={entry.id}
-                    onClick={() => openEdit(entry)}
-                    className="border-b border-gray-800 hover:bg-gray-800/50 cursor-pointer transition-colors"
+                    className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
                   >
-                    <td className="px-3 py-1.5 font-mono text-white font-semibold">{entry.callsign}</td>
+                    <td className="px-3 py-1.5">
+                      <span className="font-mono text-white font-semibold">{entry.callsign}</span>
+                      <button
+                        onClick={() => openEdit(entry)}
+                        className="ml-1.5 text-gray-600 hover:text-gray-300 transition-colors align-middle"
+                        title="Edit"
+                      >
+                        <Pencil className="w-3 h-3 inline" />
+                      </button>
+                    </td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>
                     <td className="px-3 py-1.5 text-gray-400">
                       {entry.email ? (
-                        <button
-                          onClick={e => {
-                            e.stopPropagation()
-                            e.preventDefault()
-                            window.open(`mailto:${entry.email}`, '_self')
-                          }}
-                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 text-left"
+                        <a
+                          href={`mailto:${entry.email}`}
+                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 cursor-pointer"
                         >
                           {entry.email}
-                        </button>
+                        </a>
                       ) : ''}
                     </td>
                     <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>
