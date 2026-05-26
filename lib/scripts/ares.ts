@@ -152,8 +152,7 @@ This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
     title: 'Announcements',
     type: 'input',
     allowCheckins: true,
-    script: () =>
-      `Take announcements from stations below, then any from the website. Stations with traffic will pass after announcements.`,
+    script: () => `{{announcements-section}}`,
   },
   {
     id: 'late_checkins',

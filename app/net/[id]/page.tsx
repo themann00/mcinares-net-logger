@@ -38,6 +38,7 @@ import {
 import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
 import { SetupNet } from '@/components/SetupNet'
+import { AnnouncementsSection } from '@/components/AnnouncementsSection'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
@@ -526,7 +527,17 @@ export default function NetPage() {
             </div>
           )}
 
-          {section && (
+          {net.type === 'ares' && section?.id === 'announcements' && (
+            <AnnouncementsSection
+              stations={stations}
+              logEntries={logEntries}
+              netId={netId}
+              announcementUrl={setupConfig?.announcementUrl || null}
+              onUpdate={fetchAll}
+            />
+          )}
+
+          {section && !(net.type === 'ares' && section.id === 'announcements') && (
             <ScriptCard
               section={section}
               ctx={ctx}
@@ -610,29 +621,6 @@ export default function NetPage() {
               >
                 {saving ? 'Saving...' : 'Save'}
               </Button>
-            </div>
-          )}
-
-          {net.type === 'ares' && section?.id === 'announcements' && setupConfig?.announcementUrl && (
-            <a
-              href={setupConfig.announcementUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-blue-900/30 border border-blue-700 rounded-xl px-4 py-3 text-blue-300 hover:text-blue-200 hover:bg-blue-900/50 transition-colors"
-            >
-              <FileText className="w-5 h-5 flex-shrink-0" />
-              <span className="text-sm font-medium">View Announcements PDF</span>
-            </a>
-          )}
-
-          {net.type === 'ares' && section?.id === 'announcements' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4">
-              <TrafficList
-                stations={stations}
-                logEntries={logEntries}
-                netId={netId}
-                onUpdate={fetchAll}
-              />
             </div>
           )}
 
