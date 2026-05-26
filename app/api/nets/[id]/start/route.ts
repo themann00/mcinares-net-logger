@@ -37,6 +37,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     checked_in_at: checkinTime.toISOString(),
   })
 
+  await db.from('mcinares_roster').upsert(
+    { callsign: net.net_controller },
+    { onConflict: 'callsign', ignoreDuplicates: true }
+  )
+
   await db.from('mcinares_log_entries').insert({
     net_id: id,
     entry_type: 'checkin',

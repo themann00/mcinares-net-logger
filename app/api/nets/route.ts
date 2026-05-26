@@ -44,6 +44,11 @@ export async function POST(request: NextRequest) {
         checked_in_at: checkinTime.toISOString(),
       })
 
+    await getSupabase().from('mcinares_roster').upsert(
+      { callsign: net_controller },
+      { onConflict: 'callsign', ignoreDuplicates: true }
+    )
+
     await getSupabase().from('mcinares_log_entries').insert({
       net_id: net.id,
       entry_type: 'checkin',
