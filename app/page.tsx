@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Radio, CloudLightning, Siren, Lock, AlertTriangle } from 'lucide-react'
+import { Radio, CloudLightning, Siren, Lock, AlertTriangle, X } from 'lucide-react'
 import { PastNets } from '@/components/PastNets'
 import { Roster } from '@/components/Roster'
 import type { Net, NetType } from '@/types'
@@ -250,27 +250,56 @@ export default function HomePage() {
               {openNets.map(net => {
                 const netInfo = NET_TYPES.find(n => n.type === net.type)
                 return (
-                  <button
+                  <div
                     key={net.id}
-                    onClick={() => router.push(`/net/${net.id}`)}
-                    className={`w-full flex items-center gap-4 p-5 rounded-xl border-2 transition-all text-left ${
+                    className={`flex items-center gap-0 rounded-xl border-2 overflow-hidden transition-all ${
                       net.testing
-                        ? 'border-yellow-500 bg-yellow-500/10 hover:bg-yellow-500/20'
-                        : 'border-amber-500 bg-amber-500/10 hover:bg-amber-500/20'
+                        ? 'border-yellow-500 bg-yellow-500/10'
+                        : 'border-amber-500 bg-amber-500/10'
                     }`}
                   >
-                    <div className={`${net.testing ? 'bg-yellow-600' : 'bg-amber-600'} p-3 rounded-lg text-white flex-shrink-0`}>
-                      <AlertTriangle className="w-7 h-7" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className={`${net.testing ? 'text-yellow-400' : 'text-amber-400'} font-bold text-lg`}>
-                        RESUME: {net.testing ? 'TESTING - ' : ''}{netInfo?.label || net.type.toUpperCase()}
+                    <button
+                      onClick={() => router.push(`/net/${net.id}`)}
+                      className="flex-1 flex items-center gap-4 p-5 text-left hover:bg-white/5 transition-colors"
+                    >
+                      <div className={`${net.testing ? 'bg-yellow-600' : 'bg-amber-600'} p-3 rounded-lg text-white flex-shrink-0`}>
+                        <AlertTriangle className="w-7 h-7" />
                       </div>
-                      <div className="text-gray-400 text-sm">
-                        NC: {net.net_controller} &middot; Started {new Date(net.started_at).toLocaleString()}
+                      <div className="flex-1 min-w-0">
+                        <div className={`${net.testing ? 'text-yellow-400' : 'text-amber-400'} font-bold text-lg`}>
+                          RESUME: {net.testing ? 'TESTING - ' : ''}{netInfo?.label || net.type.toUpperCase()}
+                        </div>
+                        <div className="text-gray-400 text-sm">
+                          NC: {net.net_controller} &middot; Started {new Date(net.started_at).toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                  </button>
+                    </button>
+                    {superAdmin && (
+                      <button
+                        onClick={async () => {
+                          const now = new Date().toISOString()
+                          await fetch(`/api/nets/${net.id}`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ closed_at: now }),
+                          })
+                          await fetch(`/api/nets/${net.id}/log`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              entry_type: 'net_close',
+                              content: `Net closed at ${new Date(now).toLocaleTimeString()} local (admin)`,
+                            }),
+                          })
+                          fetchNets()
+                        }}
+                        className="px-4 py-5 text-red-400 hover:bg-red-950/50 hover:text-red-300 transition-colors border-l border-amber-500/30 flex-shrink-0"
+                        title="Close net without report"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    )}
+                  </div>
                 )
               })}
             </div>
