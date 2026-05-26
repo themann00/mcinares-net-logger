@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2 } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2, BookOpen, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { Net, LogEntry, LogEntryType } from '@/types'
+import Link from 'next/link'
+import type { Net, Station, LogEntry, LogEntryType } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   net_open: { label: 'OPEN', color: 'text-green-400' },
@@ -38,6 +39,8 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const isSuperAdmin = superAdmin
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [logCache, setLogCache] = useState<Record<string, LogEntry[]>>({})
+  const [stationCache, setStationCache] = useState<Record<string, Station[]>>({})
+  const [logPopupNetId, setLogPopupNetId] = useState<string | null>(null)
   const [loadingLog, setLoadingLog] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
@@ -60,15 +63,25 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     }
     next.add(net.id)
     setExpandedIds(next)
-    if (!logCache[net.id]) {
-      setLoadingLog(true)
-      const res = await fetch(`/api/nets/${net.id}/log`)
-      if (res.ok) {
-        const entries = await res.json()
-        setLogCache(prev => ({ ...prev, [net.id]: entries }))
-      }
-      setLoadingLog(false)
+    setLoadingLog(true)
+    const [logRes, stRes] = await Promise.all([
+      logCache[net.id] ? null : fetch(`/api/nets/${net.id}/log`),
+      stationCache[net.id] ? null : fetch(`/api/nets/${net.id}/stations`),
+    ])
+    if (logRes?.ok) {
+      const entries = await logRes.json()
+      setLogCache(prev => ({ ...prev, [net.id]: entries }))
     }
+    if (stRes?.ok) {
+      const stations: Station[] = await stRes.json()
+      stations.sort((a, b) => {
+        const sa = a.callsign.match(/\d([A-Z]+)$/)?.[1] || a.callsign
+        const sb = b.callsign.match(/\d([A-Z]+)$/)?.[1] || b.callsign
+        return sa.localeCompare(sb)
+      })
+      setStationCache(prev => ({ ...prev, [net.id]: stations }))
+    }
+    setLoadingLog(false)
   }
 
   async function saveEdit(netId: string, entryId: string) {
@@ -200,84 +213,49 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                   {loadingLog ? (
                     <p className="text-gray-500 text-sm text-center py-2">Loading...</p>
                   ) : (
-                    <div className="space-y-0.5">
-                      {logEntries.map(entry => {
-                        const cfg = TYPE_CONFIG[entry.entry_type] || {
-                          label: entry.entry_type.toUpperCase(),
-                          color: 'text-gray-400',
-                        }
-                        const isEditingThis = editingId === entry.id
-
+                    <div>
+                      {(() => {
+                        const netStations = stationCache[net.id] || []
                         return (
-                          <div
-                            key={entry.id}
-                            className="group flex gap-2 text-sm py-1 border-b border-gray-800/50 last:border-0"
-                          >
-                            <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
-                              {format(new Date(entry.timestamp), 'HH:mm:ss')}
-                            </span>
-                            <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
-                              {cfg.label}
-                            </span>
-
-                            {isEditingThis ? (
-                              <div className="flex-1 flex gap-1">
-                                <input
-                                  value={editContent}
-                                  onChange={e => setEditContent(e.target.value)}
-                                  onKeyDown={e => {
-                                    if (e.key === 'Enter') saveEdit(net.id, entry.id)
-                                    if (e.key === 'Escape') setEditingId(null)
-                                  }}
-                                  className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-white text-sm"
-                                  autoFocus
-                                  disabled={saving}
-                                />
-                                <button
-                                  onClick={() => saveEdit(net.id, entry.id)}
-                                  disabled={saving}
-                                  className="text-green-400 hover:text-green-300 p-0.5"
-                                >
-                                  <Check className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => setEditingId(null)}
-                                  className="text-gray-500 hover:text-gray-300 p-0.5"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
+                          <>
+                            <div className="text-gray-400 text-xs mb-2">
+                              {netStations.length} station{netStations.length !== 1 ? 's' : ''} checked in
+                            </div>
+                            {netStations.length > 0 && (
+                              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1 mb-3">
+                                {netStations.map(s => (
+                                  <span key={s.id} className="font-mono text-xs text-gray-300 truncate">
+                                    {s.callsign}
+                                  </span>
+                                ))}
                               </div>
-                            ) : (
-                              <span
-                                className="text-gray-400 break-all flex-1 cursor-pointer hover:text-gray-200 transition-colors"
-                                onClick={() => {
-                                  setEditingId(entry.id)
-                                  setEditContent(entry.content)
-                                }}
-                                title="Click to edit"
-                              >
-                                {entry.content}
-                              </span>
                             )}
-
-                            {!isEditingThis && (
-                              <button
-                                onClick={() => {
-                                  setEditingId(entry.id)
-                                  setEditContent(entry.content)
-                                }}
-                                className="text-gray-700 group-hover:text-gray-500 hover:!text-gray-300 p-0.5 flex-shrink-0 transition-colors"
-                              >
-                                <Pencil className="w-3 h-3" />
-                              </button>
-                            )}
-                          </div>
+                          </>
                         )
-                      })}
+                      })()}
                     </div>
                   )}
 
-                  <div className="mt-4 pt-3 border-t border-gray-800">
+                  <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-gray-800">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLogPopupNetId(net.id)}
+                      className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+                    >
+                      <BookOpen className="w-3.5 h-3.5" />
+                      Logs
+                    </Button>
+                    <Link href={`/net/${net.id}/report`}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Report
+                      </Button>
+                    </Link>
                     {isDeleting ? (
                       <div className="space-y-2">
                         <p className="text-red-400 text-sm">
@@ -338,6 +316,35 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
           )
         })}
       </div>
+
+      {logPopupNetId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
+              <h3 className="text-white font-semibold">Net Log</h3>
+              <button onClick={() => setLogPopupNetId(null)} className="text-gray-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
+              {(logCache[logPopupNetId] || []).map(entry => {
+                const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
+                return (
+                  <div key={entry.id} className="flex gap-2 text-sm py-1 border-b border-gray-800/50 last:border-0">
+                    <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
+                      {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                    </span>
+                    <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
+                      {cfg.label}
+                    </span>
+                    <span className="text-gray-400 break-all flex-1">{entry.content}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
