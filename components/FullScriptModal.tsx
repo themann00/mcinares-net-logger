@@ -20,7 +20,7 @@ interface FullScriptModalProps {
 export function FullScriptModal({ open, onOpenChange, sections, ctx }: FullScriptModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-900 border-gray-700 max-w-3xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="bg-gray-900 border-gray-700 max-w-3xl max-h-[80vh] overflow-y-auto overflow-x-hidden" style={{ resize: 'horizontal', minWidth: '320px' }}>
         <DialogHeader>
           <DialogTitle className="text-white flex items-center gap-2">
             <ScrollText className="w-5 h-5" />
