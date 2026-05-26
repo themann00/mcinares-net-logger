@@ -204,13 +204,16 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                     <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>
                     <td className="px-3 py-1.5 text-gray-400">
                       {entry.email ? (
-                        <a
-                          href={`mailto:${entry.email}`}
-                          onClick={e => e.stopPropagation()}
-                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                        <button
+                          onClick={e => {
+                            e.stopPropagation()
+                            e.preventDefault()
+                            window.open(`mailto:${entry.email}`, '_self')
+                          }}
+                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 text-left"
                         >
                           {entry.email}
-                        </a>
+                        </button>
                       ) : ''}
                     </td>
                     <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>
