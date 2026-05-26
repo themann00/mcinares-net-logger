@@ -114,11 +114,11 @@ If this repeater fails, we will use our resource net repeater: 147.120 MHz repea
     type: 'checkin',
     allowCheckins: true,
     script: (ctx: NetContext) =>
-      `I will now take open check-ins grouped alphabetically by the suffix of your callsign.
+      `This is ${ctx.net_controller} for the weekly Marion County ARES net.
 
-At this time if your callsign suffix matches Alpha through Hotel, A thru H, please come now.
+I will now take open check-ins grouped alphabetically by the suffix of your callsign.
 
-This is ${ctx.net_controller} for the weekly Marion County ARES net.`,
+At this time if your callsign suffix matches Alpha through Hotel, A thru H, please come now.`,
   },
   {
     id: 'checkin_i_q',
