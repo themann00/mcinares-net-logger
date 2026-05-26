@@ -33,11 +33,13 @@ import {
   Users,
   BookOpen,
   FileText,
+  Megaphone,
 } from 'lucide-react'
+import { TrafficList } from '@/components/TrafficList'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
-type TabId = 'checkin' | 'report' | 'stations' | 'log'
+type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
 export default function NetPage() {
   const params = useParams()
@@ -262,6 +264,12 @@ export default function NetPage() {
       label: `Stations (${stations.length})`,
       icon: <Radio className="w-4 h-4" />,
       show: true,
+    },
+    {
+      id: 'traffic',
+      label: `Traffic/Ann.`,
+      icon: <Megaphone className="w-4 h-4" />,
+      show: net?.type === 'ares',
     },
     {
       id: 'log',
@@ -620,6 +628,9 @@ export default function NetPage() {
                 callsignOnly={
                   net.type === 'siren' && section.id === 'preamble'
                 }
+                showTrafficInputs={
+                  net.type === 'ares' && section.id === 'short_time'
+                }
               />
             )}
 
@@ -638,6 +649,15 @@ export default function NetPage() {
                 netId={netId}
                 netType={net.type}
                 showCircleBack={circleBackAvailable}
+                onUpdate={fetchAll}
+              />
+            )}
+
+            {activeTab === 'traffic' && net?.type === 'ares' && (
+              <TrafficList
+                stations={stations}
+                logEntries={logEntries}
+                netId={netId}
                 onUpdate={fetchAll}
               />
             )}

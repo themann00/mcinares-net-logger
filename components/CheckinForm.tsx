@@ -22,6 +22,7 @@ interface CheckinFormProps {
   requireStationType?: boolean
   showQuadrant?: boolean
   callsignOnly?: boolean
+  showTrafficInputs?: boolean
 }
 
 export function CheckinForm({
@@ -31,6 +32,7 @@ export function CheckinForm({
   requireStationType = false,
   showQuadrant = false,
   callsignOnly = false,
+  showTrafficInputs = false,
 }: CheckinFormProps) {
   const [callsign, setCallsign] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -41,6 +43,8 @@ export function CheckinForm({
   const [report, setReport] = useState('')
   const [hasTraffic, setHasTraffic] = useState(false)
   const [hasAnnouncement, setHasAnnouncement] = useState(false)
+  const [trafficText, setTrafficText] = useState('')
+  const [announcementText, setAnnouncementText] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -76,7 +80,33 @@ export function CheckinForm({
         const body = await res.json()
         throw new Error(body.error || 'Failed to add station')
       }
-      // Reset form
+
+      if (showTrafficInputs) {
+        const station = await res.json()
+        if (hasTraffic) {
+          await fetch(`/api/nets/${netId}/log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              entry_type: 'traffic',
+              content: `${callsign.trim().toUpperCase()}: ${trafficText.trim() || 'N/A'}`,
+              station_id: station.id,
+            }),
+          })
+        }
+        if (hasAnnouncement) {
+          await fetch(`/api/nets/${netId}/log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              entry_type: 'announcement',
+              content: `${callsign.trim().toUpperCase()}: ${announcementText.trim() || 'N/A'}`,
+              station_id: station.id,
+            }),
+          })
+        }
+      }
+
       setCallsign('')
       setFirstName('')
       setLastName('')
@@ -86,6 +116,8 @@ export function CheckinForm({
       setReport('')
       setHasTraffic(false)
       setHasAnnouncement(false)
+      setTrafficText('')
+      setAnnouncementText('')
       onCheckin()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
@@ -192,25 +224,51 @@ export function CheckinForm({
           )}
 
           {isAres && (
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasTraffic}
-                  onChange={e => setHasTraffic(e.target.checked)}
-                  className="rounded"
-                />
-                Has Traffic
-              </label>
-              <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={hasAnnouncement}
-                  onChange={e => setHasAnnouncement(e.target.checked)}
-                  className="rounded"
-                />
-                Has Announcement
-              </label>
+            <div className="space-y-2">
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasTraffic}
+                    onChange={e => setHasTraffic(e.target.checked)}
+                    className="rounded"
+                  />
+                  Has Traffic
+                </label>
+                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasAnnouncement}
+                    onChange={e => setHasAnnouncement(e.target.checked)}
+                    className="rounded"
+                  />
+                  Has Announcement
+                </label>
+              </div>
+              {showTrafficInputs && hasTraffic && (
+                <div>
+                  <Label className="text-yellow-400 text-xs mb-1 block">Traffic Summary</Label>
+                  <Textarea
+                    value={trafficText}
+                    onChange={e => setTrafficText(e.target.value)}
+                    placeholder="Summarize traffic..."
+                    className="bg-gray-800 border-gray-700 text-white text-sm"
+                    rows={2}
+                  />
+                </div>
+              )}
+              {showTrafficInputs && hasAnnouncement && (
+                <div>
+                  <Label className="text-teal-400 text-xs mb-1 block">Announcement Summary</Label>
+                  <Textarea
+                    value={announcementText}
+                    onChange={e => setAnnouncementText(e.target.value)}
+                    placeholder="Summarize announcement..."
+                    className="bg-gray-800 border-gray-700 text-white text-sm"
+                    rows={2}
+                  />
+                </div>
+              )}
             </div>
           )}
         </>
