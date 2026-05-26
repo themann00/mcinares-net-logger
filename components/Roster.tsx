@@ -167,7 +167,17 @@ export function Roster() {
                     <td className="px-3 py-1.5 font-mono text-white font-semibold">{entry.callsign}</td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>
                     <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>
-                    <td className="px-3 py-1.5 text-gray-400">{entry.email || ''}</td>
+                    <td className="px-3 py-1.5 text-gray-400">
+                      {entry.email ? (
+                        <a
+                          href={`mailto:${entry.email}`}
+                          onClick={e => e.stopPropagation()}
+                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                        >
+                          {entry.email}
+                        </a>
+                      ) : ''}
+                    </td>
                     <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>
                     <td className="px-3 py-1.5 text-gray-500 text-xs">
                       {entry.last_checkin ? format(new Date(entry.last_checkin), 'MMM d, yyyy') : ''}
