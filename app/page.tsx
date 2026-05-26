@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Radio, CloudLightning, Siren, Lock, AlertTriangle, X } from 'lucide-react'
 import { PastNets } from '@/components/PastNets'
 import { Roster } from '@/components/Roster'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import type { Net, NetType } from '@/types'
 
 const NET_TYPES: {
@@ -56,6 +57,7 @@ export default function HomePage() {
   const [superAdminConfirm, setSuperAdminConfirm] = useState(false)
   const [superAdminInput, setSuperAdminInput] = useState('')
   const [allNets, setAllNets] = useState<Net[]>([])
+  const [roster, setRoster] = useState<{ callsign: string; first_name: string | null; last_name: string | null; email: string | null }[]>([])
 
   const fetchNets = () => {
     fetch('/api/nets')
@@ -81,6 +83,8 @@ export default function HomePage() {
         const freshRes = await fetch('/api/nets')
         if (freshRes.ok) setAllNets(await freshRes.json())
         else setAllNets(nets)
+        const rosterRes = await fetch('/api/roster')
+        if (rosterRes.ok) setRoster(await rosterRes.json())
       })
       .catch(() => {})
   }
@@ -368,15 +372,16 @@ export default function HomePage() {
                 <Label htmlFor="callsign" className="text-gray-300">
                   Net Controller Callsign
                 </Label>
-                <Input
-                  id="callsign"
-                  value={callsign}
-                  onChange={e => setCallsign(e.target.value.toUpperCase())}
-                  placeholder="e.g. W9ABC"
-                  className="bg-gray-800 border-gray-700 text-white mt-1 uppercase"
-                  autoFocus
-                  required
-                />
+                <div className="mt-1">
+                  <CallsignAutocomplete
+                    value={callsign}
+                    onChange={setCallsign}
+                    onSelect={s => setCallsign(s.callsign)}
+                    roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
+                    placeholder="e.g. W9ABC"
+                    autoFocus
+                  />
+                </div>
               </div>
               {error && <p className="text-red-400 text-sm">{error}</p>}
               <Button
