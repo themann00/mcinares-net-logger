@@ -645,7 +645,7 @@ export default function NetPage() {
         {/* Right: Tabs panel */}
         <div className="w-full lg:w-96 flex flex-col gap-0 bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
           {/* Tab bar */}
-          <div className="flex border-b border-gray-700 overflow-x-auto">
+          <div className="flex flex-wrap border-b border-gray-700">
             {tabs
               .filter(t => t.show)
               .map(tab => (

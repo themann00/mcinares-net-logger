@@ -51,6 +51,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
 
   const [noteCallsign, setNoteCallsign] = useState('')
   const [noteContent, setNoteContent] = useState('')
+  const [noteType, setNoteType] = useState<'traffic' | 'question' | 'comment' | 'note'>('traffic')
   const [noteSaving, setNoteSaving] = useState(false)
 
   async function saveTraffic(station: Station) {
@@ -81,18 +82,21 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
     const prefix = noteCallsign.trim() ? `${noteCallsign.trim().toUpperCase()}: ` : ''
     const station = stations.find(s => s.callsign.toUpperCase() === noteCallsign.trim().toUpperCase())
 
+    const entryType = noteType === 'traffic' ? 'traffic' : 'note'
+    const typePrefix = noteType === 'question' ? '[Question] ' : noteType === 'comment' ? '[Comment] ' : ''
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        entry_type: 'note',
-        content: `${prefix}${noteContent.trim()}`,
+        entry_type: entryType,
+        content: `${prefix}${typePrefix}${noteContent.trim()}`,
         station_id: station?.id || null,
       }),
     })
 
     setNoteCallsign('')
     setNoteContent('')
+    setNoteType('traffic')
     setNoteSaving(false)
     onUpdate()
   }
@@ -171,7 +175,25 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
             />
           </div>
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">Content</Label>
+            <div className="flex items-center gap-2 mb-1">
+              <Label className="text-gray-400 text-xs">Content</Label>
+              {(['traffic', 'question', 'comment', 'note'] as const).map(t => {
+                const labels: Record<string, string> = { traffic: 'Traffic', question: 'Question', comment: 'Comment', note: 'Note' }
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setNoteType(t)}
+                    className={`px-2 py-0.5 text-xs rounded transition-colors ${
+                      noteType === t
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                    }`}
+                  >
+                    {labels[t]}
+                  </button>
+                )
+              })}
+            </div>
             <Textarea
               value={noteContent}
               onChange={e => setNoteContent(e.target.value)}
