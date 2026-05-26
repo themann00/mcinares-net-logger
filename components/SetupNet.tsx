@@ -25,13 +25,13 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
 
   const [selectedPrevNet, setSelectedPrevNet] = useState<string | null>(initialConfig?.prevNetId ?? null)
   const [prevNetChoice, setPrevNetChoice] = useState<'auto' | 'other' | 'web' | 'skip'>('auto')
-  const [showPrevOptions, setShowPrevOptions] = useState(false)
+  const [showPrevOptions, setShowPrevOptions] = useState(true)
 
   const [announcements, setAnnouncements] = useState<DocFile[]>([])
   const [checklists, setChecklists] = useState<DocFile[]>([])
   const [selectedPdf, setSelectedPdf] = useState<string | null>(initialConfig?.announcementUrl ?? null)
   const [pdfChoice, setPdfChoice] = useState<'auto' | 'other' | 'skip'>('auto')
-  const [showPdfOptions, setShowPdfOptions] = useState(false)
+  const [showPdfOptions, setShowPdfOptions] = useState(true)
   const [todayPdf, setTodayPdf] = useState<DocFile | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -56,8 +56,9 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
       }
 
       let foundPdf: DocFile | null = null
+      let docs: { announcements?: DocFile[]; checklists?: DocFile[] } = {}
       if (docsRes.ok) {
-        const docs = await docsRes.json()
+        docs = await docsRes.json()
         setAnnouncements(docs.announcements || [])
         setChecklists(docs.checklists || [])
 
@@ -82,13 +83,13 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
           setPrevNetChoice('skip')
         }
 
-        const allPdfs = docs.announcements || []
+        const annList = docs?.announcements || []
         if (foundPdf) {
           setSelectedPdf(foundPdf.url)
           setPdfChoice('auto')
-        } else if (allPdfs.length > 0) {
-          setSelectedPdf(allPdfs[0].url)
-          setTodayPdf(allPdfs[0])
+        } else if (annList.length > 0) {
+          setSelectedPdf(annList[0].url)
+          setTodayPdf(annList[0])
           setPdfChoice('auto')
         } else {
           setSelectedPdf(null)
@@ -137,13 +138,6 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
           <div className="text-gray-500 text-sm">Using website checklist</div>
         )}
 
-        <button
-          onClick={() => setShowPrevOptions(!showPrevOptions)}
-          className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1"
-        >
-          Change
-          <ChevronDown className={`w-3 h-3 transition-transform ${showPrevOptions ? 'rotate-180' : ''}`} />
-        </button>
 
         {showPrevOptions && (
           <div className="space-y-2 pt-2 border-t border-gray-800">
@@ -215,13 +209,6 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
           <div className="text-gray-500 text-sm">Skipped — read manually</div>
         )}
 
-        <button
-          onClick={() => setShowPdfOptions(!showPdfOptions)}
-          className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1"
-        >
-          Change
-          <ChevronDown className={`w-3 h-3 transition-transform ${showPdfOptions ? 'rotate-180' : ''}`} />
-        </button>
 
         {showPdfOptions && (
           <div className="space-y-2 pt-2 border-t border-gray-800">
