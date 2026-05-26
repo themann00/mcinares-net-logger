@@ -27,6 +27,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   const [pageSize, setPageSize] = useState(fullPage ? 0 : 10)
   const [page, setPage] = useState(0)
   const [search, setSearch] = useState('')
+  const [sortBySuffix, setSortBySuffix] = useState(true)
   const [editing, setEditing] = useState<RosterEntry | null>(null)
   const [editCallsign, setEditCallsign] = useState('')
   const [editFirst, setEditFirst] = useState('')
@@ -63,13 +64,27 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
       })
     : entries
 
+  function getSuffix(callsign: string) {
+    const match = callsign.match(/\d([A-Z]+)$/)
+    return match ? match[1] : callsign
+  }
+
+  function compareCallsigns(a: string, b: string) {
+    if (sortBySuffix) return getSuffix(a).localeCompare(getSuffix(b))
+    return a.localeCompare(b)
+  }
+
   const sorted = [...filtered].sort((a, b) => {
     if (sortKey === 'qrz') {
       const aMissing = !a.first_name || !a.last_name ? 0 : 1
       const bMissing = !b.first_name || !b.last_name ? 0 : 1
       const cmp = aMissing - bMissing
       if (cmp !== 0) return sortAsc ? cmp : -cmp
-      return a.callsign.localeCompare(b.callsign)
+      return compareCallsigns(a.callsign, b.callsign)
+    }
+    if (sortKey === 'callsign') {
+      const cmp = compareCallsigns(a.callsign, b.callsign)
+      return sortAsc ? cmp : -cmp
     }
     const av = a[sortKey]
     const bv = b[sortKey]
@@ -164,6 +179,16 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
             placeholder="Search..."
             className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1 w-28"
           />
+          <button
+            onClick={() => setSortBySuffix(!sortBySuffix)}
+            className={`text-xs px-2 py-1 rounded border transition-colors ${
+              sortBySuffix
+                ? 'bg-blue-600/20 border-blue-600 text-blue-300'
+                : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            {sortBySuffix ? 'Suffix' : 'Callsign'}
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {totalPages > 1 && (
