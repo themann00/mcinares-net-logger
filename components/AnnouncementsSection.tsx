@@ -97,6 +97,10 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
             I will now take announcements from stations that indicated that they had announcements. Stations with traffic will pass after announcements.
           </div>
 
+          <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <span>Enter a summary for each station (or leave as N/A) and click Log Announcement, or it will not appear in the net logs.</span>
+          </div>
+
           <div className="space-y-3">
             {announcementStations.map(station => {
               const state = annState[station.id]

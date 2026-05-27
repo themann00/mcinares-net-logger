@@ -111,6 +111,9 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
         {trafficStations.length > 0 && (
           <div className="space-y-3">
             <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Stations with Traffic</h4>
+            <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+              <span>Enter a summary for each station (or leave as N/A) and click Log Traffic, or it will not appear in the net logs.</span>
+            </div>
             {trafficStations.map(station => {
               const state = trafficState[station.id]
               if (!state || state.cancelled) return null
