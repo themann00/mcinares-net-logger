@@ -520,7 +520,7 @@ export default function NetPage() {
                 >
                   {shortLabel}
                   {s.id === 'reports_and_circleback' && incompleteStations > 0 && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[10px] font-bold bg-red-600 text-white rounded-full">!</span>
+                    <AlertTriangle className="w-3.5 h-3.5 ml-1 text-amber-400 inline-block flex-shrink-0" />
                   )}
                 </button>
               )
