@@ -59,6 +59,8 @@ export function CheckinForm({
   const [report, setReport] = useState('')
   const [hasTraffic, setHasTraffic] = useState(false)
   const [hasAnnouncement, setHasAnnouncement] = useState(false)
+  const [trafficStarted, setTrafficStarted] = useState<string | null>(null)
+  const [announcementStarted, setAnnouncementStarted] = useState<string | null>(null)
   const [trafficText, setTrafficText] = useState('')
   const [announcementText, setAnnouncementText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -79,6 +81,8 @@ export function CheckinForm({
     setHasAnnouncement(false)
     setTrafficText('')
     setAnnouncementText('')
+    setTrafficStarted(null)
+    setAnnouncementStarted(null)
     setDupeWarning(false)
   }
 
@@ -110,6 +114,8 @@ export function CheckinForm({
         hasAnnouncement,
         trafficText: trafficText.trim(),
         announcementText: announcementText.trim(),
+        trafficTimestamp: trafficStarted || undefined,
+        announcementTimestamp: announcementStarted || undefined,
         forceManual: alreadyIn,
       })
       resetForm()
@@ -314,7 +320,7 @@ export function CheckinForm({
                   <Label className="text-yellow-400 text-xs mb-1 block">Traffic Summary</Label>
                   <Textarea
                     value={trafficText}
-                    onChange={e => setTrafficText(e.target.value)}
+                    onChange={e => { if (!trafficStarted && e.target.value) setTrafficStarted(new Date().toISOString()); setTrafficText(e.target.value) }}
                     placeholder="Summarize traffic..."
                     className="bg-gray-800 border-gray-700 text-white text-sm"
                     rows={2}
@@ -326,7 +332,7 @@ export function CheckinForm({
                   <Label className="text-teal-400 text-xs mb-1 block">Announcement Summary</Label>
                   <Textarea
                     value={announcementText}
-                    onChange={e => setAnnouncementText(e.target.value)}
+                    onChange={e => { if (!announcementStarted && e.target.value) setAnnouncementStarted(new Date().toISOString()); setAnnouncementText(e.target.value) }}
                     placeholder="Summarize announcement..."
                     className="bg-gray-800 border-gray-700 text-white text-sm"
                     rows={2}

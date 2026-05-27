@@ -28,6 +28,8 @@ export interface QueuedCheckin {
   trafficText: string
   announcementText: string
   timestamp: string
+  trafficTimestamp?: string
+  announcementTimestamp?: string
   forceManual?: boolean
 }
 

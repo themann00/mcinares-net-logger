@@ -195,7 +195,7 @@ export default function NetPage() {
   const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining']
   const useQueue = net?.type === 'ares' && queueSections.includes(section?.id || '')
 
-  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; forceManual?: boolean }) {
+  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) {
     setCheckinQueue(prev => [...prev, {
       id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       callsign: entry.callsign,
@@ -209,6 +209,8 @@ export default function NetPage() {
       trafficText: entry.trafficText,
       announcementText: entry.announcementText,
       timestamp: new Date().toISOString(),
+      trafficTimestamp: entry.trafficTimestamp,
+      announcementTimestamp: entry.announcementTimestamp,
       forceManual: entry.forceManual,
     }])
   }
@@ -216,50 +218,60 @@ export default function NetPage() {
   async function commitQueue() {
     if (checkinQueue.length === 0) return
     setCommitting(true)
+
+    type QEvent = { type: 'checkin' | 'traffic' | 'announcement'; item: typeof checkinQueue[0]; timestamp: string }
+    const events: QEvent[] = []
+
     for (const item of checkinQueue) {
-      const res = await fetch(`/api/nets/${netId}/stations`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          callsign: item.callsign,
-          first_name: item.firstName || undefined,
-          last_name: item.lastName || undefined,
-          station_type: item.stationType || undefined,
-          location: item.location || undefined,
-          quadrant: item.quadrant || undefined,
-          has_traffic: item.hasTraffic,
-          has_announcements: item.hasAnnouncement,
-          checked_in_at: item.timestamp,
-          manual_prefix: item.forceManual ? 'MANUAL: ' : '',
-        }),
-      })
+      events.push({ type: 'checkin', item, timestamp: item.timestamp })
       if (item.hasTraffic && item.trafficText) {
-        const station = res.ok ? await res.json() : null
-        await fetch(`/api/nets/${netId}/log`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            entry_type: 'traffic',
-            content: `${item.callsign}: ${item.trafficText}`,
-            station_id: station?.id || null,
-          }),
-        })
+        events.push({ type: 'traffic', item, timestamp: item.trafficTimestamp || new Date(new Date(item.timestamp).getTime() + 500).toISOString() })
       }
       if (item.hasAnnouncement && item.announcementText) {
-        const stationsRes = await fetch(`/api/nets/${netId}/stations`)
-        const allStations = stationsRes.ok ? await stationsRes.json() : []
-        const station = allStations.find((s: { callsign: string }) => s.callsign === item.callsign)
+        events.push({ type: 'announcement', item, timestamp: item.announcementTimestamp || new Date(new Date(item.timestamp).getTime() + 1000).toISOString() })
+      }
+    }
+
+    events.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+
+    const stationIds: Record<string, string> = {}
+
+    for (const evt of events) {
+      if (evt.type === 'checkin') {
+        const res = await fetch(`/api/nets/${netId}/stations`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callsign: evt.item.callsign,
+            first_name: evt.item.firstName || undefined,
+            last_name: evt.item.lastName || undefined,
+            station_type: evt.item.stationType || undefined,
+            location: evt.item.location || undefined,
+            quadrant: evt.item.quadrant || undefined,
+            has_traffic: evt.item.hasTraffic,
+            has_announcements: evt.item.hasAnnouncement,
+            checked_in_at: evt.timestamp,
+            manual_prefix: evt.item.forceManual ? 'MANUAL: ' : '',
+          }),
+        })
+        if (res.ok) {
+          const station = await res.json()
+          stationIds[evt.item.callsign] = station.id
+        }
+      } else {
         await fetch(`/api/nets/${netId}/log`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            entry_type: 'announcement',
-            content: `${item.callsign}: ${item.announcementText}`,
-            station_id: station?.id || null,
+            entry_type: evt.type,
+            content: `${evt.item.callsign}: ${evt.type === 'traffic' ? evt.item.trafficText : evt.item.announcementText}`,
+            station_id: stationIds[evt.item.callsign] || null,
+            timestamp: evt.timestamp,
           }),
         })
       }
     }
+
     setCheckinQueue([])
     setCommitting(false)
     fetchAll()

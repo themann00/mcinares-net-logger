@@ -17,19 +17,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  const { entry_type, content, station_id } = body as {
+  const { entry_type, content, station_id, timestamp } = body as {
     entry_type: LogEntryType
     content: string
     station_id?: string
+    timestamp?: string
   }
 
   if (!entry_type || !content) {
     return NextResponse.json({ error: 'entry_type and content are required' }, { status: 400 })
   }
 
+  const insertData: Record<string, unknown> = { net_id: id, entry_type, content, station_id: station_id || null }
+  if (timestamp) insertData.timestamp = timestamp
+
   const { data, error } = await getSupabase()
     .from('mcinares_log_entries')
-    .insert({ net_id: id, entry_type, content, station_id: station_id || null })
+    .insert(insertData)
     .select()
     .single()
 
