@@ -131,6 +131,35 @@ I will start with check-ins from the South West corner — South of Washington a
 Are there any additional stations wishing to check in, with or without a report?`,
   },
   {
+    id: 'continuity',
+    title: 'Continuity',
+    type: 'read',
+    allowCheckins: true,
+    allowReports: true,
+    notes: 'continuity-timer',
+    script: (ctx: NetContext) => {
+      const bulletinLine = ctx.nws_bulletin
+        ? `[Here is the current information from the National Weather Service:\n${ctx.nws_bulletin}]`
+        : '[Read NWS bulletin update if available]'
+
+      return `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn net.
+
+${bulletinLine}
+
+The National Weather Service is looking for reports of weather events which you have personally observed that meet the following criteria:
+
+  • Tornadoes, funnel clouds, or rotating wall clouds
+  • Hail including the size of the hail
+  • Winds in excess of 50 miles per hour
+  • Flooding of creeks, streams, rivers, roads, or streets
+  • Damage to trees, power lines, or structures caused by wind
+
+When you make your report, please give your exact location, if measurements are estimated or actual, and the time the event occurred especially if your report is delayed.
+
+At this time are there any reports that meet these criteria?`
+    },
+  },
+  {
     id: 'closing',
     title: 'Closing',
     type: 'closenet',

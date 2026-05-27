@@ -27,7 +27,6 @@ import {
   ChevronRight,
   ScrollText,
   X,
-  RefreshCw,
   Radio,
   Users,
   BookOpen,
@@ -44,7 +43,6 @@ import { AddToLogModal } from '@/components/AddToLogModal'
 import { SetupSkywarn } from '@/components/SetupSkywarn'
 import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
-import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
@@ -60,7 +58,6 @@ export default function NetPage() {
   const [sectionIndex, setSectionIndex] = useState(0)
   const [activeTab, setActiveTab] = useState<TabId>('checkin')
   const [fullScriptOpen, setFullScriptOpen] = useState(false)
-  const [continuityText, setContinuityText] = useState<string | null>(null)
   const [closing, setClosing] = useState(false)
   const [sectionInputs, setSectionInputs] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
@@ -182,18 +179,6 @@ export default function NetPage() {
     }
 
     setSaving(false)
-    fetchAll()
-  }
-
-  async function logContinuity() {
-    if (!net) return
-    const text = skywarnContinuityScript(ctx)
-    setContinuityText(text)
-    await fetch(`/api/nets/${netId}/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entry_type: 'continuity', content: 'Continuity announcement made' }),
-    })
     fetchAll()
   }
 
@@ -461,33 +446,9 @@ export default function NetPage() {
               <ScrollText className="w-4 h-4" />
               <span className="hidden sm:inline">Full Script</span>
             </Button>
-            {net.type === 'skywarn' && (
-              <Button
-                size="sm"
-                onClick={logContinuity}
-                className="bg-cyan-800 hover:bg-cyan-700 text-white gap-1"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span className="hidden sm:inline">Continuity</span>
-              </Button>
-            )}
           </div>
         </div>
       </div>
-
-      {/* Continuity overlay */}
-      {continuityText && (
-        <div className="bg-cyan-950 border-b border-cyan-700 px-4 py-3 max-w-7xl mx-auto w-full">
-          <div className="flex items-start gap-3">
-            <div className="font-mono text-sm text-cyan-100 whitespace-pre-wrap flex-1">
-              {continuityText}
-            </div>
-            <button onClick={() => setContinuityText(null)} className="text-cyan-400 hover:text-white flex-shrink-0">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Setup step for ARES */}
       {net.type === 'ares' && !setupComplete && (
@@ -734,6 +695,14 @@ export default function NetPage() {
                 setActiveTab('report')
               }}
               onCircleBack={() => setActiveTab('stations')}
+              onContinuityLog={async () => {
+                await fetch(`/api/nets/${netId}/log`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ entry_type: 'continuity', content: 'Continuity announcement made' }),
+                })
+                fetchAll()
+              }}
             />
           )}
 

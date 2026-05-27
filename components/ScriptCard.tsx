@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -143,6 +144,56 @@ const TYPE_LABELS: Record<string, { label: string; color: string }> = {
   closenet: { label: 'CLOSING', color: 'bg-red-700' },
 }
 
+const CONTINUITY_INTERVAL = 9 * 60
+
+function ContinuityTimer({ onLog }: { onLog: () => void }) {
+  const [secondsLeft, setSecondsLeft] = useState(CONTINUITY_INTERVAL)
+  const [flash, setFlash] = useState(false)
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    intervalRef.current = setInterval(() => {
+      setSecondsLeft(prev => {
+        if (prev <= 1) {
+          setFlash(true)
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current) }
+  }, [])
+
+  function reset() {
+    setSecondsLeft(CONTINUITY_INTERVAL)
+    setFlash(false)
+    onLog()
+  }
+
+  const mins = Math.floor(secondsLeft / 60)
+  const secs = secondsLeft % 60
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex items-center gap-3 text-sm">
+        <span className="text-gray-400">Next read in:</span>
+        <span className={`font-mono font-semibold ${secondsLeft <= 60 ? 'text-red-400' : secondsLeft <= 180 ? 'text-amber-400' : 'text-gray-200'}`}>
+          {mins}:{secs.toString().padStart(2, '0')}
+        </span>
+      </div>
+      {flash && (
+        <button
+          onClick={reset}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium bg-cyan-700 text-white border-2 border-cyan-400 animate-pulse"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Read appx every 10 min when things are slow. Clicking resets timer.
+        </button>
+      )}
+    </div>
+  )
+}
+
 interface ScriptCardProps {
   section: ScriptSection
   ctx: NetContext
@@ -153,9 +204,10 @@ interface ScriptCardProps {
   stationCount?: number
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
+  onContinuityLog?: () => void
 }
 
-export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, onTakeReports, stationCount = 0, inlineInputs, onCircleBack }: ScriptCardProps) {
+export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, onTakeReports, stationCount = 0, inlineInputs, onCircleBack, onContinuityLog }: ScriptCardProps) {
   const scriptText = resolveScript(section, ctx)
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
@@ -204,6 +256,10 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
             <Info className="w-4 h-4 flex-shrink-0" />
             Go to the 443.250 Repeater to unlink from 146.760 via DTMF Codes
           </div>
+        )}
+
+        {section.notes === 'continuity-timer' && onContinuityLog && (
+          <ContinuityTimer onLog={onContinuityLog} />
         )}
       </div>
     </div>
