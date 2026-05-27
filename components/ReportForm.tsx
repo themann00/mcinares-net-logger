@@ -29,7 +29,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
   const [reportFormatted, setReportFormatted] = useState('')
-  const [reportFreeText, setReportFreeText] = useState('')
+  const [reportValid, setReportValid] = useState(false)
   const [sirenContent, setSirenContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetKey, setResetKey] = useState(0)
@@ -97,7 +97,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
     onReport()
   }
 
-  const hasContent = isSkywarn ? !!reportFreeText.trim() : !!sirenContent.trim()
+  const hasContent = isSkywarn ? reportValid : !!sirenContent.trim()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -132,7 +132,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
           resetKey={resetKey}
           onChange={data => {
             setReportFormatted(data.formatted)
-            setReportFreeText(data.freeText)
+            setReportValid(data.valid)
           }}
         />
       ) : (

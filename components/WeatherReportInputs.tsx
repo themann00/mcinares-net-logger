@@ -41,7 +41,7 @@ const FLOOD_TREND = ['Rising', 'Steady', 'Receding']
 const DAMAGE_TARGETS = ['Trees', 'Power Lines', 'Structures', 'Other']
 
 interface WeatherReportInputsProps {
-  onChange: (data: { reportType: ReportType; formatted: string; freeText: string }) => void
+  onChange: (data: { reportType: ReportType; formatted: string; freeText: string; valid: boolean }) => void
   resetKey?: number
   compact?: boolean
 }
@@ -56,7 +56,7 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
   const [floodDepth, setFloodDepth] = useState('')
   const [floodFlow, setFloodFlow] = useState('')
   const [floodTrend, setFloodTrend] = useState('')
-  const [damageTarget, setDamageTarget] = useState('')
+  const [damageTarget, setDamageTarget] = useState('Other')
 
   useEffect(() => {
     setReportType('Other')
@@ -67,7 +67,7 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
     setFloodDepth('')
     setFloodFlow('')
     setFloodTrend('')
-    setDamageTarget('')
+    setDamageTarget('Other')
   }, [resetKey])
 
   useEffect(() => {
@@ -84,13 +84,29 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
       if (floodFlow) parts.push(floodFlow)
       if (floodTrend) parts.push(floodTrend)
     }
-    if (reportType === 'Damage' && damageTarget) parts.push(damageTarget)
+    if (reportType === 'Damage' && damageTarget && damageTarget !== 'Other') parts.push(damageTarget)
 
     const prefix = parts.length > 0 ? parts.join(', ') + '. ' : ''
     const typePrefix = reportType !== 'Other' ? `${reportType.toUpperCase()}: ` : ''
     const formatted = `${typePrefix}${prefix}${freeText.trim()}`
 
-    onChange({ reportType, formatted, freeText })
+    const hasFreeText = !!freeText.trim()
+    const floodDropdownCount = [floodSource, floodDepth, floodFlow, floodTrend].filter(Boolean).length
+
+    let valid = false
+    if (reportType === 'Tornado' || reportType === 'Funnel Cloud' || reportType === 'Rotating Wall Clouds' || reportType === 'Other' || reportType === 'Rainfall') {
+      valid = hasFreeText
+    } else if (reportType === 'Hail') {
+      valid = !!hailSize || hasFreeText
+    } else if (reportType === 'Wind') {
+      valid = !!windForce || hasFreeText
+    } else if (reportType === 'Flooding') {
+      valid = floodDropdownCount >= 2 || hasFreeText
+    } else if (reportType === 'Damage') {
+      valid = hasFreeText
+    }
+
+    onChange({ reportType, formatted, freeText, valid })
   }, [reportType, freeText, hailSize, windForce, floodSource, floodDepth, floodFlow, floodTrend, damageTarget])
 
   const rows = compact ? 2 : 3

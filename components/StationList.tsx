@@ -32,7 +32,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editQuadrant, setEditQuadrant] = useState<Quadrant | ''>('')
   const [editReason, setEditReason] = useState<EditReason>('correction')
   const [editReportFormatted, setEditReportFormatted] = useState('')
-  const [editReportFreeText, setEditReportFreeText] = useState('')
+  const [editReportValid, setEditReportValid] = useState(false)
   const [editReportResetKey, setEditReportResetKey] = useState(0)
   const [saving, setSaving] = useState(false)
 
@@ -52,7 +52,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     setEditReason(reason)
     setEditReportResetKey(k => k + 1)
     setEditReportFormatted('')
-    setEditReportFreeText('')
+    setEditReportValid(false)
   }
 
   async function saveEdit(station: Station) {
@@ -69,7 +69,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       }),
     })
 
-    if (editReportFreeText.trim()) {
+    if (editReportValid) {
       const locPrefix = editLocation.trim() ? `[${editLocation.trim()}] ` : ''
       await fetch(`/api/nets/${netId}/log`, {
         method: 'POST',
@@ -201,7 +201,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   compact
                   onChange={data => {
                     setEditReportFormatted(data.formatted)
-                    setEditReportFreeText(data.freeText)
+                    setEditReportValid(data.valid)
                   }}
                 />
               </div>
