@@ -49,8 +49,9 @@ export function CheckinForm({
   onQueue,
 }: CheckinFormProps) {
   const callsignRef = useRef<HTMLDivElement>(null)
-  const [callsign, setCallsign] = useState('')
+  const [callsign, setCallsignRaw] = useState('')
   const [dupeWarning, setDupeWarning] = useState(false)
+  const setCallsign = (v: string) => { setCallsignRaw(v); if (dupeWarning) setDupeWarning(false) }
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [stationType, setStationType] = useState<StationType | ''>('')
@@ -70,7 +71,7 @@ export function CheckinForm({
   const isSkywarn = netType === 'skywarn'
 
   function resetForm() {
-    setCallsign('')
+    setCallsignRaw('')
     setFirstName('')
     setLastName('')
     setStationType('')
