@@ -33,7 +33,7 @@ interface CheckinFormProps {
   showTrafficInputs?: boolean
   roster?: RosterEntry[]
   currentStations?: { callsign: string }[]
-  onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; forceManual?: boolean }) => void
+  onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) => void
 }
 
 export function CheckinForm({
