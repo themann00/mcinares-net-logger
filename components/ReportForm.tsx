@@ -7,7 +7,17 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FileText } from 'lucide-react'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { NetType, Station } from '@/types'
+
+const REPORT_TYPES = ['Tornado', 'Funnel Cloud', 'Flooding', 'Hail', 'Wind', 'Rainfall', 'Other'] as const
+type ReportType = typeof REPORT_TYPES[number]
 
 interface RosterEntry {
   callsign: string
@@ -27,6 +37,7 @@ interface ReportFormProps {
 export function ReportForm({ netId, netType, stations, onReport, roster = [] }: ReportFormProps) {
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
+  const [reportType, setReportType] = useState<ReportType>('Other')
   const [content, setContent] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -62,18 +73,20 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
 
     const prefix = cs ? `${cs}: ` : ''
     const locPrefix = location.trim() ? `[${location.trim()}] ` : ''
+    const typePrefix = reportType !== 'Other' ? `${reportType.toUpperCase()}: ` : ''
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entry_type: 'report',
-        content: `${prefix}${locPrefix}${content.trim()}`,
+        content: `${prefix}${locPrefix}${typePrefix}${content.trim()}`,
         station_id: stationAfter?.id,
       }),
     })
 
     setCallsign('')
     setLocation('')
+    setReportType('Other')
     setContent('')
     setLoading(false)
     onReport()
@@ -106,6 +119,21 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
           className="bg-gray-800 border-gray-700 text-white"
         />
       </div>
+      {netType === 'skywarn' && (
+        <div>
+          <Label className="text-gray-400 text-xs mb-1 block">Report Type</Label>
+          <Select value={reportType} onValueChange={v => setReportType(v as ReportType)}>
+            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="bg-gray-800 border-gray-700">
+              {REPORT_TYPES.map(t => (
+                <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div>
         <Label className="text-gray-400 text-xs mb-1 block">
           {netType === 'siren' ? 'Siren Report' : 'Weather Report'} *

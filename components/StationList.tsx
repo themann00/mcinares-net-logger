@@ -11,8 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
 import { RefreshCw, MapPin, AlertCircle, Pencil } from 'lucide-react'
 import type { Station, NetType, StationType, Quadrant } from '@/types'
+
+const REPORT_TYPES = ['Tornado', 'Funnel Cloud', 'Flooding', 'Hail', 'Wind', 'Rainfall', 'Other'] as const
+type ReportType = typeof REPORT_TYPES[number]
 
 type EditReason = 'correction' | 'moved'
 
@@ -30,6 +35,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editType, setEditType] = useState<StationType | ''>('')
   const [editQuadrant, setEditQuadrant] = useState<Quadrant | ''>('')
   const [editReason, setEditReason] = useState<EditReason>('correction')
+  const [editReportType, setEditReportType] = useState<ReportType>('Other')
+  const [editReport, setEditReport] = useState('')
   const [saving, setSaving] = useState(false)
 
   const needsCircleBack = showCircleBack
@@ -46,6 +53,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     setEditType((station.station_type as StationType) || '')
     setEditQuadrant((station.quadrant as Quadrant) || '')
     setEditReason(reason)
+    setEditReportType('Other')
+    setEditReport('')
   }
 
   async function saveEdit(station: Station) {
@@ -61,6 +70,21 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         log_reason: editReason,
       }),
     })
+
+    if (editReport.trim()) {
+      const typePrefix = editReportType !== 'Other' ? `${editReportType.toUpperCase()}: ` : ''
+      const locPrefix = editLocation.trim() ? `[${editLocation.trim()}] ` : ''
+      await fetch(`/api/nets/${netId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry_type: 'report',
+          content: `${station.callsign}: ${locPrefix}${typePrefix}${editReport.trim()}`,
+          station_id: station.id,
+        }),
+      })
+    }
+
     setSaving(false)
     setEditingId(null)
     onUpdate()
@@ -171,6 +195,29 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   Station has moved
                 </button>
               </div>
+
+            {netType === 'skywarn' && (
+              <div className="space-y-2 border-t border-gray-700 pt-2">
+                <Label className="text-gray-400 text-xs">Weather Report (optional)</Label>
+                <Select value={editReportType} onValueChange={v => setEditReportType(v as ReportType)}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    {REPORT_TYPES.map(t => (
+                      <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Textarea
+                  value={editReport}
+                  onChange={e => setEditReport(e.target.value)}
+                  placeholder="Event details, measurement, time..."
+                  className="bg-gray-800 border-gray-700 text-white text-sm"
+                  rows={2}
+                />
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
