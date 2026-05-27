@@ -116,7 +116,11 @@ export default function NetPage() {
   }, [net?.started_at])
 
   useEffect(() => {
-    if (section?.id === 'initial_reports') setActiveTab('report')
+    const id = section?.id
+    if (!id) return
+    if (id === 'initial_reports' || id === 'continuity') setActiveTab('report')
+    else if (id === 'reports_and_circleback') setActiveTab('stations')
+    else if (id.startsWith('checkin_')) setActiveTab('checkin')
   }, [section?.id])
 
   async function saveSectionInputs() {
