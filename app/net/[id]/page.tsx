@@ -302,9 +302,7 @@ export default function NetPage() {
   const baseStations = stations.filter(s => s.station_type === 'base').length
   const mobileStations = stations.filter(s => s.station_type === 'mobile').length
   const reportEntries = logEntries.filter(e => e.entry_type === 'report').length
-  const circleBackAvailable =
-    (net.type === 'skywarn' || net.type === 'siren') &&
-    (section?.allowCircleBack ?? false)
+  const circleBackAvailable = net.type === 'skywarn' || net.type === 'siren'
 
   const sectionNav = (position: 'top' | 'bottom' = 'bottom') => (
     <div className="flex items-center justify-between">
