@@ -498,8 +498,6 @@ export default function NetPage() {
               const shortLabel = s.title
                 .replace('Check-ins: ', '')
                 .replace(' Quadrant', '')
-                .replace('Reports & ', '')
-                .replace('Initial Reports', 'Reports')
                 .replace('Closing', 'Close')
               return (
                 <button

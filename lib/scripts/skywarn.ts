@@ -118,7 +118,7 @@ I will start with check-ins from the South West corner — South of Washington a
   },
   {
     id: 'reports_and_circleback',
-    title: 'Initial Reports',
+    title: 'Circle Back',
     type: 'report',
     allowCheckins: true,
     allowReports: true,
