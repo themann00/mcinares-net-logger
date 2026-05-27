@@ -732,6 +732,7 @@ export default function NetPage() {
                 setSectionIndex(i => Math.min(sections.length - 1, i + 1))
                 setActiveTab('report')
               }}
+              incompleteStations={incompleteStations}
               onCircleBack={() => setActiveTab('stations')}
               onContinuityLog={async () => {
                 await fetch(`/api/nets/${netId}/log`, {

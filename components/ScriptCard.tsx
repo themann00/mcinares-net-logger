@@ -205,9 +205,10 @@ interface ScriptCardProps {
   inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
   onContinuityLog?: () => void
+  incompleteStations?: number
 }
 
-export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, onTakeReports, stationCount = 0, inlineInputs, onCircleBack, onContinuityLog }: ScriptCardProps) {
+export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, onTakeReports, stationCount = 0, inlineInputs, onCircleBack, onContinuityLog, incompleteStations = 0 }: ScriptCardProps) {
   const scriptText = resolveScript(section, ctx)
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
@@ -255,6 +256,14 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
           <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
             <Info className="w-4 h-4 flex-shrink-0" />
             Go to the 443.250 Repeater to unlink from 146.760 via DTMF Codes
+          </div>
+        )}
+
+        {section.notes === 'circleback-hint' && incompleteStations > 0 && (
+          <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>Edit stations on the Stations tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.</span>
+            <ArrowRight className="w-5 h-5 hidden lg:block ml-auto flex-shrink-0" />
           </div>
         )}
 

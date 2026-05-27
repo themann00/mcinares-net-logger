@@ -123,6 +123,7 @@ I will start with check-ins from the South West corner — South of Washington a
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
+    notes: 'circleback-hint',
     script: () =>
       `I will now go around to each station for their weather reports. When called upon, please provide your location and any observations that meet the criteria previously stated.
 
