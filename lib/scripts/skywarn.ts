@@ -132,7 +132,7 @@ Are there any additional stations wishing to check in, with or without a report?
   },
   {
     id: 'continuity',
-    title: 'Reports',
+    title: 'Additional Reports',
     type: 'read',
     allowCheckins: true,
     allowReports: true,
