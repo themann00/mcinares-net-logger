@@ -27,6 +27,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     has_traffic,
     has_announcements,
     report,
+    checked_in_at,
   } = body as {
     callsign: string
     first_name?: string
@@ -37,25 +38,29 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     has_traffic?: boolean
     has_announcements?: boolean
     report?: string
+    checked_in_at?: string
   }
 
   if (!callsign) {
     return NextResponse.json({ error: 'callsign is required' }, { status: 400 })
   }
 
+  const insertData: Record<string, unknown> = {
+    net_id: id,
+    callsign: callsign.toUpperCase().trim(),
+    first_name: first_name || null,
+    last_name: last_name || null,
+    station_type: station_type || null,
+    location: location || null,
+    quadrant: quadrant || null,
+    has_traffic: has_traffic || false,
+    has_announcements: has_announcements || false,
+  }
+  if (checked_in_at) insertData.checked_in_at = checked_in_at
+
   const { data: station, error: stationError } = await getSupabase()
     .from('mcinares_stations')
-    .insert({
-      net_id: id,
-      callsign: callsign.toUpperCase().trim(),
-      first_name: first_name || null,
-      last_name: last_name || null,
-      station_type: station_type || null,
-      location: location || null,
-      quadrant: quadrant || null,
-      has_traffic: has_traffic || false,
-      has_announcements: has_announcements || false,
-    })
+    .insert(insertData)
     .select()
     .single()
 
@@ -80,12 +85,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (has_traffic) parts.push('— has traffic')
   if (has_announcements) parts.push('— has announcement')
 
-  await getSupabase().from('mcinares_log_entries').insert({
+  const logEntry: Record<string, unknown> = {
     net_id: id,
     station_id: station.id,
     entry_type: 'checkin',
     content: parts.join(' '),
-  })
+  }
+  if (checked_in_at) logEntry.timestamp = checked_in_at
+
+  await getSupabase().from('mcinares_log_entries').insert(logEntry)
 
   // If a report was provided at check-in, log it too
   if (report?.trim()) {

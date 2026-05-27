@@ -228,6 +228,7 @@ export default function NetPage() {
           quadrant: item.quadrant || undefined,
           has_traffic: item.hasTraffic,
           has_announcements: item.hasAnnouncement,
+          checked_in_at: item.timestamp,
         }),
       })
       if (item.hasTraffic && item.trafficText) {
