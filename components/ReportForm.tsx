@@ -58,13 +58,23 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
           location: location.trim() || null,
         }),
       })
-    } else if (cs && existing && location.trim() && !existing.location) {
+    } else if (cs && existing && location.trim() && location.trim() !== (existing.location || '')) {
+      await fetch(`/api/nets/${netId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry_type: 'station_moved',
+          content: `${cs} moved to ${location.trim()}`,
+          station_id: existing.id,
+        }),
+      })
       await fetch(`/api/nets/${netId}/stations`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           station_id: existing.id,
           location: location.trim(),
+          log_reason: 'correction',
         }),
       })
     }
