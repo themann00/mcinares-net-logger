@@ -849,6 +849,12 @@ export default function NetPage() {
                     onCheckin={fetchAll}
                     requireStationType={false}
                     showQuadrant={net.type === 'skywarn'}
+                    defaultQuadrant={
+                      section?.id === 'checkin_sw' ? 'SW' :
+                      section?.id === 'checkin_nw' ? 'NW' :
+                      section?.id === 'checkin_ne' ? 'NE' :
+                      section?.id === 'checkin_se' ? 'SE' : ''
+                    }
                     callsignOnly={
                       net.type === 'siren' && section.id === 'preamble'
                     }

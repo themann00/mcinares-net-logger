@@ -11,8 +11,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RefreshCw, MapPin, AlertCircle } from 'lucide-react'
-import type { Station, NetType, StationType } from '@/types'
+import { RefreshCw, MapPin, AlertCircle, Pencil } from 'lucide-react'
+import type { Station, NetType, StationType, Quadrant } from '@/types'
+
+type EditReason = 'correction' | 'moved'
 
 interface StationListProps {
   stations: Station[]
@@ -26,6 +28,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editLocation, setEditLocation] = useState('')
   const [editType, setEditType] = useState<StationType | ''>('')
+  const [editQuadrant, setEditQuadrant] = useState<Quadrant | ''>('')
+  const [editReason, setEditReason] = useState<EditReason>('correction')
   const [saving, setSaving] = useState(false)
 
   const needsCircleBack = showCircleBack
@@ -36,21 +40,25 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       )
     : []
 
-  function startEdit(station: Station) {
+  function startEdit(station: Station, reason: EditReason) {
     setEditingId(station.id)
     setEditLocation(station.location || '')
     setEditType((station.station_type as StationType) || '')
+    setEditQuadrant((station.quadrant as Quadrant) || '')
+    setEditReason(reason)
   }
 
-  async function saveEdit(stationId: string) {
+  async function saveEdit(station: Station) {
     setSaving(true)
     await fetch(`/api/nets/${netId}/stations`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        station_id: stationId,
+        station_id: station.id,
         station_type: editType || undefined,
         location: editLocation.trim() || undefined,
+        quadrant: editQuadrant || null,
+        log_reason: editReason,
       }),
     })
     setSaving(false)
@@ -77,10 +85,10 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         <p className="text-gray-500 text-sm text-center py-4">No stations checked in yet.</p>
       )}
 
-      {(['SW', 'NW', 'NE', 'SE', null] as const).map(quadrant => {
-        const group = stations.filter(s =>
-          quadrant === null ? !s.quadrant : s.quadrant === quadrant
-        )
+      {([null, 'SW', 'NW', 'NE', 'SE'] as const).map(quadrant => {
+        const group = stations
+          .filter(s => quadrant === null ? !s.quadrant : s.quadrant === quadrant)
+          .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
         if (group.length === 0) return null
         return (
           <div key={quadrant ?? 'unknown'}>
@@ -120,6 +128,19 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
                 </SelectContent>
               </Select>
+              {netType === 'skywarn' && (
+                <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
+                    <SelectValue placeholder="Quad" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="SW" className="text-white">SW</SelectItem>
+                    <SelectItem value="NW" className="text-white">NW</SelectItem>
+                    <SelectItem value="NE" className="text-white">NE</SelectItem>
+                    <SelectItem value="SE" className="text-white">SE</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Input
                 value={editLocation}
                 onChange={e => setEditLocation(e.target.value)}
@@ -127,10 +148,36 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 className="bg-gray-800 border-gray-700 text-white flex-1"
               />
             </div>
+
+            <div className="flex rounded-lg overflow-hidden border border-gray-700">
+                <button
+                  type="button"
+                  onClick={() => setEditReason('correction')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    editReason === 'correction'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  Update inaccurate data
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditReason('moved')}
+                  className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                    editReason === 'moved'
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                  }`}
+                >
+                  Station has moved
+                </button>
+              </div>
+
             <div className="flex gap-2">
               <Button
                 size="sm"
-                onClick={() => saveEdit(station.id)}
+                onClick={() => saveEdit(station)}
                 disabled={saving}
                 className="bg-green-700 hover:bg-green-600"
               >
@@ -164,10 +211,15 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 )}
               </div>
               {station.location && (
-                <div className="flex items-center gap-1 text-gray-400 text-xs mt-0.5">
+                <a
+                  href={`https://www.google.com/search?q=${encodeURIComponent(station.location + ' indianapolis')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs mt-0.5 underline underline-offset-2"
+                >
                   <MapPin className="w-3 h-3" />
                   {station.location}
-                </div>
+                </a>
               )}
               {(station.first_name || station.last_name) && (
                 <div className="text-gray-500 text-xs mt-0.5">
@@ -175,13 +227,21 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 </div>
               )}
             </div>
-            {showCircleBack && incomplete && (
+            {showCircleBack && incomplete ? (
               <button
-                onClick={() => startEdit(station)}
+                onClick={() => startEdit(station, 'correction')}
                 className="flex-shrink-0 text-amber-400 hover:text-amber-300 p-1"
                 title="Circle back to fill in missing info"
               >
                 <RefreshCw className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => startEdit(station, 'correction')}
+                className="flex-shrink-0 text-gray-500 hover:text-gray-300 p-1"
+                title="Edit station"
+              >
+                <Pencil className="w-3.5 h-3.5" />
               </button>
             )}
           </div>

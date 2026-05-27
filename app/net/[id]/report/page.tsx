@@ -282,7 +282,16 @@ export default function ReportPage() {
                       )}
                       {(isSkywarn || isSiren) && (
                         <td className="py-1.5 px-3 border border-gray-200 text-gray-700">
-                          {station.location || '—'}
+                          {station.location ? (
+                            <a
+                              href={`https://www.google.com/search?q=${encodeURIComponent(station.location + ' indianapolis')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-500 underline underline-offset-2"
+                            >
+                              {station.location}
+                            </a>
+                          ) : '—'}
                         </td>
                       )}
                       {isSkywarn && (

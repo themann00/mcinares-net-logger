@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,6 +29,7 @@ interface CheckinFormProps {
   onCheckin: () => void
   requireStationType?: boolean
   showQuadrant?: boolean
+  defaultQuadrant?: Quadrant | ''
   callsignOnly?: boolean
   showTrafficInputs?: boolean
   roster?: RosterEntry[]
@@ -42,6 +43,7 @@ export function CheckinForm({
   onCheckin,
   requireStationType = false,
   showQuadrant = false,
+  defaultQuadrant = '',
   callsignOnly = false,
   showTrafficInputs = false,
   roster = [],
@@ -56,7 +58,7 @@ export function CheckinForm({
   const [lastName, setLastName] = useState('')
   const [stationType, setStationType] = useState<StationType | ''>('')
   const [location, setLocation] = useState('')
-  const [quadrant, setQuadrant] = useState<Quadrant | ''>('')
+  const [quadrant, setQuadrant] = useState<Quadrant | ''>(defaultQuadrant)
   const [report, setReport] = useState('')
   const [hasTraffic, setHasTraffic] = useState(false)
   const [hasAnnouncement, setHasAnnouncement] = useState(false)
@@ -67,6 +69,10 @@ export function CheckinForm({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => {
+    setQuadrant(defaultQuadrant)
+  }, [defaultQuadrant])
+
   const isAres = netType === 'ares'
   const isSkywarn = netType === 'skywarn'
 
@@ -76,7 +82,7 @@ export function CheckinForm({
     setLastName('')
     setStationType('')
     setLocation('')
-    setQuadrant('')
+    setQuadrant(defaultQuadrant)
     setReport('')
     setHasTraffic(false)
     setHasAnnouncement(false)
@@ -179,7 +185,7 @@ export function CheckinForm({
       setLastName('')
       setStationType('')
       setLocation('')
-      setQuadrant('')
+      setQuadrant(defaultQuadrant)
       setReport('')
       setHasTraffic(false)
       setHasAnnouncement(false)
@@ -217,7 +223,15 @@ export function CheckinForm({
               Type {requireStationType ? '*' : ''}
             </Label>
             <Select value={stationType} onValueChange={v => setStationType(v as StationType)}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger
+                className="bg-gray-800 border-gray-700 text-white"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && stationType) {
+                    e.preventDefault()
+                    e.currentTarget.closest('form')?.requestSubmit()
+                  }
+                }}
+              >
                 <SelectValue placeholder="—" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
@@ -256,7 +270,15 @@ export function CheckinForm({
             <div>
               <Label className="text-gray-400 text-xs mb-1 block">Quadrant</Label>
               <Select value={quadrant} onValueChange={v => setQuadrant(v as Quadrant)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger
+                  className="bg-gray-800 border-gray-700 text-white"
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && quadrant) {
+                      e.preventDefault()
+                      e.currentTarget.closest('form')?.requestSubmit()
+                    }
+                  }}
+                >
                   <SelectValue placeholder="Select quadrant..." />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700">

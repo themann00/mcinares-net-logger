@@ -113,7 +113,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  const { station_id, station_type, location, ...rest } = body
+  const { station_id, station_type, location, log_reason, ...rest } = body
 
   if (!station_id) {
     return NextResponse.json({ error: 'station_id required' }, { status: 400 })
@@ -129,17 +129,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Log the circle-back update
-  const updates: string[] = []
-  if (station_type) updates.push(`type: ${station_type}`)
-  if (location) updates.push(`location: ${location}`)
+  const reason: string = log_reason || 'circle_back'
 
-  if (updates.length > 0) {
+  if (reason === 'moved') {
+    const parts: string[] = []
+    if (location) parts.push(location)
+    if (rest.quadrant) parts.push(`[${rest.quadrant}]`)
     await getSupabase().from('mcinares_log_entries').insert({
       net_id: id,
       station_id,
-      entry_type: 'circle_back',
-      content: `${station.callsign} updated — ${updates.join(', ')}`,
+      entry_type: 'station_moved',
+      content: `${station.callsign} moved${parts.length ? ' to ' + parts.join(' ') : ''}`,
     })
   }
 
