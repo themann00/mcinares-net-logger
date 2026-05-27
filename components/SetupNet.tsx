@@ -153,11 +153,14 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
 
         {checklists.length > 0 && (
           <div className="pt-1">
-            <span className="text-gray-500 text-xs">From mcinares.org:</span>
+            <span className="text-gray-500 text-xs">Download and keep in another window, previous net's check-in logs:</span>
             <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
               {checklists.map(cl => (
-                <button
+                <a
                   key={cl.filename}
+                  href={cl.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={() => { setSelectedChecklistUrl(cl.url); setPrevNetChoice('web') }}
                   className={`w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm text-left transition-colors ${
                     prevNetChoice === 'web' && selectedChecklistUrl === cl.url ? selectedStyle : unselectedStyle
@@ -166,7 +169,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
                   {prevNetChoice === 'web' && selectedChecklistUrl === cl.url && <Check className="w-4 h-4 flex-shrink-0" />}
                   <Download className="w-3 h-3 flex-shrink-0" />
                   {cl.label} — {cl.filename}
-                </button>
+                </a>
               ))}
             </div>
           </div>

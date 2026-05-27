@@ -35,6 +35,7 @@ import {
   Megaphone,
   Plus,
   AlertTriangle,
+  Download,
 } from 'lucide-react'
 import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
@@ -646,24 +647,19 @@ export default function NetPage() {
           )}
 
           {net.type === 'ares' && section?.id === 'roll_call' && setupConfig?.checklistUrl && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-2">
-              <div className="flex items-center gap-3">
-                <span className="text-gray-400 text-sm font-medium">Website Check-in List</span>
-                <a
-                  href={setupConfig.checklistUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-400 hover:text-blue-300 text-xs underline"
-                >
-                  Open in new tab
-                </a>
-              </div>
-              <iframe
-                src={`https://docs.google.com/gview?url=${encodeURIComponent(window.location.origin + '/api/proxy?url=' + encodeURIComponent(setupConfig.checklistUrl))}&embedded=true`}
-                className="w-full rounded-lg border border-gray-700 bg-white"
-                style={{ height: '50vh', minHeight: '300px' }}
-                title="Check-in List"
-              />
+            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
+              <p className="text-gray-400 italic font-mono text-sm">
+                Read the previously downloaded Check-In spreadsheet from the previous net.
+              </p>
+              <a
+                href={setupConfig.checklistUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm underline underline-offset-2"
+              >
+                <Download className="w-4 h-4" />
+                Download again
+              </a>
             </div>
           )}
 
