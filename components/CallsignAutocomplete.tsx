@@ -52,6 +52,11 @@ export function CallsignAutocomplete({
       return -1
     }
 
+    const rosterMap = new Map<string, Suggestion>()
+    for (const r of roster) {
+      rosterMap.set(r.callsign.toUpperCase(), r)
+    }
+
     const seen = new Set<string>()
     const results: { suggestion: Suggestion; rank: number }[] = []
 
@@ -59,7 +64,14 @@ export function CallsignAutocomplete({
       const sc = score(s.callsign)
       if (sc >= 0 && !seen.has(s.callsign.toUpperCase())) {
         seen.add(s.callsign.toUpperCase())
-        results.push({ suggestion: s, rank: sc })
+        const rosterEntry = rosterMap.get(s.callsign.toUpperCase())
+        const merged: Suggestion = {
+          callsign: s.callsign,
+          first_name: rosterEntry?.first_name || s.first_name,
+          last_name: rosterEntry?.last_name || s.last_name,
+          source: 'station',
+        }
+        results.push({ suggestion: merged, rank: sc })
       }
     }
 
