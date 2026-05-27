@@ -13,7 +13,7 @@ export const skywarnSections: ScriptSection[] = [
         : '[approaching the area / imminent in the area].'
 
       const bulletinLine = ctx.nws_bulletin
-        ? `[Here is the current information from the National Weather Service:\n${ctx.nws_bulletin}]`
+        ? `Here is the current information from the National Weather Service:\n  [${ctx.nws_bulletin}]`
         : '[Read NWS bulletin / watch / warning if available]'
 
       return `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
@@ -140,7 +140,7 @@ Are there any additional stations wishing to check in, with or without a report?
     notes: 'continuity-timer',
     script: (ctx: NetContext) => {
       const bulletinLine = ctx.nws_bulletin
-        ? `[Here is the current information from the National Weather Service:\n${ctx.nws_bulletin}]`
+        ? `Here is the current information from the National Weather Service:\n  [${ctx.nws_bulletin}]`
         : '[Read NWS bulletin update if available]'
 
       return `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn net.
