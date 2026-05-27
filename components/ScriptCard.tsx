@@ -24,7 +24,7 @@ interface RenderOpts {
 
 function renderScriptText(text: string, opts: RenderOpts = {}) {
   const parts: React.ReactNode[] = []
-  const regex = /(\[[^\]]+\])|(NWS [Bb]ulletin)|(\{\{take-reports\}\})|(\{\{no-checkins\}\})|(\{\{input:(\w+)\}\})|(\{\{circle-back\}\})/g
+  const regex = /(\[[\s\S]+?\])|(NWS [Bb]ulletin)|(\{\{take-reports\}\})|(\{\{no-checkins\}\})|(\{\{input:(\w+)\}\})|(\{\{circle-back\}\})/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
@@ -188,6 +188,21 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
           <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
             <Info className="w-4 h-4 flex-shrink-0" />
             Remember to set the repeater back to normal mode, or have the Designated Button Pusher do this task.
+          </div>
+        )}
+
+        {section.notes === 'report-hint' && (
+          <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            <span>Log reports using the Report tab <span className="hidden lg:inline">on the right</span><span className="lg:hidden">below</span>.</span>
+            <ArrowRight className="w-5 h-5 hidden lg:block ml-auto flex-shrink-0" />
+          </div>
+        )}
+
+        {section.notes === 'unlink-hint' && (
+          <div className="mt-3 flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
+            <Info className="w-4 h-4 flex-shrink-0" />
+            Go to the 443.250 Repeater to unlink from 146.760 via DTMF Codes
           </div>
         )}
       </div>

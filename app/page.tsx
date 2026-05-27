@@ -67,7 +67,7 @@ export default function HomePage() {
         return []
       })
       .then(async (nets: Net[]) => {
-        const staleNets = nets.filter(n => !n.closed_at && n.type === 'ares')
+        const staleNets = nets.filter(n => !n.closed_at && (n.type === 'ares' || n.type === 'skywarn'))
         for (const sn of staleNets) {
           const logRes = await fetch(`/api/nets/${sn.id}/log`)
           if (logRes.ok) {
@@ -127,7 +127,7 @@ export default function HomePage() {
           type: selectedNet,
           net_controller: callsign.toUpperCase().trim(),
           testing: testingMode,
-          defer_start: selectedNet === 'ares',
+          defer_start: selectedNet === 'ares' || selectedNet === 'skywarn',
         }),
       })
       if (res.redirected || !res.headers.get('content-type')?.includes('application/json')) {

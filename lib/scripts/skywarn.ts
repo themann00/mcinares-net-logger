@@ -13,7 +13,7 @@ export const skywarnSections: ScriptSection[] = [
         : '[approaching the area / imminent in the area].'
 
       const bulletinLine = ctx.nws_bulletin
-        ? ctx.nws_bulletin
+        ? `[Here is the current information from the National Weather Service:\n${ctx.nws_bulletin}]`
         : '[Read NWS bulletin / watch / warning if available]'
 
       return `CQ net CQ net CQ net. This is ${ctx.net_controller}, net control activating the Marion County Skywarn Severe Weather net.
@@ -48,8 +48,9 @@ At this time are there any reports that meet these criteria?
     type: 'report',
     allowReports: true,
     allowCheckins: true,
-    script: () =>
-      `Take any immediate reports before moving on to liaison and check-ins. Log reports using the Report tab.
+    notes: 'report-hint',
+    script: (ctx: NetContext) =>
+      `I will now take any urgent or immediate reports of severe storm damage or storm reports before moving on to liaison and general check-ins. Only critical reports where life or property are in imminent danger. Please call ${ctx.net_controller}.
 
 {{no-checkins}}`,
   },
@@ -139,6 +140,7 @@ Are there any additional stations wishing to check in, with or without a report?
 [Read any NWS bulletin or watch still in effect, if applicable]
 
 We would like to also thank the Central Indiana Repeater Club, and KM9E repeater for the use of the repeaters for this net. This net is now closed at ______ local time. This is ${ctx.net_controller} clear.`,
+    notes: 'unlink-hint',
   },
 ]
 

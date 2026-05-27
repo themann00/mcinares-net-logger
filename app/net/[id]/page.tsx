@@ -41,6 +41,7 @@ import { SetupNet } from '@/components/SetupNet'
 import { AnnouncementsSection } from '@/components/AnnouncementsSection'
 import { TrafficSection } from '@/components/TrafficSection'
 import { AddToLogModal } from '@/components/AddToLogModal'
+import { SetupSkywarn } from '@/components/SetupSkywarn'
 import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
 import type { Net, Station, LogEntry, NetContext } from '@/types'
 import { skywarnContinuityScript } from '@/lib/scripts/skywarn'
@@ -116,6 +117,10 @@ export default function NetPage() {
     const interval = setInterval(tick, 30000)
     return () => clearInterval(interval)
   }, [net?.started_at])
+
+  useEffect(() => {
+    if (section?.id === 'initial_reports') setActiveTab('report')
+  }, [section?.id])
 
   async function saveSectionInputs() {
     if (!net || !section?.inputFields) return
@@ -324,7 +329,7 @@ export default function NetPage() {
           <ChevronLeft className="w-4 h-4" />
           Previous
         </Button>
-        {position === 'top' && net?.type === 'ares' && (
+        {position === 'top' && (net?.type === 'ares' || net?.type === 'skywarn') && (
           <Button
             onClick={() => setSetupComplete(false)}
             size="sm"
@@ -503,8 +508,28 @@ export default function NetPage() {
         </div>
       )}
 
+      {/* Setup step for Skywarn */}
+      {net.type === 'skywarn' && !setupComplete && (
+        <div className="max-w-2xl mx-auto w-full p-4">
+          <SetupSkywarn
+            initialWeatherStatus={localWeatherStatus}
+            initialBulletin={localBulletin}
+            isResuming={logEntries.length > 0}
+            onComplete={async config => {
+              setLocalWeatherStatus(config.weatherStatus)
+              setLocalBulletin(config.bulletin)
+              if (logEntries.length === 0) {
+                await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
+                await fetchAll()
+              }
+              setSetupComplete(true)
+            }}
+          />
+        </div>
+      )}
+
       {/* Main content */}
-      <div className={`flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4${net.type === 'ares' && !setupComplete ? ' hidden' : ''}`}>
+      <div className={`flex-1 max-w-7xl mx-auto w-full p-4 flex flex-col lg:flex-row gap-4${(net.type === 'ares' || net.type === 'skywarn') && !setupComplete ? ' hidden' : ''}`}>
         {/* Left: Section jump nav */}
         {sections.length > 1 && (
           <div className="hidden lg:flex flex-col gap-0.5 w-32 flex-shrink-0 pt-1">
