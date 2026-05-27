@@ -38,7 +38,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
     const initial: Record<string, AnnState> = {}
     announcementStations.forEach(s => {
       initial[s.id] = {
-        text: '',
+        text: 'N/A',
         startedAt: null,
         cancelled: false,
         saved: alreadyLogged.has(s.id),
@@ -128,6 +128,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
                     value={state.text}
                     onChange={e => handleTextChange(station.id, e.target.value)}
                     placeholder="Summarize announcement..."
+                    onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
                     className="bg-gray-900 border-gray-700 text-white text-sm"
                     rows={2}
                   />

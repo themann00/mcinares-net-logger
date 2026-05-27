@@ -44,7 +44,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
   const [trafficState, setTrafficState] = useState<Record<string, TrafficState>>(() => {
     const initial: Record<string, TrafficState> = {}
     trafficStations.forEach(s => {
-      initial[s.id] = { text: '', cancelled: false, saved: alreadyLogged.has(s.id) }
+      initial[s.id] = { text: 'N/A', cancelled: false, saved: alreadyLogged.has(s.id) }
     })
     return initial
   })
@@ -141,6 +141,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                     value={state.text}
                     onChange={e => setTrafficState(prev => ({ ...prev, [station.id]: { ...prev[station.id], text: e.target.value } }))}
                     placeholder="Summarize traffic..."
+                    onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
                     className="bg-gray-900 border-gray-700 text-white text-sm"
                     rows={2}
                   />
