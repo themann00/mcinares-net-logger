@@ -149,7 +149,9 @@ At this time if your callsign suffix matches Alpha through Hotel, A thru H, plea
     title: 'Announcements',
     type: 'input',
     allowCheckins: true,
-    script: () => `{{announcements-section}}`,
+    script: (ctx: NetContext) => `This is ${ctx.net_controller} for the Marion County ARES Net.
+
+{{announcements-section}}`,
   },
   {
     id: 'late_checkins',

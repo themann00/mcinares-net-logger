@@ -637,6 +637,14 @@ export default function NetPage() {
           )}
 
           {net.type === 'ares' && section?.id === 'announcements' && (
+            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4">
+              <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+                This is {net.net_controller} for the Marion County ARES Net.
+              </div>
+            </div>
+          )}
+
+          {net.type === 'ares' && section?.id === 'announcements' && (
             <AnnouncementsSection
               stations={stations}
               logEntries={logEntries}
