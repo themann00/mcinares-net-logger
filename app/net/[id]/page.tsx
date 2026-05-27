@@ -793,7 +793,7 @@ export default function NetPage() {
           {/* Tab content */}
           <div className="flex-1 overflow-y-auto p-4">
             {activeTab === 'checkin' && section?.allowCheckins && (
-              net.type === 'ares' && section.id === 'roll_call' && !rollCallSkipped ? (
+              net.type === 'ares' && section.id === 'roll_call' && !rollCallSkipped && setupConfig?.prevNetId ? (
                 <RollCallList
                   netId={netId}
                   currentStations={stations}
