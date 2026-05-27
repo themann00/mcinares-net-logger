@@ -34,6 +34,7 @@ import {
   FileText,
   Megaphone,
   Plus,
+  AlertTriangle,
 } from 'lucide-react'
 import { TrafficList } from '@/components/TrafficList'
 import { RollCallList } from '@/components/RollCallList'
@@ -304,6 +305,9 @@ export default function NetPage() {
   const mobileStations = stations.filter(s => s.station_type === 'mobile').length
   const reportEntries = logEntries.filter(e => e.entry_type === 'report').length
   const circleBackAvailable = net.type === 'skywarn' || net.type === 'siren'
+  const incompleteStations = (net.type === 'skywarn' || net.type === 'siren')
+    ? stations.filter(s => !s.station_type || !s.location).length
+    : 0
 
   const sectionNav = (position: 'top' | 'bottom' = 'bottom') => (
     <div className="flex items-center justify-between">
@@ -515,6 +519,9 @@ export default function NetPage() {
                   }`}
                 >
                   {shortLabel}
+                  {s.id === 'reports_and_circleback' && incompleteStations > 0 && (
+                    <span className="inline-flex items-center justify-center w-4 h-4 ml-1 text-[10px] font-bold bg-red-600 text-white rounded-full">!</span>
+                  )}
                 </button>
               )
             })}
@@ -668,6 +675,13 @@ export default function NetPage() {
               roster={roster}
               onUpdate={fetchAll}
             />
+          )}
+
+          {section?.id === 'reports_and_circleback' && incompleteStations > 0 && (
+            <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-xl px-4 py-3">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              There are {incompleteStations} station{incompleteStations > 1 ? 's' : ''} with incomplete information.
+            </div>
           )}
 
           {section?.type === 'closenet' && (net.type === 'skywarn' || net.type === 'siren') && (() => {
