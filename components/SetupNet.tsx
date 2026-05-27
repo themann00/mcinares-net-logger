@@ -3,7 +3,15 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Check, FileText, SkipForward, ChevronRight, Download } from 'lucide-react'
+import { format } from 'date-fns'
 import type { Net } from '@/types'
+
+function formatNetLabel(net: Net): string {
+  const date = format(new Date(net.started_at), 'M/d/yyyy')
+  const start = format(new Date(net.started_at), 'HH:mm')
+  const end = net.closed_at ? format(new Date(net.closed_at), 'HH:mm') : '?'
+  return `${date} — ${start} to ${end} — ${net.net_controller}`
+}
 
 interface DocFile {
   filename: string
@@ -128,7 +136,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
             className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'auto' ? selectedStyle : unselectedStyle}`}
           >
             {prevNetChoice === 'auto' && <Check className="w-4 h-4 flex-shrink-0" />}
-            Use list from {new Date(autoNet.started_at).toLocaleDateString()} (auto-detected)
+            {formatNetLabel(autoNet)} (auto-detected)
           </button>
         )}
 
@@ -139,7 +147,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
             className={`w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm transition-colors ${prevNetChoice === 'other' && selectedPrevNet === net.id ? selectedStyle : unselectedStyle}`}
           >
             {prevNetChoice === 'other' && selectedPrevNet === net.id && <Check className="w-4 h-4 flex-shrink-0" />}
-            {new Date(net.started_at).toLocaleDateString()} — {net.net_controller}
+            {formatNetLabel(net)}
           </button>
         ))}
 
