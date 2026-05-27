@@ -128,19 +128,17 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
                 </SelectContent>
               </Select>
-              {netType === 'skywarn' && (
-                <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
-                    <SelectValue placeholder="Quad" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="SW" className="text-white">SW</SelectItem>
-                    <SelectItem value="NW" className="text-white">NW</SelectItem>
-                    <SelectItem value="NE" className="text-white">NE</SelectItem>
-                    <SelectItem value="SE" className="text-white">SE</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
+              <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
+                  <SelectValue placeholder="Quad" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value="SW" className="text-white">SW</SelectItem>
+                  <SelectItem value="NW" className="text-white">NW</SelectItem>
+                  <SelectItem value="NE" className="text-white">NE</SelectItem>
+                  <SelectItem value="SE" className="text-white">SE</SelectItem>
+                </SelectContent>
+              </Select>
               <Input
                 value={editLocation}
                 onChange={e => setEditLocation(e.target.value)}
@@ -198,6 +196,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-white font-mono font-semibold">{station.callsign}</span>
+                <span className="text-gray-500 text-xs">({station.quadrant || 'Unknown'})</span>
                 {station.station_type && (
                   <Badge className={`${typeColor(station.station_type)} text-white text-xs`}>
                     {station.station_type}
