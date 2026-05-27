@@ -118,7 +118,7 @@ I will start with check-ins from the South West corner — South of Washington a
   },
   {
     id: 'reports_and_circleback',
-    title: 'Reports & Circle-Back',
+    title: 'Initial Reports',
     type: 'report',
     allowCheckins: true,
     allowReports: true,
@@ -132,7 +132,7 @@ Are there any additional stations wishing to check in, with or without a report?
   },
   {
     id: 'continuity',
-    title: 'Continuity',
+    title: 'Reports',
     type: 'read',
     allowCheckins: true,
     allowReports: true,
