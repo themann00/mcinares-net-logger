@@ -1,23 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { FileText } from 'lucide-react'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { WeatherReportInputs } from '@/components/WeatherReportInputs'
 import type { NetType, Station } from '@/types'
-
-const REPORT_TYPES = ['Tornado', 'Funnel Cloud', 'Flooding', 'Hail', 'Wind', 'Rainfall', 'Other'] as const
-type ReportType = typeof REPORT_TYPES[number]
 
 interface RosterEntry {
   callsign: string
@@ -37,13 +28,18 @@ interface ReportFormProps {
 export function ReportForm({ netId, netType, stations, onReport, roster = [] }: ReportFormProps) {
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
-  const [reportType, setReportType] = useState<ReportType>('Other')
-  const [content, setContent] = useState('')
+  const [reportFormatted, setReportFormatted] = useState('')
+  const [reportFreeText, setReportFreeText] = useState('')
+  const [sirenContent, setSirenContent] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
+
+  const isSkywarn = netType === 'skywarn'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!content.trim()) return
+    const reportContent = isSkywarn ? reportFormatted : sirenContent.trim()
+    if (!reportContent) return
     setLoading(true)
 
     const cs = callsign.toUpperCase().trim()
@@ -83,24 +79,25 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
 
     const prefix = cs ? `${cs}: ` : ''
     const locPrefix = location.trim() ? `[${location.trim()}] ` : ''
-    const typePrefix = reportType !== 'Other' ? `${reportType.toUpperCase()}: ` : ''
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entry_type: 'report',
-        content: `${prefix}${locPrefix}${typePrefix}${content.trim()}`,
+        content: `${prefix}${locPrefix}${reportContent}`,
         station_id: stationAfter?.id,
       }),
     })
 
     setCallsign('')
     setLocation('')
-    setReportType('Other')
-    setContent('')
+    setSirenContent('')
+    setResetKey(k => k + 1)
     setLoading(false)
     onReport()
   }
+
+  const hasContent = isSkywarn ? !!reportFreeText.trim() : !!sirenContent.trim()
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
@@ -129,41 +126,38 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
           className="bg-gray-800 border-gray-700 text-white"
         />
       </div>
-      {netType === 'skywarn' && (
+
+      {isSkywarn ? (
+        <WeatherReportInputs
+          resetKey={resetKey}
+          onChange={data => {
+            setReportFormatted(data.formatted)
+            setReportFreeText(data.freeText)
+          }}
+        />
+      ) : (
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Report Type</Label>
-          <Select value={reportType} onValueChange={v => setReportType(v as ReportType)}>
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
-              {REPORT_TYPES.map(t => (
-                <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label className="text-gray-400 text-xs mb-1 block">
+            {netType === 'siren' ? 'Siren Report' : 'Weather Report'} *
+          </Label>
+          <Textarea
+            value={sirenContent}
+            onChange={e => setSirenContent(e.target.value)}
+            placeholder={
+              netType === 'siren'
+                ? 'Siren #, rotation, damage/repair notes...'
+                : 'Event type, measurement, time...'
+            }
+            className="bg-gray-800 border-gray-700 text-white"
+            rows={3}
+            required
+          />
         </div>
       )}
-      <div>
-        <Label className="text-gray-400 text-xs mb-1 block">
-          {netType === 'siren' ? 'Siren Report' : 'Weather Report'} *
-        </Label>
-        <Textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          placeholder={
-            netType === 'siren'
-              ? 'Siren #, rotation, damage/repair notes...'
-              : 'Event type, measurement, time...'
-          }
-          className="bg-gray-800 border-gray-700 text-white"
-          rows={3}
-          required
-        />
-      </div>
+
       <Button
         type="submit"
-        disabled={loading || !content.trim()}
+        disabled={loading || !hasContent}
         className="w-full bg-orange-700 hover:bg-orange-600"
       >
         <FileText className="w-4 h-4 mr-2" />
