@@ -32,7 +32,8 @@ interface CheckinFormProps {
   callsignOnly?: boolean
   showTrafficInputs?: boolean
   roster?: RosterEntry[]
-  onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string }) => void
+  currentStations?: { callsign: string }[]
+  onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; forceManual?: boolean }) => void
 }
 
 export function CheckinForm({
@@ -44,10 +45,12 @@ export function CheckinForm({
   callsignOnly = false,
   showTrafficInputs = false,
   roster = [],
+  currentStations = [],
   onQueue,
 }: CheckinFormProps) {
   const callsignRef = useRef<HTMLDivElement>(null)
   const [callsign, setCallsign] = useState('')
+  const [dupeWarning, setDupeWarning] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [stationType, setStationType] = useState<StationType | ''>('')
@@ -76,6 +79,7 @@ export function CheckinForm({
     setHasAnnouncement(false)
     setTrafficText('')
     setAnnouncementText('')
+    setDupeWarning(false)
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -86,9 +90,17 @@ export function CheckinForm({
       return
     }
 
+    const cs = callsign.trim().toUpperCase()
+    const alreadyIn = currentStations.some(s => s.callsign.toUpperCase() === cs)
+
+    if (alreadyIn && !dupeWarning) {
+      setDupeWarning(true)
+      return
+    }
+
     if (onQueue) {
       onQueue({
-        callsign: callsign.trim().toUpperCase(),
+        callsign: cs,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
         stationType: stationType,
@@ -98,8 +110,10 @@ export function CheckinForm({
         hasAnnouncement,
         trafficText: trafficText.trim(),
         announcementText: announcementText.trim(),
+        forceManual: alreadyIn,
       })
       resetForm()
+      setDupeWarning(false)
       setTimeout(() => callsignRef.current?.querySelector('input')?.focus(), 50)
       return
     }
@@ -326,14 +340,42 @@ export function CheckinForm({
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
-      <Button
-        type="submit"
-        disabled={loading || !callsign.trim()}
-        className="w-full bg-green-700 hover:bg-green-600"
-      >
-        <UserPlus className="w-4 h-4 mr-2" />
-        {loading ? 'Logging...' : 'Log Check-in'}
-      </Button>
+      {dupeWarning && (
+        <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-2">
+          <p className="text-amber-300 text-sm font-medium">
+            {callsign.trim().toUpperCase()} is already checked in.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              type="submit"
+              size="sm"
+              className="bg-amber-700 hover:bg-amber-600"
+            >
+              Force Manual Check-in
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => { setDupeWarning(false); resetForm(); setTimeout(() => callsignRef.current?.querySelector('input')?.focus(), 50) }}
+              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {!dupeWarning && (
+        <Button
+          type="submit"
+          disabled={loading || !callsign.trim()}
+          className="w-full bg-green-700 hover:bg-green-600"
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          {loading ? 'Logging...' : 'Log Check-in'}
+        </Button>
+      )}
     </form>
   )
 }

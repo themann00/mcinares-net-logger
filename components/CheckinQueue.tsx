@@ -28,6 +28,7 @@ export interface QueuedCheckin {
   trafficText: string
   announcementText: string
   timestamp: string
+  forceManual?: boolean
 }
 
 interface CheckinQueueProps {
@@ -117,7 +118,7 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
       </div>
 
       {editingId && editData && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() } if (e.key === 'Escape') setEditingId(null) }}>
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-white font-semibold">Edit Queued Check-in</span>

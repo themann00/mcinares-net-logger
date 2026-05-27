@@ -28,6 +28,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     has_announcements,
     report,
     checked_in_at,
+    manual_prefix,
   } = body as {
     callsign: string
     first_name?: string
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     has_announcements?: boolean
     report?: string
     checked_in_at?: string
+    manual_prefix?: string
   }
 
   if (!callsign) {
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     net_id: id,
     station_id: station.id,
     entry_type: 'checkin',
-    content: parts.join(' '),
+    content: `${manual_prefix || ''}${parts.join(' ')}`,
   }
   if (checked_in_at) logEntry.timestamp = checked_in_at
 

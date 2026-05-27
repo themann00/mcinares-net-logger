@@ -195,7 +195,7 @@ export default function NetPage() {
   const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining']
   const useQueue = net?.type === 'ares' && queueSections.includes(section?.id || '')
 
-  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string }) {
+  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; forceManual?: boolean }) {
     setCheckinQueue(prev => [...prev, {
       id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       callsign: entry.callsign,
@@ -209,6 +209,7 @@ export default function NetPage() {
       trafficText: entry.trafficText,
       announcementText: entry.announcementText,
       timestamp: new Date().toISOString(),
+      forceManual: entry.forceManual,
     }])
   }
 
@@ -229,6 +230,7 @@ export default function NetPage() {
           has_traffic: item.hasTraffic,
           has_announcements: item.hasAnnouncement,
           checked_in_at: item.timestamp,
+          manual_prefix: item.forceManual ? 'MANUAL: ' : '',
         }),
       })
       if (item.hasTraffic && item.trafficText) {
@@ -817,6 +819,7 @@ export default function NetPage() {
                       net.type === 'ares' && section.id === 'short_time'
                     }
                     roster={roster}
+                    currentStations={stations}
                     onQueue={useQueue ? addToQueue : undefined}
                   />
                   {useQueue && (
