@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -46,6 +46,7 @@ export function CheckinForm({
   roster = [],
   onQueue,
 }: CheckinFormProps) {
+  const callsignRef = useRef<HTMLDivElement>(null)
   const [callsign, setCallsign] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -99,6 +100,7 @@ export function CheckinForm({
         announcementText: announcementText.trim(),
       })
       resetForm()
+      setTimeout(() => callsignRef.current?.querySelector('input')?.focus(), 50)
       return
     }
 
@@ -163,6 +165,7 @@ export function CheckinForm({
       setTrafficText('')
       setAnnouncementText('')
       onCheckin()
+      setTimeout(() => callsignRef.current?.querySelector('input')?.focus(), 50)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
     } finally {
@@ -173,7 +176,7 @@ export function CheckinForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div className="flex gap-2">
-        <div className="flex-1">
+        <div className="flex-1" ref={callsignRef}>
           <Label className="text-gray-400 text-xs mb-1 block">Callsign *</Label>
           <CallsignAutocomplete
             value={callsign}
