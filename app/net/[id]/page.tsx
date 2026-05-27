@@ -27,6 +27,7 @@ import {
   ChevronRight,
   ScrollText,
   X,
+  RefreshCw,
   Radio,
   Users,
   BookOpen,
@@ -668,6 +669,29 @@ export default function NetPage() {
               onUpdate={fetchAll}
             />
           )}
+
+          {section?.type === 'closenet' && (net.type === 'skywarn' || net.type === 'siren') && (() => {
+            const incomplete = stations.filter(s => !s.station_type || !s.location).length
+            if (incomplete === 0) return null
+            const circleBackIdx = sections.findIndex(s => s.id === 'reports_and_circleback')
+            return (
+              <div className="bg-red-950/40 border border-red-700 rounded-xl p-4 space-y-2">
+                <div className="text-red-300 text-sm font-medium">
+                  WARNING: INCOMPLETE DATA. There are {incomplete} station{incomplete > 1 ? 's' : ''} that require additional information such as Base/Mobile, or their Location. Please Circle Back to collect before closing the net.
+                </div>
+                {circleBackIdx >= 0 && (
+                  <Button
+                    size="sm"
+                    onClick={() => setSectionIndex(circleBackIdx)}
+                    className="bg-amber-700 hover:bg-amber-600 text-white gap-1"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                    Go to Circle Back
+                  </Button>
+                )}
+              </div>
+            )
+          })()}
 
           {section && !(net.type === 'ares' && (section.id === 'announcements' || section.id === 'traffic')) && (
             <ScriptCard
