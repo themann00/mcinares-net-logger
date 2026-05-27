@@ -27,9 +27,10 @@ interface RecentLogProps {
   limit?: number
   reversed?: boolean
   stations?: Station[]
+  roster?: { callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]
 }
 
-export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [] }: RecentLogProps) {
+export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [], roster = [] }: RecentLogProps) {
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
 
   const sliced = entries.slice(-limit)
@@ -76,6 +77,8 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
             onUpdate()
           }}
           onClose={() => setEditingEntry(null)}
+          stations={stations}
+          roster={roster}
         />
       )}
     </>

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { X } from 'lucide-react'
 import { format } from 'date-fns'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import type { LogEntry, Station, LogEntryType } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
@@ -31,12 +32,21 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   note: { label: 'NOTE', color: 'text-gray-400' },
 }
 
+interface RosterEntry {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+}
+
 interface EditLogModalProps {
   entry: LogEntry
   station: Station | null
   netId: string
   onSave: () => void
   onClose: () => void
+  stations?: Station[]
+  roster?: RosterEntry[]
 }
 
 function parseReportContent(content: string) {
@@ -56,7 +66,7 @@ function parseCheckinContent(content: string) {
   return callMatch ? callMatch[1] : ''
 }
 
-export function EditLogModal({ entry, station, netId, onSave, onClose }: EditLogModalProps) {
+export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [] }: EditLogModalProps) {
   const [saving, setSaving] = useState(false)
   const [content, setContent] = useState(entry.content)
 
@@ -164,10 +174,16 @@ export function EditLogModal({ entry, station, netId, onSave, onClose }: EditLog
           <>
             <div>
               <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
-              <Input
+              <CallsignAutocomplete
                 value={callsign}
-                onChange={e => setCallsign(e.target.value.toUpperCase())}
-                className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+                onChange={setCallsign}
+                onSelect={s => {
+                  setCallsign(s.callsign)
+                  const st = stations.find(st => st.callsign.toUpperCase() === s.callsign.toUpperCase())
+                  if (st?.location && st.location !== 'N/A') setLocation(st.location)
+                }}
+                stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+                roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
               />
             </div>
             <div>
@@ -194,10 +210,19 @@ export function EditLogModal({ entry, station, netId, onSave, onClose }: EditLog
           <>
             <div>
               <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
-              <Input
+              <CallsignAutocomplete
                 value={callsign}
-                onChange={e => setCallsign(e.target.value.toUpperCase())}
-                className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+                onChange={setCallsign}
+                onSelect={s => {
+                  setCallsign(s.callsign)
+                  if (s.first_name) setFirstName(s.first_name)
+                  if (s.last_name) setLastName(s.last_name)
+                  const st = stations.find(st => st.callsign.toUpperCase() === s.callsign.toUpperCase())
+                  if (st?.location && st.location !== 'N/A') setLocation(st.location)
+                  if (st?.station_type) setStationType(st.station_type)
+                }}
+                stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+                roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -205,7 +230,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose }: EditLog
                 <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
                 <Input
                   value={firstName}
-                  onChange={e => setFirstName(e.target.value)}
+                  onChange={e => { const v = e.target.value; setFirstName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                   className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>
@@ -213,7 +238,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose }: EditLog
                 <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
                 <Input
                   value={lastName}
-                  onChange={e => setLastName(e.target.value)}
+                  onChange={e => { const v = e.target.value; setLastName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                   className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>

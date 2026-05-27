@@ -343,7 +343,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                 <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
                 <Input
                   value={editFirst}
-                  onChange={e => setEditFirst(e.target.value)}
+                  onChange={e => { const v = e.target.value; setEditFirst(v.charAt(0).toUpperCase() + v.slice(1)) }}
                   className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>
@@ -351,7 +351,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                 <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
                 <Input
                   value={editLast}
-                  onChange={e => setEditLast(e.target.value)}
+                  onChange={e => { const v = e.target.value; setEditLast(v.charAt(0).toUpperCase() + v.slice(1)) }}
                   className="bg-gray-800 border-gray-700 text-white"
                 />
               </div>

@@ -215,7 +215,7 @@ export function CheckinForm({
               <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
               <Input
                 value={firstName}
-                onChange={e => setFirstName(e.target.value)}
+                onChange={e => { const v = e.target.value; setFirstName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                 placeholder="Optional"
                 className="bg-gray-800 border-gray-700 text-white"
               />
@@ -224,7 +224,7 @@ export function CheckinForm({
               <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
               <Input
                 value={lastName}
-                onChange={e => setLastName(e.target.value)}
+                onChange={e => { const v = e.target.value; setLastName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                 placeholder="Optional"
                 className="bg-gray-800 border-gray-700 text-white"
               />

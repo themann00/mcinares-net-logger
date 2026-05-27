@@ -758,7 +758,7 @@ export default function NetPage() {
 
           {sectionNav('bottom')}
 
-          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} />
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} />
         </div>
 
         {/* Right: Tabs panel */}
@@ -878,6 +878,7 @@ export default function NetPage() {
                   limit={50}
                   reversed
                   stations={stations}
+                  roster={roster}
                 />
               </div>
             )}
@@ -909,6 +910,7 @@ export default function NetPage() {
                 limit={logEntries.length}
                 reversed
                 stations={stations}
+                roster={roster}
               />
             </div>
           </div>
