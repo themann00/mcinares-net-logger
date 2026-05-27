@@ -90,6 +90,7 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
                 roster={field.roster}
                 placeholder={field.placeholder}
                 className="h-8 text-sm"
+                onEnter={field.onSave}
               />
             </div>
           ) : (

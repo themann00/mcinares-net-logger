@@ -20,6 +20,7 @@ interface CallsignAutocompleteProps {
   placeholder?: string
   className?: string
   autoFocus?: boolean
+  onEnter?: () => void
 }
 
 export function CallsignAutocomplete({
@@ -31,6 +32,7 @@ export function CallsignAutocomplete({
   placeholder = 'W9ABC',
   className = '',
   autoFocus = false,
+  onEnter,
 }: CallsignAutocompleteProps) {
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(0)
@@ -96,7 +98,10 @@ export function CallsignAutocomplete({
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (!open || matches.length === 0) return
+    if (!open || matches.length === 0) {
+      if (e.key === 'Enter' && onEnter) { e.preventDefault(); onEnter() }
+      return
+    }
 
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -105,9 +110,12 @@ export function CallsignAutocomplete({
       e.preventDefault()
       setHighlightIndex(i => Math.max(i - 1, 0))
     } else if (e.key === 'Tab' || e.key === 'Enter') {
+      e.preventDefault()
       if (matches[highlightIndex]) {
-        e.preventDefault()
         selectMatch(matches[highlightIndex])
+      }
+      if (e.key === 'Enter' && onEnter) {
+        setTimeout(onEnter, 50)
       }
     } else if (e.key === 'Escape') {
       setOpen(false)
