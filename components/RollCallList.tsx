@@ -75,7 +75,8 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
       setLoading(false)
     }
     fetchPrevious()
-  }, [netId, currentStations])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [netId])
 
   async function toggleCheckin(callsign: string) {
     const current = rollState[callsign]
@@ -133,47 +134,43 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
   async function toggleTraffic(callsign: string) {
     const current = rollState[callsign]
     if (!current) return
+    const newVal = !current.hasTraffic
     setRollState(prev => ({
       ...prev,
-      [callsign]: { ...prev[callsign], hasTraffic: !prev[callsign].hasTraffic },
+      [callsign]: { ...prev[callsign], hasTraffic: newVal },
     }))
 
-    if (!current.hasTraffic) {
-      const station = currentStations.find(
-        s => s.callsign.toUpperCase() === callsign.toUpperCase()
-      )
-      if (station) {
-        await fetch(`/api/nets/${netId}/stations`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ station_id: station.id, has_traffic: true }),
-        })
-        onUpdate()
-      }
+    const station = currentStations.find(
+      s => s.callsign.toUpperCase() === callsign.toUpperCase()
+    )
+    if (station) {
+      await fetch(`/api/nets/${netId}/stations`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ station_id: station.id, has_traffic: newVal }),
+      })
     }
   }
 
   async function toggleAnnouncement(callsign: string) {
     const current = rollState[callsign]
     if (!current) return
+    const newVal = !current.hasAnnouncement
     setRollState(prev => ({
       ...prev,
-      [callsign]: { ...prev[callsign], hasAnnouncement: !prev[callsign].hasAnnouncement },
+      [callsign]: { ...prev[callsign], hasAnnouncement: newVal },
     }))
 
-    if (!current.hasAnnouncement) {
-      const station = currentStations.find(
-        s => s.callsign.toUpperCase() === callsign.toUpperCase()
-      )
-      if (station) {
-        await fetch(`/api/nets/${netId}/stations`, {
+    const station = currentStations.find(
+      s => s.callsign.toUpperCase() === callsign.toUpperCase()
+    )
+    if (station) {
+      await fetch(`/api/nets/${netId}/stations`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ station_id: station.id, has_announcements: true }),
+          body: JSON.stringify({ station_id: station.id, has_announcements: newVal }),
         })
-        onUpdate()
       }
-    }
   }
 
   if (loading) return <p className="text-gray-500 text-sm py-2">Loading last week...</p>
