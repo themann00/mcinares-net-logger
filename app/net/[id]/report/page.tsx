@@ -228,8 +228,8 @@ export default function ReportPage() {
               />
               <Field label="Duration" value={duration} />
               <Field label="Total Unique Stations" value={stations.length} />
-              <Field label="Base Stations" value={isAres ? undefined : baseStations} />
-              <Field label="Mobile Stations" value={isAres ? undefined : mobileStations} />
+              {!isAres && <Field label="Base Stations" value={baseStations} />}
+              {!isAres && <Field label="Mobile Stations" value={mobileStations} />}
               {(isSkywarn || isSiren) && (
                 <Field
                   label={isSiren ? 'Siren Reports' : 'Weather Reports'}
