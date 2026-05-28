@@ -67,14 +67,26 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  await db.from('mcinares_roster').upsert(
-    {
+  const { data: existing } = await db
+    .from('mcinares_roster')
+    .select('first_name, last_name')
+    .eq('callsign', cs)
+    .maybeSingle()
+
+  if (!existing) {
+    await db.from('mcinares_roster').insert({
       callsign: cs,
       first_name: first_name || null,
       last_name: last_name || null,
-    },
-    { onConflict: 'callsign', ignoreDuplicates: false }
-  )
+    })
+  } else {
+    const update: Record<string, unknown> = {}
+    if (first_name && !existing.first_name) update.first_name = first_name
+    if (last_name && !existing.last_name) update.last_name = last_name
+    if (Object.keys(update).length > 0) {
+      await db.from('mcinares_roster').update(update).eq('callsign', cs)
+    }
+  }
 
   if (report?.trim()) {
     await db.from('mcinares_log_entries').insert({
