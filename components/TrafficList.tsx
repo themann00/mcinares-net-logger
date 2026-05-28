@@ -16,7 +16,6 @@ interface TrafficListProps {
 }
 
 interface EditState {
-  stationId: string
   callsign: string
   type: 'traffic' | 'announcement'
   content: string
@@ -32,36 +31,37 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
     .filter(s => s.has_traffic || s.has_announcements)
     .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
 
-  function getKey(stationId: string, type: string) {
-    return `${stationId}:${type}`
+  function getKey(callsign: string, type: string) {
+    return `${callsign}:${type}`
   }
 
-  function isHandled(stationId: string, type: string) {
-    const key = getKey(stationId, type)
+  function findEntryByCallsign(callsign: string, type: string) {
+    return logEntries.find(
+      e => e.entry_type === type && e.content.startsWith(`${callsign}:`)
+    )
+  }
+
+  function isHandled(callsign: string, type: string) {
+    const key = getKey(callsign, type)
     if (handled[key] !== undefined) return handled[key]
-    return logEntries.some(
-      e => e.station_id === stationId && e.entry_type === type
-    )
+    return !!findEntryByCallsign(callsign, type)
   }
 
-  function getSummary(stationId: string, type: string) {
-    const key = getKey(stationId, type)
+  function getSummary(callsign: string, type: string) {
+    const key = getKey(callsign, type)
     if (summaries[key] !== undefined) return summaries[key]
-    const entry = logEntries.find(
-      e => e.station_id === stationId && e.entry_type === type
-    )
+    const entry = findEntryByCallsign(callsign, type)
     return entry?.content || ''
   }
 
   function handleClick(station: Station, type: 'traffic' | 'announcement') {
-    const key = getKey(station.id, type)
-    if (isHandled(station.id, type)) {
+    const key = getKey(station.callsign, type)
+    if (isHandled(station.callsign, type)) {
       setHandled(prev => ({ ...prev, [key]: false }))
       return
     }
-    const existing = getSummary(station.id, type)
+    const existing = getSummary(station.callsign, type)
     setEditState({
-      stationId: station.id,
       callsign: station.callsign,
       type,
       content: existing || 'N/A',
@@ -71,12 +71,10 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
   async function handleSave() {
     if (!editState) return
     setSaving(true)
-    const key = getKey(editState.stationId, editState.type)
+    const key = getKey(editState.callsign, editState.type)
     const content = editState.content.trim() || 'N/A'
 
-    const existing = logEntries.find(
-      e => e.station_id === editState.stationId && e.entry_type === editState.type
-    )
+    const existing = findEntryByCallsign(editState.callsign, editState.type)
 
     if (existing) {
       await fetch(`/api/nets/${netId}/log`, {
@@ -91,7 +89,7 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
         body: JSON.stringify({
           entry_type: editState.type,
           content: `${editState.callsign}: ${content}`,
-          station_id: editState.stationId,
+          metadata: { callsign: editState.callsign },
         }),
       })
     }
@@ -116,12 +114,12 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
           if (station.has_announcements) items.push({ type: 'announcement', label: 'Announcement' })
 
           return (
-            <div key={station.id} className="space-y-0.5">
+            <div key={station.callsign} className="space-y-0.5">
               {items.map(item => {
-                const done = isHandled(station.id, item.type)
+                const done = isHandled(station.callsign, item.type)
                 return (
                   <button
-                    key={`${station.id}-${item.type}`}
+                    key={`${station.callsign}-${item.type}`}
                     onClick={() => handleClick(station, item.type)}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
                       done
@@ -141,7 +139,7 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
                     </Badge>
                     {done && (
                       <span className="text-gray-600 text-xs ml-auto truncate max-w-32">
-                        {getSummary(station.id, item.type)}
+                        {getSummary(station.callsign, item.type)}
                       </span>
                     )}
                   </button>

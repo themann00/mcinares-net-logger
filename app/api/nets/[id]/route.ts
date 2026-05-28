@@ -28,7 +28,6 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const db = getSupabase()
 
   await db.from('mcinares_log_entries').delete().eq('net_id', id)
-  await db.from('mcinares_stations').delete().eq('net_id', id)
   const { error } = await db.from('mcinares_nets').delete().eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -11,21 +11,24 @@ export async function GET() {
 
   if (rosterError) return NextResponse.json({ error: rosterError.message }, { status: 500 })
 
-  const { data: stats, error: statsError } = await db
-    .from('mcinares_stations')
-    .select('callsign, checked_in_at')
+  const { data: logStats, error: logError } = await db
+    .from('mcinares_log_entries')
+    .select('metadata, timestamp')
+    .in('entry_type', ['checkin', 'late_checkin'])
 
-  if (statsError) return NextResponse.json({ error: statsError.message }, { status: 500 })
+  if (logError) return NextResponse.json({ error: logError.message }, { status: 500 })
 
   const checkinMap: Record<string, { count: number; last: string }> = {}
-  for (const s of stats || []) {
-    const cs = s.callsign.toUpperCase()
+  for (const e of logStats || []) {
+    const meta = e.metadata as Record<string, unknown> | null
+    const cs = ((meta?.callsign as string) || '').toUpperCase()
+    if (!cs) continue
     if (!checkinMap[cs]) {
-      checkinMap[cs] = { count: 0, last: s.checked_in_at }
+      checkinMap[cs] = { count: 0, last: e.timestamp }
     }
     checkinMap[cs].count++
-    if (s.checked_in_at > checkinMap[cs].last) {
-      checkinMap[cs].last = s.checked_in_at
+    if (e.timestamp > checkinMap[cs].last) {
+      checkinMap[cs].last = e.timestamp
     }
   }
 

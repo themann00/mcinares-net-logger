@@ -47,7 +47,7 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
       body: JSON.stringify({
         entry_type: entryType,
         content: `${prefix}${typePrefix}${content.trim()}`,
-        station_id: station?.id || null,
+        metadata: cs ? { callsign: cs } : undefined,
       }),
     })
 

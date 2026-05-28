@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import type { Net, Station } from '@/types'
+import type { Net, Station, LogEntry } from '@/types'
+import { deriveStations } from '@/lib/deriveStations'
 
 interface RollCallListProps {
   netId: string
@@ -40,16 +41,17 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
 
       const eightDaysAgo = Date.now() - 8 * 24 * 60 * 60 * 1000
       const prev = nets.find(
-        n => n.type === 'ares' && n.closed_at && n.id !== netId &&
-          new Date(n.started_at).getTime() > eightDaysAgo
+        n => n.type === 'ares' && n.closed && n.id !== netId &&
+          new Date(n.created_at).getTime() > eightDaysAgo
       )
 
       if (!prev) { setLoading(false); return }
 
       setPrevNet(prev)
-      const stRes = await fetch(`/api/nets/${prev.id}/stations`)
+      const stRes = await fetch(`/api/nets/${prev.id}/log`)
       if (stRes.ok) {
-        const stations: Station[] = await stRes.json()
+        const logEntries: LogEntry[] = await stRes.json()
+        const stations: Station[] = deriveStations(logEntries)
         stations.sort((a, b) => sortBySuffix
           ? getSuffix(a.callsign).localeCompare(getSuffix(b.callsign))
           : a.callsign.localeCompare(b.callsign)
@@ -102,7 +104,7 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
       )
       if (!alreadyIn) {
         setSaving(prev => ({ ...prev, [callsign]: true }))
-        await fetch(`/api/nets/${netId}/stations`, {
+        await fetch(`/api/nets/${netId}/checkin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ callsign }),
@@ -118,12 +120,12 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
         cs => cs.callsign.toUpperCase() === callsign.toUpperCase()
       )
       if (existing) {
-        await fetch(`/api/nets/${netId}/stations`, {
+        await fetch(`/api/nets/${netId}/log`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            station_id: existing.id,
-            checked_in_at: new Date(now).toISOString(),
+            entry_id: existing.log_entry_id,
+            metadata: { checked_in_at: new Date(now).toISOString() },
           }),
         })
         onUpdate()
@@ -144,10 +146,10 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
       s => s.callsign.toUpperCase() === callsign.toUpperCase()
     )
     if (station) {
-      await fetch(`/api/nets/${netId}/stations`, {
+      await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ station_id: station.id, has_traffic: newVal }),
+        body: JSON.stringify({ entry_id: station.log_entry_id, metadata: { has_traffic: newVal } }),
       })
     }
   }
@@ -165,12 +167,12 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
       s => s.callsign.toUpperCase() === callsign.toUpperCase()
     )
     if (station) {
-      await fetch(`/api/nets/${netId}/stations`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ station_id: station.id, has_announcements: newVal }),
-        })
-      }
+      await fetch(`/api/nets/${netId}/log`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_id: station.log_entry_id, metadata: { has_announcements: newVal } }),
+      })
+    }
   }
 
   if (loading) return <p className="text-gray-500 text-sm py-2">Loading last week...</p>

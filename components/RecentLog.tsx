@@ -71,7 +71,11 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
       {editingEntry && (
         <EditLogModal
           entry={editingEntry}
-          station={stations.find(s => s.id === editingEntry.station_id) || null}
+          station={(() => {
+            const meta = editingEntry.metadata as Record<string, unknown> | null
+            const cs = (meta?.callsign as string) || editingEntry.content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)[\s:]/)?.[1]
+            return cs ? stations.find(s => s.callsign === cs) || null : null
+          })()}
           netId={netId}
           onSave={() => {
             setEditingEntry(null)

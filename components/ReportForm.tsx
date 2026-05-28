@@ -46,7 +46,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
     const existing = stations.find(s => s.callsign === cs)
 
     if (cs && !existing) {
-      await fetch(`/api/nets/${netId}/stations`, {
+      await fetch(`/api/nets/${netId}/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -61,21 +61,17 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
         body: JSON.stringify({
           entry_type: 'station_moved',
           content: `${cs} moved to ${location.trim()}`,
-          station_id: existing.id,
         }),
       })
-      await fetch(`/api/nets/${netId}/stations`, {
+      await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          station_id: existing.id,
-          location: location.trim(),
-          log_reason: 'correction',
+          entry_id: existing.log_entry_id,
+          metadata: { location: location.trim() },
         }),
       })
     }
-
-    const stationAfter = existing || (cs ? (await fetch(`/api/nets/${netId}/stations`).then(r => r.json()) as Station[]).find(s => s.callsign === cs) : null)
 
     const prefix = cs ? `${cs}: ` : ''
     const locPrefix = location.trim() ? `[${location.trim()}] ` : ''
@@ -85,7 +81,6 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
       body: JSON.stringify({
         entry_type: 'report',
         content: `${prefix}${locPrefix}${reportContent}`,
-        station_id: stationAfter?.id,
       }),
     })
 

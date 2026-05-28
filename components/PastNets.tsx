@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import Link from 'next/link'
-import type { Net, Station, LogEntry, LogEntryType } from '@/types'
+import type { Net, LogEntry, LogEntryType } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   net_open: { label: 'OPEN', color: 'text-green-400' },
@@ -47,7 +47,6 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const isSuperAdmin = superAdmin
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set())
   const [logCache, setLogCache] = useState<Record<string, LogEntry[]>>({})
-  const [stationCache, setStationCache] = useState<Record<string, Station[]>>({})
   const [logPopupNetId, setLogPopupNetId] = useState<string | null>(null)
   const [loadingLog, setLoadingLog] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -64,7 +63,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [pageSize, setPageSize] = useState(5)
   const [page, setPage] = useState(0)
 
-  const closedNets = nets.filter(n => n.closed_at && !n.testing)
+  const closedNets = nets.filter(n => n.closed && !n.testing)
   if (closedNets.length === 0) return null
 
   async function toggleExpand(net: Net) {
@@ -77,22 +76,12 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     next.add(net.id)
     setExpandedIds(next)
     setLoadingLog(true)
-    const [logRes, stRes] = await Promise.all([
-      logCache[net.id] ? null : fetch(`/api/nets/${net.id}/log`),
-      stationCache[net.id] ? null : fetch(`/api/nets/${net.id}/stations`),
-    ])
-    if (logRes?.ok) {
-      const entries = await logRes.json()
-      setLogCache(prev => ({ ...prev, [net.id]: entries }))
-    }
-    if (stRes?.ok) {
-      const stations: Station[] = await stRes.json()
-      stations.sort((a, b) => {
-        const sa = a.callsign.match(/\d([A-Z]+)$/)?.[1] || a.callsign
-        const sb = b.callsign.match(/\d([A-Z]+)$/)?.[1] || b.callsign
-        return sa.localeCompare(sb)
-      })
-      setStationCache(prev => ({ ...prev, [net.id]: stations }))
+    if (!logCache[net.id]) {
+      const logRes = await fetch(`/api/nets/${net.id}/log`)
+      if (logRes?.ok) {
+        const entries = await logRes.json()
+        setLogCache(prev => ({ ...prev, [net.id]: entries }))
+      }
     }
     setLoadingLog(false)
   }
@@ -149,7 +138,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   }
 
   function getDeletePhrase(net: Net) {
-    return `DELETE ${format(new Date(net.started_at), 'yyyy-MM-dd')}`
+    return `DELETE ${format(new Date(net.created_at), 'yyyy-MM-dd')}`
   }
 
   async function handleDelete(net: Net) {
@@ -231,7 +220,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                       {NET_LABELS[net.type] || net.type}
                     </span>
                     <span className="text-gray-500 text-sm ml-2">
-                      {format(new Date(net.started_at), 'MMM d, yyyy h:mm a')}
+                      {format(new Date(net.created_at), 'MMM d, yyyy h:mm a')}
                     </span>
                   </div>
                   <span className="text-gray-500 text-xs">{net.net_controller}</span>

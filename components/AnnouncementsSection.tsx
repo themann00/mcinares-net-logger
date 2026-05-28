@@ -26,10 +26,10 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
     .filter(s => s.has_announcements)
     .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
 
-  const alreadyLogged = new Set(
+  const alreadyLoggedCallsigns = new Set(
     logEntries
-      .filter(e => e.entry_type === 'announcement' && e.station_id)
-      .map(e => e.station_id)
+      .filter(e => e.entry_type === 'announcement' && e.content.includes(':'))
+      .map(e => e.content.split(':')[0].trim().toUpperCase())
   )
 
   const [pdfZoom, setPdfZoom] = useState(false)
@@ -40,11 +40,11 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
   const [annState, setAnnState] = useState<Record<string, AnnState>>(() => {
     const initial: Record<string, AnnState> = {}
     announcementStations.forEach(s => {
-      initial[s.id] = {
+      initial[s.callsign] = {
         text: 'N/A',
         startedAt: null,
         cancelled: false,
-        saved: alreadyLogged.has(s.id),
+        saved: alreadyLoggedCallsigns.has(s.callsign.toUpperCase()),
       }
     })
     return initial
@@ -53,7 +53,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
   const hasAnnouncements = announcementStations.length > 0
 
   async function saveAnnouncement(station: Station) {
-    const state = annState[station.id]
+    const state = annState[station.callsign]
     if (!state || !state.text.trim()) return
 
     await fetch(`/api/nets/${netId}/log`, {
@@ -62,13 +62,13 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
       body: JSON.stringify({
         entry_type: 'announcement',
         content: `${station.callsign}: ${state.text.trim()}`,
-        station_id: station.id,
+        metadata: { callsign: station.callsign },
       }),
     })
 
     setAnnState(prev => ({
       ...prev,
-      [station.id]: { ...prev[station.id], saved: true },
+      [station.callsign]: { ...prev[station.callsign], saved: true },
     }))
     onUpdate()
   }
@@ -106,12 +106,12 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
 
           <div className="space-y-3">
             {announcementStations.map(station => {
-              const state = annState[station.id]
+              const state = annState[station.callsign]
               if (!state || state.cancelled) return null
 
               if (state.saved) {
                 return (
-                  <div key={station.id} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
+                  <div key={station.callsign} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                     <span className="font-mono text-sm text-green-400 line-through">{station.callsign}</span>
                     <span className="text-gray-500 text-xs">logged</span>
@@ -120,11 +120,11 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
               }
 
               return (
-                <div key={station.id} className="bg-gray-800 rounded-lg p-3 space-y-2">
+                <div key={station.callsign} className="bg-gray-800 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-mono font-semibold text-white">{station.callsign}</span>
                     <button
-                      onClick={() => cancelStation(station.id)}
+                      onClick={() => cancelStation(station.callsign)}
                       className="text-gray-500 hover:text-red-400 text-xs flex items-center gap-1"
                     >
                       <X className="w-3 h-3" />
@@ -133,7 +133,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
                   </div>
                   <Textarea
                     value={state.text}
-                    onChange={e => handleTextChange(station.id, e.target.value)}
+                    onChange={e => handleTextChange(station.callsign, e.target.value)}
                     placeholder="Summarize announcement..."
                     onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
                     className="bg-gray-900 border-gray-700 text-white text-sm"

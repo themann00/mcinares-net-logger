@@ -116,10 +116,13 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       })
 
       if (station && location.trim()) {
-        await fetch(`/api/nets/${netId}/stations`, {
+        await fetch(`/api/nets/${netId}/log`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ station_id: station.id, location: location.trim() }),
+          body: JSON.stringify({
+            entry_id: station.log_entry_id,
+            metadata: { location: location.trim() },
+          }),
         })
       }
     } else if (isCheckin && station) {
@@ -127,21 +130,19 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       if (stationType) parts.push(`(${stationType})`)
       if (location.trim() && location.trim() !== 'N/A') parts.push(`@ ${location.trim()}`)
 
+      const metadata: Record<string, unknown> = {}
+      if (stationType) metadata.station_type = stationType
+      if (location.trim()) metadata.location = location.trim()
+      if (firstName.trim()) metadata.first_name = firstName.trim()
+      if (lastName.trim()) metadata.last_name = lastName.trim()
+
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: parts.join(' ') }),
-      })
-
-      await fetch(`/api/nets/${netId}/stations`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          station_id: station.id,
-          station_type: stationType || undefined,
-          location: location.trim() || undefined,
-          first_name: firstName.trim() || undefined,
-          last_name: lastName.trim() || undefined,
+          entry_id: station.log_entry_id,
+          content: parts.join(' '),
+          metadata,
         }),
       })
     } else {
@@ -163,13 +164,6 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ entry_id: entry.id }),
     })
-    if (isCheckin && station) {
-      await fetch(`/api/nets/${netId}/stations`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ station_id: station.id }),
-      })
-    }
     setDeleting(false)
     onSave()
   }

@@ -21,19 +21,32 @@ export interface Net {
   id: string
   type: NetType
   net_controller: string
-  alt_net_controller: string | null
-  liaison: string | null
-  weather_status: 'approaching' | 'imminent' | null
-  nws_bulletin: string | null
   testing: boolean
-  started_at: string
-  closed_at: string | null
+  closed: boolean
   created_at: string
 }
 
-export interface Station {
+export interface CheckinMetadata {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  station_type?: StationType | null
+  location?: string | null
+  quadrant?: Quadrant | null
+  has_traffic?: boolean
+  has_announcements?: boolean
+}
+
+export interface LogEntry {
   id: string
   net_id: string
+  entry_type: LogEntryType
+  content: string
+  timestamp: string
+  metadata: CheckinMetadata | Record<string, unknown> | null
+}
+
+export interface DerivedStation {
   callsign: string
   first_name: string | null
   last_name: string | null
@@ -43,16 +56,11 @@ export interface Station {
   has_traffic: boolean
   has_announcements: boolean
   checked_in_at: string
+  log_entry_id: string
 }
 
-export interface LogEntry {
-  id: string
-  net_id: string
-  station_id: string | null
-  entry_type: LogEntryType
-  content: string
-  timestamp: string
-}
+/** Backward-compat alias: components that still import Station get DerivedStation */
+export type Station = DerivedStation
 
 export type SectionType = 'read' | 'checkin' | 'input' | 'report' | 'closenet'
 

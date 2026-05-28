@@ -7,10 +7,9 @@ import { format } from 'date-fns'
 import type { Net } from '@/types'
 
 function formatNetLabel(net: Net): string {
-  const date = format(new Date(net.started_at), 'M/d/yyyy')
-  const start = format(new Date(net.started_at), 'HH:mm')
-  const end = net.closed_at ? format(new Date(net.closed_at), 'HH:mm') : '?'
-  return `${date} — ${start} to ${end} — ${net.net_controller}`
+  const date = format(new Date(net.created_at), 'M/d/yyyy')
+  const time = format(new Date(net.created_at), 'HH:mm')
+  return `${date} — ${time} — ${net.net_controller}`
 }
 
 interface DocFile {
@@ -55,10 +54,10 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
         const nets: Net[] = await netsRes.json()
         const eightDaysAgo = Date.now() - 8 * 24 * 60 * 60 * 1000
         const aresNets = nets.filter(
-          n => n.type === 'ares' && n.closed_at && n.id !== netId && !n.testing
+          n => n.type === 'ares' && n.closed && n.id !== netId && !n.testing
         )
         setRecentNets(aresNets.slice(0, 5))
-        foundAutoNet = aresNets.find(n => new Date(n.started_at).getTime() > eightDaysAgo) || null
+        foundAutoNet = aresNets.find(n => new Date(n.created_at).getTime() > eightDaysAgo) || null
         setAutoNet(foundAutoNet)
       }
 

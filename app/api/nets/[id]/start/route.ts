@@ -18,36 +18,26 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   const now = new Date()
   const checkinTime = new Date(now.getTime() + 1000)
 
-  await db.from('mcinares_nets')
-    .update({ started_at: now.toISOString() })
-    .eq('id', id)
-
   await db.from('mcinares_log_entries').insert({
     net_id: id,
     entry_type: 'net_open',
     content: `Net opened by ${net.net_controller}`,
     timestamp: now.toISOString(),
+    metadata: { net_controller: net.net_controller },
   })
-
-  await db.from('mcinares_stations').insert({
-    net_id: id,
-    callsign: net.net_controller,
-    station_type: 'base',
-    location: 'N/A',
-    checked_in_at: checkinTime.toISOString(),
-  })
-
-  await db.from('mcinares_roster').upsert(
-    { callsign: net.net_controller },
-    { onConflict: 'callsign', ignoreDuplicates: true }
-  )
 
   await db.from('mcinares_log_entries').insert({
     net_id: id,
     entry_type: 'checkin',
     content: `${net.net_controller} checked in (net control)`,
     timestamp: checkinTime.toISOString(),
+    metadata: { callsign: net.net_controller, station_type: 'base', location: 'N/A' },
   })
+
+  await db.from('mcinares_roster').upsert(
+    { callsign: net.net_controller },
+    { onConflict: 'callsign', ignoreDuplicates: true }
+  )
 
   return NextResponse.json({ ok: true })
 }

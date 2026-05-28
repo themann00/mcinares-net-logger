@@ -67,7 +67,7 @@ export default function HomePage() {
         return []
       })
       .then(async (nets: Net[]) => {
-        const staleNets = nets.filter(n => !n.closed_at && (n.type === 'ares' || n.type === 'skywarn'))
+        const staleNets = nets.filter(n => !n.closed && (n.type === 'ares' || n.type === 'skywarn'))
         for (const sn of staleNets) {
           const logRes = await fetch(`/api/nets/${sn.id}/log`)
           if (logRes.ok) {
@@ -96,7 +96,7 @@ export default function HomePage() {
     fetchNets()
   }, [authenticated])
 
-  const openNets = allNets.filter(n => !n.closed_at)
+  const openNets = allNets.filter(n => !n.closed)
 
   async function handlePinSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -218,7 +218,7 @@ export default function HomePage() {
                           RESUME: {net.testing ? 'TESTING - ' : ''}{netInfo?.label || net.type.toUpperCase()}
                         </div>
                         <div className="text-gray-400 text-sm">
-                          NC: {net.net_controller} &middot; Started {new Date(net.started_at).toLocaleString()}
+                          NC: {net.net_controller} &middot; Started {new Date(net.created_at).toLocaleString()}
                         </div>
                       </div>
                     </button>
@@ -229,7 +229,7 @@ export default function HomePage() {
                           await fetch(`/api/nets/${net.id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ closed_at: now }),
+                            body: JSON.stringify({ closed: true }),
                           })
                           await fetch(`/api/nets/${net.id}/log`, {
                             method: 'POST',

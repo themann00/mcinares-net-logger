@@ -151,8 +151,8 @@ export default function ReportPage() {
     ? `${differenceInMinutes(closedAt, openedAt)} minutes`
     : 'Net still open'
   const nc = derived.netController || net.net_controller
-  const altNc = derived.altNc || net.alt_net_controller
-  const liaison = derived.liaison || net.liaison
+  const altNc = derived.altNc
+  const liaison = derived.liaison
 
   function downloadCsv() {
     if (!net) return
@@ -240,16 +240,6 @@ export default function ReportPage() {
               <Field label="Net Controller" value={nc} />
               {(isAres || altNc) && <Field label="Alternate Net Control" value={altNc} />}
               {(isAres || isSkywarn || liaison) && <Field label="Liaison" value={liaison} />}
-              {isSkywarn && (
-                <Field
-                  label="Weather Status"
-                  value={
-                    net.weather_status
-                      ? net.weather_status.charAt(0).toUpperCase() + net.weather_status.slice(1)
-                      : null
-                  }
-                />
-              )}
               <Field label="Net Opened" value={openedAt ? format(openedAt, 'MMMM d, yyyy HH:mm') : null} />
               <Field label="Net Closed" value={closedAt ? format(closedAt, 'MMMM d, yyyy HH:mm') : 'Still open'} />
               <Field label="Duration" value={duration} />

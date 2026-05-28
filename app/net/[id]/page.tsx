@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -45,7 +45,8 @@ import { TrafficSection } from '@/components/TrafficSection'
 import { AddToLogModal } from '@/components/AddToLogModal'
 import { SetupSkywarn } from '@/components/SetupSkywarn'
 import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
-import type { Net, Station, LogEntry, NetContext } from '@/types'
+import type { Net, DerivedStation, LogEntry, NetContext } from '@/types'
+import { deriveStations, deriveNetContext } from '@/lib/deriveStations'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
@@ -55,7 +56,6 @@ export default function NetPage() {
   const netId = params.id as string
 
   const [net, setNet] = useState<Net | null>(null)
-  const [stations, setStations] = useState<Station[]>([])
   const [logEntries, setLogEntries] = useState<LogEntry[]>([])
   const [roster, setRoster] = useState<{ callsign: string; first_name: string | null; last_name: string | null; email: string | null }[]>([])
   const [sectionIndex, setSectionIndex] = useState(0)
@@ -78,27 +78,32 @@ export default function NetPage() {
   const [checkinQueue, setCheckinQueue] = useState<QueuedCheckin[]>([])
   const [committing, setCommitting] = useState(false)
 
+  const stations: DerivedStation[] = useMemo(() => deriveStations(logEntries), [logEntries])
+
+  const derivedCtx = useMemo(
+    () => (net ? deriveNetContext(logEntries, net) : null),
+    [logEntries, net]
+  )
+
   const sections = net ? getSections(net.type) : []
   const section = sections[sectionIndex]
 
   const ctx: NetContext = {
     net_controller: net?.net_controller || '',
-    alt_net_controller: net?.alt_net_controller,
-    liaison: net?.liaison,
+    alt_net_controller: derivedCtx?.alt_net_controller,
+    liaison: derivedCtx?.liaison,
     weather_status: localWeatherStatus,
     nws_bulletin: localBulletin || null,
   }
 
   const fetchAll = useCallback(async () => {
-    const [netRes, stationsRes, logRes, rosterRes] = await Promise.all([
+    const [netRes, logRes, rosterRes] = await Promise.all([
       fetch(`/api/nets/${netId}`),
-      fetch(`/api/nets/${netId}/stations`),
       fetch(`/api/nets/${netId}/log`),
       fetch('/api/roster'),
     ])
     if (!netRes.ok) return
     setNet(await netRes.json())
-    setStations(await stationsRes.json())
     const entries = await logRes.json()
     setLogEntries(entries)
     if (entries.length > 2) setSetupComplete(true)
@@ -109,14 +114,15 @@ export default function NetPage() {
     fetchAll()
   }, [fetchAll])
 
-  // Live elapsed timer
+  // Live elapsed timer - derive started_at from first net_open log entry
+  const startedAt = derivedCtx?.started_at ?? null
   useEffect(() => {
-    if (!net?.started_at) return
-    const tick = () => setElapsed(formatDistanceToNow(new Date(net.started_at), { addSuffix: false }))
+    if (!startedAt) return
+    const tick = () => setElapsed(formatDistanceToNow(new Date(startedAt), { addSuffix: false }))
     tick()
     const interval = setInterval(tick, 30000)
     return () => clearInterval(interval)
-  }, [net?.started_at])
+  }, [startedAt])
 
   useEffect(() => {
     const id = section?.id
@@ -129,7 +135,6 @@ export default function NetPage() {
   async function saveSectionInputs() {
     if (!net || !section?.inputFields) return
     setSaving(true)
-    const patch: Record<string, string> = {}
     const logItems: { entry_type: string; content: string }[] = []
 
     const autoCheckins: string[] = []
@@ -139,15 +144,12 @@ export default function NetPage() {
       if (!val) return
 
       if (field.id === 'alt_nc') {
-        patch.alt_net_controller = val
         logItems.push({ entry_type: 'alt_nc', content: `Alternate net control: ${val}` })
         autoCheckins.push(val)
       } else if (field.id === 'liaison') {
-        patch.liaison = val
         logItems.push({ entry_type: 'liaison', content: `Liaison station: ${val}` })
         autoCheckins.push(val)
       } else if (field.id === 'nts_liaison') {
-        patch.liaison = val
         logItems.push({ entry_type: 'liaison', content: `NTS Liaison: ${val}` })
         autoCheckins.push(val)
       } else if (field.id === 'oes_station') {
@@ -155,14 +157,6 @@ export default function NetPage() {
         autoCheckins.push(val)
       }
     })
-
-    if (Object.keys(patch).length > 0) {
-      await fetch(`/api/nets/${netId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      })
-    }
 
     for (const item of logItems) {
       await fetch(`/api/nets/${netId}/log`, {
@@ -177,7 +171,7 @@ export default function NetPage() {
         s => s.callsign.toUpperCase() === callsign.toUpperCase()
       )
       if (!already) {
-        await fetch(`/api/nets/${netId}/stations`, {
+        await fetch(`/api/nets/${netId}/checkin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ callsign }),
@@ -235,7 +229,7 @@ export default function NetPage() {
 
     for (const evt of events) {
       if (evt.type === 'checkin') {
-        const res = await fetch(`/api/nets/${netId}/stations`, {
+        const res = await fetch(`/api/nets/${netId}/checkin`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -252,8 +246,8 @@ export default function NetPage() {
           }),
         })
         if (res.ok) {
-          const station = await res.json()
-          stationIds[evt.item.callsign] = station.id
+          const logEntry = await res.json()
+          stationIds[evt.item.callsign] = logEntry.id
         }
       } else {
         await fetch(`/api/nets/${netId}/log`, {
@@ -262,7 +256,7 @@ export default function NetPage() {
           body: JSON.stringify({
             entry_type: evt.type,
             content: `${evt.item.callsign}: ${evt.type === 'traffic' ? evt.item.trafficText : evt.item.announcementText}`,
-            station_id: stationIds[evt.item.callsign] || null,
+            metadata: { callsign: evt.item.callsign },
             timestamp: evt.timestamp,
           }),
         })
@@ -278,11 +272,6 @@ export default function NetPage() {
     if (!net) return
     setClosing(true)
     const now = new Date().toISOString()
-    await fetch(`/api/nets/${netId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ closed_at: now }),
-    })
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -290,6 +279,11 @@ export default function NetPage() {
         entry_type: 'net_close',
         content: `Net closed at ${format(new Date(now), 'HH:mm')} local`,
       }),
+    })
+    await fetch(`/api/nets/${netId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ closed: true }),
     })
     router.push(`/net/${netId}/report`)
   }

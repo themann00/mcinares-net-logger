@@ -12,49 +12,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'type and net_controller are required' }, { status: 400 })
   }
 
-  const { data: net, error: netError } = await getSupabase()
+  const cs = net_controller.toUpperCase().trim()
+  const db = getSupabase()
+
+  const { data: net, error: netError } = await db
     .from('mcinares_nets')
-    .insert({ type, net_controller, testing: testing || false })
+    .insert({ type, net_controller: cs, testing: testing || false })
     .select()
     .single()
 
-  if (netError) {
-    console.error('Supabase insert mcinares_nets failed:', netError)
-    return NextResponse.json({ error: netError.message }, { status: 500 })
-  }
+  if (netError) return NextResponse.json({ error: netError.message }, { status: 500 })
 
   if (!defer_start) {
-    const openTime = new Date(net.started_at)
-    const checkinTime = new Date(openTime.getTime() + 1000)
+    const now = new Date()
+    const checkinTime = new Date(now.getTime() + 1000)
 
-    await getSupabase().from('mcinares_log_entries').insert({
+    await db.from('mcinares_log_entries').insert({
       net_id: net.id,
       entry_type: 'net_open',
-      content: `Net opened by ${net_controller}`,
-      timestamp: openTime.toISOString(),
+      content: `Net opened by ${cs}`,
+      timestamp: now.toISOString(),
+      metadata: { net_controller: cs },
     })
 
-    await getSupabase()
-      .from('mcinares_stations')
-      .insert({
-        net_id: net.id,
-        callsign: net_controller,
-        station_type: 'base',
-        location: 'N/A',
-        checked_in_at: checkinTime.toISOString(),
-      })
-
-    await getSupabase().from('mcinares_roster').upsert(
-      { callsign: net_controller },
-      { onConflict: 'callsign', ignoreDuplicates: true }
-    )
-
-    await getSupabase().from('mcinares_log_entries').insert({
+    await db.from('mcinares_log_entries').insert({
       net_id: net.id,
       entry_type: 'checkin',
-      content: `${net_controller} checked in (net control)`,
+      content: `${cs} checked in (net control)`,
       timestamp: checkinTime.toISOString(),
+      metadata: { callsign: cs, station_type: 'base', location: 'N/A' },
     })
+
+    await db.from('mcinares_roster').upsert(
+      { callsign: cs },
+      { onConflict: 'callsign', ignoreDuplicates: true }
+    )
   }
 
   return NextResponse.json(net, { status: 201 })
@@ -64,7 +56,7 @@ export async function GET() {
   const { data, error } = await getSupabase()
     .from('mcinares_nets')
     .select('*')
-    .order('started_at', { ascending: false })
+    .order('created_at', { ascending: false })
     .limit(20)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

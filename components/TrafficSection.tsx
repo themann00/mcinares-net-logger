@@ -35,16 +35,16 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
     .filter(s => s.has_traffic)
     .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
 
-  const alreadyLogged = new Set(
+  const alreadyLoggedCallsigns = new Set(
     logEntries
-      .filter(e => e.entry_type === 'traffic' && e.station_id)
-      .map(e => e.station_id)
+      .filter(e => e.entry_type === 'traffic' && e.content.includes(':'))
+      .map(e => e.content.split(':')[0].trim().toUpperCase())
   )
 
   const [trafficState, setTrafficState] = useState<Record<string, TrafficState>>(() => {
     const initial: Record<string, TrafficState> = {}
     trafficStations.forEach(s => {
-      initial[s.id] = { text: 'N/A', cancelled: false, saved: alreadyLogged.has(s.id) }
+      initial[s.callsign] = { text: 'N/A', cancelled: false, saved: alreadyLoggedCallsigns.has(s.callsign.toUpperCase()) }
     })
     return initial
   })
@@ -55,7 +55,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
   const [noteSaving, setNoteSaving] = useState(false)
 
   async function saveTraffic(station: Station) {
-    const state = trafficState[station.id]
+    const state = trafficState[station.callsign]
     if (!state || !state.text.trim()) return
 
     await fetch(`/api/nets/${netId}/log`, {
@@ -64,13 +64,13 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
       body: JSON.stringify({
         entry_type: 'traffic',
         content: `${station.callsign}: ${state.text.trim()}`,
-        station_id: station.id,
+        metadata: { callsign: station.callsign },
       }),
     })
 
     setTrafficState(prev => ({
       ...prev,
-      [station.id]: { ...prev[station.id], saved: true },
+      [station.callsign]: { ...prev[station.callsign], saved: true },
     }))
     onUpdate()
   }
@@ -90,7 +90,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
       body: JSON.stringify({
         entry_type: entryType,
         content: `${prefix}${typePrefix}${noteContent.trim()}`,
-        station_id: station?.id || null,
+        metadata: noteCallsign.trim() ? { callsign: noteCallsign.trim().toUpperCase() } : undefined,
       }),
     })
 
@@ -115,12 +115,12 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
               <span>Enter a summary for each station (or leave as N/A) and click Log Traffic, or it will not appear in the net logs.</span>
             </div>
             {trafficStations.map(station => {
-              const state = trafficState[station.id]
+              const state = trafficState[station.callsign]
               if (!state || state.cancelled) return null
 
               if (state.saved) {
                 return (
-                  <div key={station.id} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
+                  <div key={station.callsign} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                     <span className="font-mono text-sm text-green-400 line-through">{station.callsign}</span>
                     <span className="text-gray-500 text-xs">logged</span>
@@ -129,11 +129,11 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
               }
 
               return (
-                <div key={station.id} className="bg-gray-800 rounded-lg p-3 space-y-2">
+                <div key={station.callsign} className="bg-gray-800 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="font-mono font-semibold text-white">{station.callsign}</span>
                     <button
-                      onClick={() => setTrafficState(prev => ({ ...prev, [station.id]: { ...prev[station.id], cancelled: true } }))}
+                      onClick={() => setTrafficState(prev => ({ ...prev, [station.callsign]: { ...prev[station.callsign], cancelled: true } }))}
                       className="text-gray-500 hover:text-red-400 text-xs flex items-center gap-1"
                     >
                       <X className="w-3 h-3" />
@@ -142,7 +142,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                   </div>
                   <Textarea
                     value={state.text}
-                    onChange={e => setTrafficState(prev => ({ ...prev, [station.id]: { ...prev[station.id], text: e.target.value } }))}
+                    onChange={e => setTrafficState(prev => ({ ...prev, [station.callsign]: { ...prev[station.callsign], text: e.target.value } }))}
                     placeholder="Summarize traffic..."
                     onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
                     className="bg-gray-900 border-gray-700 text-white text-sm"

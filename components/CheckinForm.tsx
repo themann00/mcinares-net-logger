@@ -134,7 +134,7 @@ export function CheckinForm({
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/nets/${netId}/stations`, {
+      const res = await fetch(`/api/nets/${netId}/checkin`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -155,7 +155,6 @@ export function CheckinForm({
       }
 
       if (showTrafficInputs) {
-        const station = await res.json()
         if (hasTraffic) {
           await fetch(`/api/nets/${netId}/log`, {
             method: 'POST',
@@ -163,7 +162,7 @@ export function CheckinForm({
             body: JSON.stringify({
               entry_type: 'traffic',
               content: `${callsign.trim().toUpperCase()}: ${trafficText.trim() || 'N/A'}`,
-              station_id: station.id,
+              metadata: { callsign: callsign.trim().toUpperCase() },
             }),
           })
         }
@@ -174,7 +173,7 @@ export function CheckinForm({
             body: JSON.stringify({
               entry_type: 'announcement',
               content: `${callsign.trim().toUpperCase()}: ${announcementText.trim() || 'N/A'}`,
-              station_id: station.id,
+              metadata: { callsign: callsign.trim().toUpperCase() },
             }),
           })
         }

@@ -45,7 +45,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     : []
 
   function startEdit(station: Station, reason: EditReason) {
-    setEditingId(station.id)
+    setEditingId(station.callsign)
     setEditLocation(station.location || '')
     setEditType((station.station_type as StationType) || '')
     setEditQuadrant((station.quadrant as Quadrant) || '')
@@ -57,17 +57,34 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
 
   async function saveEdit(station: Station) {
     setSaving(true)
-    await fetch(`/api/nets/${netId}/stations`, {
+
+    const metadata: Record<string, unknown> = {}
+    if (editType) metadata.station_type = editType
+    if (editLocation.trim()) metadata.location = editLocation.trim()
+    if (editQuadrant) metadata.quadrant = editQuadrant
+
+    await fetch(`/api/nets/${netId}/log`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        station_id: station.id,
-        station_type: editType || undefined,
-        location: editLocation.trim() || undefined,
-        quadrant: editQuadrant || null,
-        log_reason: editReason,
+        entry_id: station.log_entry_id,
+        metadata,
       }),
     })
+
+    if (editReason === 'moved') {
+      const parts: string[] = []
+      if (editLocation.trim()) parts.push(editLocation.trim())
+      if (editQuadrant) parts.push(`[${editQuadrant}]`)
+      await fetch(`/api/nets/${netId}/log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          entry_type: 'station_moved',
+          content: `${station.callsign} moved${parts.length ? ' to ' + parts.join(' ') : ''}`,
+        }),
+      })
+    }
 
     if (editReportValid) {
       const locPrefix = editLocation.trim() ? `[${editLocation.trim()}] ` : ''
@@ -77,7 +94,6 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         body: JSON.stringify({
           entry_type: 'report',
           content: `${station.callsign}: ${locPrefix}${editReportFormatted}`,
-          station_id: station.id,
         }),
       })
     }
@@ -131,12 +147,12 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
 
     return (
       <div
-        key={station.id}
+        key={station.callsign}
         className={`rounded-lg border p-3 ${
           incomplete ? 'border-amber-700/50 bg-amber-950/20' : 'border-gray-700 bg-gray-800/60'
         }`}
       >
-        {editingId === station.id ? (
+        {editingId === station.callsign ? (
           <div className="space-y-2">
             <div className="text-white font-mono font-semibold">{station.callsign}</div>
             <div className="flex gap-2">
