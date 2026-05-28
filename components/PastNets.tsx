@@ -2,9 +2,16 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2, BookOpen, FileText } from 'lucide-react'
+import { ChevronDown, ChevronUp, Pencil, Check, X, Trash2, BookOpen, FileText, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import Link from 'next/link'
 import type { Net, Station, LogEntry, LogEntryType } from '@/types'
 
@@ -19,6 +26,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   continuity: { label: 'CONT.', color: 'text-cyan-400' },
   circle_back: { label: 'UPDATE', color: 'text-amber-400' },
   late_checkin: { label: 'LATE', color: 'text-blue-300' },
+  station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'CLOSE', color: 'text-red-400' },
   note: { label: 'NOTE', color: 'text-gray-400' },
 }
@@ -48,6 +56,11 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [insertAfterIdx, setInsertAfterIdx] = useState<number | null>(null)
+  const [insertType, setInsertType] = useState<LogEntryType>('note')
+  const [insertContent, setInsertContent] = useState('')
+  const [insertTimestamp, setInsertTimestamp] = useState('')
+  const [insertSaving, setInsertSaving] = useState(false)
   const [pageSize, setPageSize] = useState(5)
   const [page, setPage] = useState(0)
 
@@ -96,6 +109,40 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     setEditingId(null)
     const res = await fetch(`/api/nets/${netId}/log`)
     if (res.ok) {
+      const entries = await res.json()
+      setLogCache(prev => ({ ...prev, [netId]: entries }))
+    }
+  }
+
+  function startInsert(idx: number, entries: LogEntry[]) {
+    const current = entries[idx]
+    const next = entries[idx + 1]
+    const t1 = new Date(current.timestamp).getTime()
+    const t2 = next ? new Date(next.timestamp).getTime() : t1 + 1000
+    const mid = new Date(Math.floor((t1 + t2) / 2))
+    setInsertAfterIdx(idx)
+    setInsertType('note')
+    setInsertContent('')
+    setInsertTimestamp(format(mid, "yyyy-MM-dd'T'HH:mm:ss"))
+  }
+
+  async function saveInsert(netId: string) {
+    if (!insertContent.trim()) return
+    setInsertSaving(true)
+    await fetch(`/api/nets/${netId}/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entry_type: insertType,
+        content: insertContent.trim(),
+        timestamp: new Date(insertTimestamp).toISOString(),
+      }),
+    })
+    setInsertSaving(false)
+    setInsertAfterIdx(null)
+    const res = await fetch(`/api/nets/${netId}/log`)
+    if (res.ok) {
+      setLogCache(prev => ({ ...prev, [netId]: res.ok ? [] : [] }))
       const entries = await res.json()
       setLogCache(prev => ({ ...prev, [netId]: entries }))
     }
@@ -335,65 +382,127 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
               </button>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
-              {(logCache[logPopupNetId] || []).map(entry => {
+              {(logCache[logPopupNetId] || []).map((entry, idx, arr) => {
                 const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
                 const isEditingThis = editingId === entry.id
+                const isInsertingAfter = insertAfterIdx === idx
                 return (
-                  <div key={entry.id} className="group flex gap-2 text-sm py-1 border-b border-gray-800/50 last:border-0">
-                    <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
-                      {format(new Date(entry.timestamp), 'HH:mm:ss')}
-                    </span>
-                    <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
-                      {cfg.label}
-                    </span>
-                    {isSuperAdmin && isEditingThis ? (
-                      <div className="flex-1 flex gap-1">
-                        <input
-                          value={editContent}
-                          onChange={e => setEditContent(e.target.value)}
-                          onKeyDown={e => {
-                            if (e.key === 'Enter') saveEdit(logPopupNetId, entry.id)
-                            if (e.key === 'Escape') setEditingId(null)
-                          }}
-                          className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-white text-sm"
-                          autoFocus
-                          disabled={saving}
-                        />
-                        <button onClick={() => saveEdit(logPopupNetId, entry.id)} disabled={saving} className="text-green-400 hover:text-green-300 p-0.5">
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setEditingId(null)} className="text-gray-500 hover:text-gray-300 p-0.5">
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="text-gray-400 break-all flex-1">{entry.content}</span>
-                    )}
-                    {isSuperAdmin && !isEditingThis && (
-                      <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => { setEditingId(entry.id); setEditContent(entry.content) }}
-                          className="text-gray-600 hover:text-gray-300 p-0.5"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            await fetch(`/api/nets/${logPopupNetId}/log`, {
-                              method: 'DELETE',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ entry_id: entry.id }),
-                            })
-                            const res = await fetch(`/api/nets/${logPopupNetId}/log`)
-                            if (res.ok) {
-                              const entries = await res.json()
-                              setLogCache(prev => ({ ...prev, [logPopupNetId]: entries }))
-                            }
-                          }}
-                          className="text-gray-700 hover:text-red-400 p-0.5"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                  <div key={entry.id}>
+                    <div className="group flex gap-2 text-sm py-1 border-b border-gray-800/50">
+                      <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
+                        {format(new Date(entry.timestamp), 'HH:mm:ss')}
+                      </span>
+                      <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
+                        {cfg.label}
+                      </span>
+                      {isSuperAdmin && isEditingThis ? (
+                        <div className="flex-1 flex gap-1">
+                          <input
+                            value={editContent}
+                            onChange={e => setEditContent(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveEdit(logPopupNetId, entry.id)
+                              if (e.key === 'Escape') setEditingId(null)
+                            }}
+                            className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-white text-sm"
+                            autoFocus
+                            disabled={saving}
+                          />
+                          <button onClick={() => saveEdit(logPopupNetId, entry.id)} disabled={saving} className="text-green-400 hover:text-green-300 p-0.5">
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => setEditingId(null)} className="text-gray-500 hover:text-gray-300 p-0.5">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 break-all flex-1">{entry.content}</span>
+                      )}
+                      {isSuperAdmin && !isEditingThis && (
+                        <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => startInsert(idx, arr)}
+                            className="text-gray-600 hover:text-green-400 p-0.5"
+                            title="Insert log entry after this line"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => { setEditingId(entry.id); setEditContent(entry.content) }}
+                            className="text-gray-600 hover:text-gray-300 p-0.5"
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={async () => {
+                              await fetch(`/api/nets/${logPopupNetId}/log`, {
+                                method: 'DELETE',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ entry_id: entry.id }),
+                              })
+                              const res = await fetch(`/api/nets/${logPopupNetId}/log`)
+                              if (res.ok) {
+                                const entries = await res.json()
+                                setLogCache(prev => ({ ...prev, [logPopupNetId]: entries }))
+                              }
+                            }}
+                            className="text-gray-700 hover:text-red-400 p-0.5"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {isSuperAdmin && isInsertingAfter && (
+                      <div className="bg-green-950/30 border border-green-800/40 rounded-lg p-3 my-1 space-y-2">
+                        <div className="flex gap-2">
+                          <div className="w-40">
+                            <label className="text-gray-500 text-xs block mb-0.5">Timestamp</label>
+                            <input
+                              type="datetime-local"
+                              step="1"
+                              value={insertTimestamp}
+                              onChange={e => setInsertTimestamp(e.target.value)}
+                              className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs font-mono"
+                            />
+                          </div>
+                          <div className="w-32">
+                            <label className="text-gray-500 text-xs block mb-0.5">Type</label>
+                            <Select value={insertType} onValueChange={v => setInsertType(v as LogEntryType)}>
+                              <SelectTrigger className="bg-gray-800 border-gray-600 text-white h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
+                                {Object.entries(TYPE_CONFIG).map(([key, val]) => (
+                                  <SelectItem key={key} value={key} className="text-white text-xs">{val.label}</SelectItem>
+                                ))}
+                                <SelectItem value="station_moved" className="text-white text-xs">MOVED</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-gray-500 text-xs block mb-0.5">Content</label>
+                          <input
+                            value={insertContent}
+                            onChange={e => setInsertContent(e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') saveInsert(logPopupNetId)
+                              if (e.key === 'Escape') setInsertAfterIdx(null)
+                            }}
+                            placeholder="Log entry content..."
+                            className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => saveInsert(logPopupNetId)} disabled={insertSaving || !insertContent.trim()} className="bg-green-700 hover:bg-green-600 text-xs h-7">
+                            {insertSaving ? 'Adding...' : 'Add Log Entry'}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setInsertAfterIdx(null)} className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 text-xs h-7">
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

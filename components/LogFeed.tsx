@@ -14,6 +14,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   continuity: { label: 'CONT.', color: 'text-cyan-400' },
   circle_back: { label: 'UPDATE', color: 'text-amber-400' },
   late_checkin: { label: 'LATE', color: 'text-blue-300' },
+  station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'CLOSE', color: 'text-red-400' },
   note: { label: 'NOTE', color: 'text-gray-400' },
 }

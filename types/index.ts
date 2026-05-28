@@ -13,6 +13,7 @@ export type LogEntryType =
   | 'continuity'
   | 'circle_back'
   | 'late_checkin'
+  | 'station_moved'
   | 'net_close'
   | 'note'
 
