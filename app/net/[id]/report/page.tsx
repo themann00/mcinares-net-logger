@@ -253,25 +253,19 @@ export default function ReportPage() {
             {stations.length === 0 ? (
               <p className="text-gray-500 text-sm">No stations logged.</p>
             ) : (() => {
-              const colSize = Math.ceil(sortedStations.length / 3)
+              const colSize = Math.ceil(sortedStations.length / 4)
               const cols = [
                 sortedStations.slice(0, colSize),
                 sortedStations.slice(colSize, colSize * 2),
-                sortedStations.slice(colSize * 2),
+                sortedStations.slice(colSize * 2, colSize * 3),
+                sortedStations.slice(colSize * 3),
               ]
               return (
-                <div className="grid grid-cols-3 gap-4 text-sm">
+                <div className="grid grid-cols-4 gap-4 text-sm">
                   {cols.map((col, ci) => (
                     <div key={ci} className="space-y-0">
                       {col.map(s => (
-                        <div key={s.id} className="py-0.5 font-mono">
-                          {s.callsign}
-                          {(s.first_name || s.last_name) && (
-                            <span className="text-gray-500 text-xs ml-1 font-sans">
-                              {[s.first_name, s.last_name].filter(Boolean).join(' ')}
-                            </span>
-                          )}
-                        </div>
+                        <div key={s.id} className="py-0.5 font-mono">{s.callsign}</div>
                       ))}
                     </div>
                   ))}
