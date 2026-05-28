@@ -262,24 +262,33 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                   ) : (
                     <div>
                       {(() => {
-                        const netStations = [...(stationCache[net.id] || [])].sort((a, b) => {
-                          const sa = a.callsign.match(/\d([A-Z]+)$/); const sb = b.callsign.match(/\d([A-Z]+)$/)
-                          return (sa?.[1] || a.callsign).localeCompare(sb?.[1] || b.callsign)
+                        const entries = logCache[net.id] || []
+                        const seen = new Set<string>()
+                        const callsigns: string[] = []
+                        for (const e of entries) {
+                          if (e.entry_type !== 'checkin' && e.entry_type !== 'late_checkin') continue
+                          const m = e.content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)\s/)
+                          if (m && !seen.has(m[1])) { seen.add(m[1]); callsigns.push(m[1]) }
+                        }
+                        callsigns.sort((a, b) => {
+                          const sa = a.match(/\d([A-Z]+)$/)?.[1] || a
+                          const sb = b.match(/\d([A-Z]+)$/)?.[1] || b
+                          return sa.localeCompare(sb)
                         })
                         return (
                           <>
                             <div className="text-gray-400 text-xs mb-2">
-                              {netStations.length} station{netStations.length !== 1 ? 's' : ''} checked in
+                              {callsigns.length} station{callsigns.length !== 1 ? 's' : ''} checked in
                             </div>
-                            {netStations.length > 0 && (() => {
-                              const count = netStations.length
+                            {callsigns.length > 0 && (() => {
+                              const count = callsigns.length
                               const cols = count <= 5 ? 1 : count <= 10 ? 2 : count <= 15 ? 3 : count <= 20 ? 4 : 5
                               const colClass = ['grid-cols-1', 'grid-cols-2', 'grid-cols-3', 'grid-cols-4', 'grid-cols-5'][cols - 1]
                               return (
                                 <div className={`grid ${colClass} gap-1 mb-3`}>
-                                  {netStations.map(s => (
-                                    <span key={s.id} className="font-mono text-xs text-gray-300 truncate">
-                                      {s.callsign}
+                                  {callsigns.map(cs => (
+                                    <span key={cs} className="font-mono text-xs text-gray-300 truncate">
+                                      {cs}
                                     </span>
                                   ))}
                                 </div>
