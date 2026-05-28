@@ -145,3 +145,26 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   return NextResponse.json(station)
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const { station_id } = await request.json()
+
+  if (!station_id) {
+    return NextResponse.json({ error: 'station_id required' }, { status: 400 })
+  }
+
+  const db = getSupabase()
+
+  await db.from('mcinares_log_entries')
+    .delete()
+    .eq('station_id', station_id)
+    .eq('net_id', id)
+
+  await db.from('mcinares_stations')
+    .delete()
+    .eq('id', station_id)
+    .eq('net_id', id)
+
+  return NextResponse.json({ ok: true })
+}

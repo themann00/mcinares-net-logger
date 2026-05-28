@@ -215,7 +215,10 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                   ) : (
                     <div>
                       {(() => {
-                        const netStations = stationCache[net.id] || []
+                        const netStations = [...(stationCache[net.id] || [])].sort((a, b) => {
+                          const sa = a.callsign.match(/\d([A-Z]+)$/); const sb = b.callsign.match(/\d([A-Z]+)$/)
+                          return (sa?.[1] || a.callsign).localeCompare(sb?.[1] || b.callsign)
+                        })
                         return (
                           <>
                             <div className="text-gray-400 text-xs mb-2">

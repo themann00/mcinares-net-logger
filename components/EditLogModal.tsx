@@ -68,6 +68,8 @@ function parseCheckinContent(content: string) {
 
 export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [] }: EditLogModalProps) {
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [content, setContent] = useState(entry.content)
 
   const [callsign, setCallsign] = useState('')
@@ -150,6 +152,24 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
     }
 
     setSaving(false)
+    onSave()
+  }
+
+  async function handleDelete() {
+    setDeleting(true)
+    await fetch(`/api/nets/${netId}/log`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry_id: entry.id }),
+    })
+    if (isCheckin && station) {
+      await fetch(`/api/nets/${netId}/stations`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ station_id: station.id }),
+      })
+    }
+    setDeleting(false)
     onSave()
   }
 
@@ -280,24 +300,48 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           </div>
         )}
 
-        <div className="flex gap-2 justify-end">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onClose}
-            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
-          >
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-blue-700 hover:bg-blue-600"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </Button>
-        </div>
+        {confirmDelete ? (
+          <div className="bg-red-950/40 border border-red-700 rounded-lg p-3 space-y-2">
+            <p className="text-red-300 text-sm">Delete this {isCheckin ? 'check-in and station' : 'log entry'}?</p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={handleDelete} disabled={deleting} className="bg-red-700 hover:bg-red-600">
+                {deleting ? 'Deleting...' : 'Yes, Delete'}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)} className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white">
+                No
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2 justify-between">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setConfirmDelete(true)}
+              className="border-red-800 bg-red-950/30 text-red-400 hover:bg-red-900 hover:text-red-300"
+            >
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onClose}
+                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="bg-blue-700 hover:bg-blue-600"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

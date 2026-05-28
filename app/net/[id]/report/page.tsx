@@ -102,7 +102,7 @@ export default function ReportPage() {
       '',
       'STATIONS',
       'Callsign,Name,Type,Location,Quadrant,Check-in Time',
-      ...stations.map(s => [
+      ...[...stations].sort((a, b) => { const sa = a.callsign.match(/\d([A-Z]+)$/); const sb = b.callsign.match(/\d([A-Z]+)$/); return (sa?.[1] || a.callsign).localeCompare(sb?.[1] || b.callsign) }).map(s => [
         s.callsign,
         `"${[s.first_name, s.last_name].filter(Boolean).join(' ')}"`,
         s.station_type || '',
@@ -154,6 +154,12 @@ export default function ReportPage() {
   const isAres = net.type === 'ares'
   const isSiren = net.type === 'siren'
   const isSkywarn = net.type === 'skywarn'
+
+  function getSuffix(cs: string) {
+    const m = cs.match(/\d([A-Z]+)$/)
+    return m ? m[1] : cs
+  }
+  const sortedStations = [...stations].sort((a, b) => getSuffix(a.callsign).localeCompare(getSuffix(b.callsign)))
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
@@ -239,72 +245,39 @@ export default function ReportPage() {
             </div>
           </div>
 
-          {/* Station list */}
+          {/* Station list — 3 columns, sorted by suffix */}
           <div className="mb-8">
             <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
               Stations Checked In ({stations.length})
             </h3>
             {stations.length === 0 ? (
               <p className="text-gray-500 text-sm">No stations logged.</p>
-            ) : (
-              <table className="w-full text-sm border-collapse">
-                <thead>
-                  <tr className="bg-gray-50 text-left">
-                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">#</th>
-                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Callsign</th>
-                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Name</th>
-                    {!isAres && (
-                      <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Type</th>
-                    )}
-                    {(isSkywarn || isSiren) && (
-                      <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Location</th>
-                    )}
-                    {isSkywarn && (
-                      <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Quadrant</th>
-                    )}
-                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Time</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stations.map((station, i) => (
-                    <tr key={station.id} className="border-b border-gray-100">
-                      <td className="py-1.5 px-3 border border-gray-200 text-gray-500">{i + 1}</td>
-                      <td className="py-1.5 px-3 border border-gray-200 font-mono font-semibold">{station.callsign}</td>
-                      <td className="py-1.5 px-3 border border-gray-200 text-gray-700">
-                        {[station.first_name, station.last_name].filter(Boolean).join(' ') || '—'}
-                      </td>
-                      {!isAres && (
-                        <td className="py-1.5 px-3 border border-gray-200">
-                          {station.station_type
-                            ? station.station_type.charAt(0).toUpperCase() + station.station_type.slice(1)
-                            : '—'}
-                        </td>
-                      )}
-                      {(isSkywarn || isSiren) && (
-                        <td className="py-1.5 px-3 border border-gray-200 text-gray-700">
-                          {station.location ? (
-                            <a
-                              href={`https://www.google.com/search?q=${encodeURIComponent(station.location + ' indianapolis')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-500 underline underline-offset-2"
-                            >
-                              {station.location}
-                            </a>
-                          ) : '—'}
-                        </td>
-                      )}
-                      {isSkywarn && (
-                        <td className="py-1.5 px-3 border border-gray-200">{station.quadrant || '—'}</td>
-                      )}
-                      <td className="py-1.5 px-3 border border-gray-200 text-gray-500 font-mono">
-                        {format(new Date(station.checked_in_at), 'HH:mm')}
-                      </td>
-                    </tr>
+            ) : (() => {
+              const colSize = Math.ceil(sortedStations.length / 3)
+              const cols = [
+                sortedStations.slice(0, colSize),
+                sortedStations.slice(colSize, colSize * 2),
+                sortedStations.slice(colSize * 2),
+              ]
+              return (
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  {cols.map((col, ci) => (
+                    <div key={ci} className="space-y-0">
+                      {col.map(s => (
+                        <div key={s.id} className="py-0.5 font-mono">
+                          {s.callsign}
+                          {(s.first_name || s.last_name) && (
+                            <span className="text-gray-500 text-xs ml-1 font-sans">
+                              {[s.first_name, s.last_name].filter(Boolean).join(' ')}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   ))}
-                </tbody>
-              </table>
-            )}
+                </div>
+              )
+            })()}
           </div>
 
           {/* Detailed log */}
