@@ -36,9 +36,70 @@ const LOG_TYPE_LABELS: Record<string, string> = {
   alt_nc: 'ALT NC',
   continuity: 'CONTINUITY',
   circle_back: 'UPDATE',
+  station_moved: 'MOVED',
   late_checkin: 'LATE CHECK-IN',
   net_close: 'NET CLOSE',
   note: 'NOTE',
+}
+
+function getSuffix(cs: string) {
+  const m = cs.match(/\d([A-Z]+)$/)
+  return m ? m[1] : cs
+}
+
+function parseCallsignFromLog(content: string): string {
+  const m = content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)\s/)
+  return m ? m[1] : ''
+}
+
+function deriveFromLogs(log: LogEntry[]) {
+  const openEntry = log.find(e => e.entry_type === 'net_open')
+  const closeEntry = [...log].reverse().find(e => e.entry_type === 'net_close')
+
+  const openedAt = openEntry ? new Date(openEntry.timestamp) : null
+  const closedAt = closeEntry ? new Date(closeEntry.timestamp) : null
+
+  const checkinEntries = log.filter(e => e.entry_type === 'checkin' || e.entry_type === 'late_checkin')
+  const callsignSet = new Set<string>()
+  const checkedInCallsigns: string[] = []
+  let baseCount = 0
+  let mobileCount = 0
+
+  for (const e of checkinEntries) {
+    const cs = parseCallsignFromLog(e.content)
+    if (cs && !callsignSet.has(cs)) {
+      callsignSet.add(cs)
+      checkedInCallsigns.push(cs)
+      if (e.content.includes('(base)')) baseCount++
+      else if (e.content.includes('(mobile)')) mobileCount++
+    }
+  }
+
+  const sortedCallsigns = [...checkedInCallsigns].sort((a, b) => getSuffix(a).localeCompare(getSuffix(b)))
+  const reportCount = log.filter(e => e.entry_type === 'report').length
+
+  const ncEntry = log.find(e => e.entry_type === 'net_open')
+  const ncMatch = ncEntry?.content.match(/by\s+([A-Z0-9/]+)/)
+  const netController = ncMatch ? ncMatch[1] : null
+
+  const altNcEntry = log.find(e => e.entry_type === 'alt_nc')
+  const altNc = altNcEntry ? altNcEntry.content.replace(/^Alternate net control:\s*/i, '').trim() : null
+
+  const liaisonEntry = log.find(e => e.entry_type === 'liaison')
+  const liaison = liaisonEntry ? liaisonEntry.content.replace(/^(?:NTS )?Liaison(?: station)?:\s*/i, '').trim() : null
+
+  return {
+    openedAt,
+    closedAt,
+    sortedCallsigns,
+    totalStations: callsignSet.size,
+    baseCount,
+    mobileCount,
+    reportCount,
+    netController,
+    altNc,
+    liaison,
+  }
 }
 
 export default function ReportPage() {
@@ -48,19 +109,16 @@ export default function ReportPage() {
   const deletedRef = useRef(false)
 
   const [net, setNet] = useState<Net | null>(null)
-  const [stations, setStations] = useState<Station[]>([])
   const [log, setLog] = useState<LogEntry[]>([])
   const [testingDeleted, setTestingDeleted] = useState(false)
 
   const fetchAll = useCallback(async () => {
-    const [netRes, stationsRes, logRes] = await Promise.all([
+    const [netRes, logRes] = await Promise.all([
       fetch(`/api/nets/${netId}`),
-      fetch(`/api/nets/${netId}/stations`),
       fetch(`/api/nets/${netId}/log`),
     ])
     const netData = await netRes.json()
     setNet(netData)
-    setStations(await stationsRes.json())
     setLog(await logRes.json())
 
     if (netData.testing && !deletedRef.current) {
@@ -74,54 +132,56 @@ export default function ReportPage() {
     fetchAll()
   }, [fetchAll])
 
+  if (!net) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-gray-500">Loading report...</div>
+      </div>
+    )
+  }
+
+  const derived = deriveFromLogs(log)
+  const isAres = net.type === 'ares'
+  const isSiren = net.type === 'siren'
+  const isSkywarn = net.type === 'skywarn'
+
+  const openedAt = derived.openedAt
+  const closedAt = derived.closedAt
+  const duration = openedAt && closedAt
+    ? `${differenceInMinutes(closedAt, openedAt)} minutes`
+    : 'Net still open'
+  const nc = derived.netController || net.net_controller
+  const altNc = derived.altNc || net.alt_net_controller
+  const liaison = derived.liaison || net.liaison
+
   function downloadCsv() {
     if (!net) return
-
-    const startedAt = new Date(net.started_at)
-    const closedAt = net.closed_at ? new Date(net.closed_at) : null
-    const duration = closedAt
-      ? `${differenceInMinutes(closedAt, startedAt)} minutes`
-      : 'Net still open'
-    const baseCount = stations.filter(s => s.station_type === 'base').length
-    const mobileCount = stations.filter(s => s.station_type === 'mobile').length
-    const reports = log.filter(e => e.entry_type === 'report').length
 
     const summary = [
       'NET SUMMARY',
       `Net Type,${NET_LABELS[net.type] || net.type}`,
-      `Net Controller,${net.net_controller}`,
-      `Alt Net Control,${net.alt_net_controller || ''}`,
-      `Liaison,${net.liaison || ''}`,
-      `Opened,"${format(startedAt, 'yyyy-MM-dd HH:mm')}"`,
+      `Net Controller,${nc}`,
+      `Alt Net Control,${altNc || ''}`,
+      `Liaison,${liaison || ''}`,
+      `Opened,"${openedAt ? format(openedAt, 'yyyy-MM-dd HH:mm') : ''}"`,
       `Closed,"${closedAt ? format(closedAt, 'yyyy-MM-dd HH:mm') : 'Still open'}"`,
       `Duration,${duration}`,
-      `Total Stations,${stations.length}`,
-      `Base Stations,${baseCount}`,
-      `Mobile Stations,${mobileCount}`,
-      `Reports,${reports}`,
+      `Total Stations,${derived.totalStations}`,
+      `Base Stations,${derived.baseCount}`,
+      `Mobile Stations,${derived.mobileCount}`,
+      `Reports,${derived.reportCount}`,
       '',
       'STATIONS',
-      'Callsign,Name,Type,Location,Quadrant,Check-in Time',
-      ...[...stations].sort((a, b) => { const sa = a.callsign.match(/\d([A-Z]+)$/); const sb = b.callsign.match(/\d([A-Z]+)$/); return (sa?.[1] || a.callsign).localeCompare(sb?.[1] || b.callsign) }).map(s => [
-        s.callsign,
-        `"${[s.first_name, s.last_name].filter(Boolean).join(' ')}"`,
-        s.station_type || '',
-        `"${s.location || ''}"`,
-        s.quadrant || '',
-        format(new Date(s.checked_in_at), 'HH:mm'),
-      ].join(',')),
+      'Callsign',
+      ...derived.sortedCallsigns,
       '',
       'DETAILED LOG',
-      'Timestamp,Type,Callsign,Content',
-      ...log.map(e => {
-        const station = stations.find(s => s.id === e.station_id)
-        return [
-          format(new Date(e.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-          LOG_TYPE_LABELS[e.entry_type] || e.entry_type.toUpperCase(),
-          station?.callsign || '',
-          `"${e.content.replace(/"/g, '""')}"`,
-        ].join(',')
-      }),
+      'Timestamp,Type,Content',
+      ...log.map(e => [
+        format(new Date(e.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+        LOG_TYPE_LABELS[e.entry_type] || e.entry_type.toUpperCase(),
+        `"${e.content.replace(/"/g, '""')}"`,
+      ].join(',')),
     ]
 
     const csv = summary.join('\n')
@@ -134,36 +194,8 @@ export default function ReportPage() {
     URL.revokeObjectURL(url)
   }
 
-  if (!net) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">Loading report...</div>
-      </div>
-    )
-  }
-
-  const startedAt = new Date(net.started_at)
-  const closedAt = net.closed_at ? new Date(net.closed_at) : null
-  const duration = closedAt
-    ? `${differenceInMinutes(closedAt, startedAt)} minutes`
-    : 'Net still open'
-
-  const baseStations = stations.filter(s => s.station_type === 'base').length
-  const mobileStations = stations.filter(s => s.station_type === 'mobile').length
-  const reportCount = log.filter(e => e.entry_type === 'report').length
-  const isAres = net.type === 'ares'
-  const isSiren = net.type === 'siren'
-  const isSkywarn = net.type === 'skywarn'
-
-  function getSuffix(cs: string) {
-    const m = cs.match(/\d([A-Z]+)$/)
-    return m ? m[1] : cs
-  }
-  const sortedStations = [...stations].sort((a, b) => getSuffix(a.callsign).localeCompare(getSuffix(b.callsign)))
-
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
-      {/* Print toolbar — hidden when printing */}
       <div className="bg-gray-900 px-4 py-3 flex items-center justify-end gap-3 print:hidden">
         <Button
           size="sm"
@@ -189,10 +221,8 @@ export default function ReportPage() {
         </div>
       )}
 
-      {/* Report content */}
       <div className="max-w-3xl mx-auto p-6 print:p-0 print:max-w-none">
         <div className="bg-white rounded-xl shadow-sm print:shadow-none p-8">
-          {/* Header */}
           <div className="border-b-2 border-gray-900 pb-4 mb-6">
             <h1 className="text-2xl font-bold text-gray-900">Net Summary Report</h1>
             <h2 className="text-lg text-gray-700 mt-1">{NET_LABELS[net.type]}</h2>
@@ -201,22 +231,15 @@ export default function ReportPage() {
             </p>
           </div>
 
-          {/* Summary */}
           <div className="mb-8">
             <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
               Net Summary
             </h3>
             <div className="divide-y divide-gray-100">
               <Field label="Net Type" value={NET_LABELS[net.type]} />
-              <Field label="Net Controller" value={net.net_controller} />
-              <Field
-                label="Alternate Net Control"
-                value={isAres ? net.alt_net_controller : undefined}
-              />
-              <Field
-                label="Liaison"
-                value={isAres || isSkywarn ? net.liaison : undefined}
-              />
+              <Field label="Net Controller" value={nc} />
+              {(isAres || altNc) && <Field label="Alternate Net Control" value={altNc} />}
+              {(isAres || isSkywarn || liaison) && <Field label="Liaison" value={liaison} />}
               {isSkywarn && (
                 <Field
                   label="Weather Status"
@@ -227,45 +250,42 @@ export default function ReportPage() {
                   }
                 />
               )}
-              <Field label="Net Opened" value={format(startedAt, 'MMMM d, yyyy HH:mm')} />
-              <Field
-                label="Net Closed"
-                value={closedAt ? format(closedAt, 'MMMM d, yyyy HH:mm') : 'Still open'}
-              />
+              <Field label="Net Opened" value={openedAt ? format(openedAt, 'MMMM d, yyyy HH:mm') : null} />
+              <Field label="Net Closed" value={closedAt ? format(closedAt, 'MMMM d, yyyy HH:mm') : 'Still open'} />
               <Field label="Duration" value={duration} />
-              <Field label="Total Unique Stations" value={stations.length} />
-              {!isAres && <Field label="Base Stations" value={baseStations} />}
-              {!isAres && <Field label="Mobile Stations" value={mobileStations} />}
+              <Field label="Total Unique Stations" value={derived.totalStations} />
+              {!isAres && <Field label="Base Stations" value={derived.baseCount} />}
+              {!isAres && <Field label="Mobile Stations" value={derived.mobileCount} />}
               {(isSkywarn || isSiren) && (
                 <Field
                   label={isSiren ? 'Siren Reports' : 'Weather Reports'}
-                  value={reportCount}
+                  value={derived.reportCount}
                 />
               )}
             </div>
           </div>
 
-          {/* Station list — 3 columns, sorted by suffix */}
           <div className="mb-8">
             <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
-              Stations Checked In ({stations.length})
+              Stations Checked In ({derived.totalStations})
             </h3>
-            {stations.length === 0 ? (
+            {derived.sortedCallsigns.length === 0 ? (
               <p className="text-gray-500 text-sm">No stations logged.</p>
             ) : (() => {
-              const colSize = Math.ceil(sortedStations.length / 4)
+              const list = derived.sortedCallsigns
+              const colSize = Math.ceil(list.length / 4)
               const cols = [
-                sortedStations.slice(0, colSize),
-                sortedStations.slice(colSize, colSize * 2),
-                sortedStations.slice(colSize * 2, colSize * 3),
-                sortedStations.slice(colSize * 3),
+                list.slice(0, colSize),
+                list.slice(colSize, colSize * 2),
+                list.slice(colSize * 2, colSize * 3),
+                list.slice(colSize * 3),
               ]
               return (
                 <div className="grid grid-cols-4 gap-4 text-sm">
                   {cols.map((col, ci) => (
                     <div key={ci} className="space-y-0">
-                      {col.map(s => (
-                        <div key={s.id} className="py-0.5 font-mono">{s.callsign}</div>
+                      {col.map(cs => (
+                        <div key={cs} className="py-0.5 font-mono">{cs}</div>
                       ))}
                     </div>
                   ))}
@@ -274,7 +294,6 @@ export default function ReportPage() {
             })()}
           </div>
 
-          {/* Detailed log */}
           <div>
             <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
               Detailed Log ({log.length} entries)
