@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { FileText, X, Check, Maximize2 } from 'lucide-react'
+import { FileText, X, Check, Maximize2, BookOpen } from 'lucide-react'
 import type { Station, LogEntry } from '@/types'
 
 interface AnnouncementsSectionProps {
@@ -33,6 +33,9 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
   )
 
   const [pdfZoom, setPdfZoom] = useState(false)
+  const [readingLogged, setReadingLogged] = useState(
+    logEntries.some(e => e.entry_type === 'announcement' && e.content.includes('Net controller read the prepared weekly announcements'))
+  )
 
   const [annState, setAnnState] = useState<Record<string, AnnState>>(() => {
     const initial: Record<string, AnnState> = {}
@@ -155,6 +158,32 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
         <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
           I will now read this week's Marion County Ham Radio Announcements.
         </div>
+
+        {readingLogged ? (
+          <div className="flex items-center gap-2 text-green-400 text-sm">
+            <Check className="w-4 h-4" />
+            Reading announcements logged
+          </div>
+        ) : (
+          <Button
+            onClick={async () => {
+              await fetch(`/api/nets/${netId}/log`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  entry_type: 'announcement',
+                  content: 'Net controller read the prepared weekly announcements, available at MCINARES.org',
+                }),
+              })
+              setReadingLogged(true)
+              onUpdate()
+            }}
+            className="w-full bg-teal-700 hover:bg-teal-600 gap-2"
+          >
+            <BookOpen className="w-4 h-4" />
+            Log Start of Reading Announcements
+          </Button>
+        )}
 
         {announcementUrl ? (
           <div className="space-y-2">
