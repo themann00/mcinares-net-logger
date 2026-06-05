@@ -26,13 +26,51 @@ interface ReportFormProps {
   logEntries?: LogEntry[]
 }
 
+// Tri-state toggle switch: yes on the left, no on the right, unset in between.
+function TriToggle({ label, value, onChange }: { label: string; value: boolean | null; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-gray-300 text-xs w-14">{label}</span>
+      <div
+        className={`flex w-24 h-7 rounded-full border text-xs font-medium select-none overflow-hidden ${
+          value === true
+            ? 'border-green-700'
+            : value === false
+            ? 'border-red-800'
+            : 'border-gray-700'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => onChange(true)}
+          className={`flex-1 transition-colors ${
+            value === true ? 'bg-green-700 text-white font-semibold' : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          Yes
+        </button>
+        <button
+          type="button"
+          onClick={() => onChange(false)}
+          className={`flex-1 transition-colors ${
+            value === false ? 'bg-red-700 text-white font-semibold' : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+          }`}
+        >
+          No
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export function ReportForm({ netId, netType, stations, onReport, roster = [], logEntries = [] }: ReportFormProps) {
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
   const [sirenNumber, setSirenNumber] = useState('')
-  const [visualConfirm, setVisualConfirm] = useState(false)
-  const [sound, setSound] = useState(true)
-  const [rotation, setRotation] = useState(true)
+  // Tri-state toggles: null = not set, true = yes, false = no
+  const [visual, setVisual] = useState<boolean | null>(null)
+  const [sound, setSound] = useState<boolean | null>(null)
+  const [rotation, setRotation] = useState<boolean | null>(null)
   const [reportFormatted, setReportFormatted] = useState('')
   const [reportValid, setReportValid] = useState(false)
   const [sirenContent, setSirenContent] = useState('')
@@ -42,11 +80,17 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
   const isSkywarn = netType === 'skywarn'
   const isSiren = netType === 'siren'
 
+  const togglesSet = sound !== null && rotation !== null
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const reportContent = isSkywarn ? reportFormatted : sirenContent.trim()
-    if (!reportContent) return
-    if (isSiren && !location.trim() && !sirenNumber.trim()) return
+    if (isSiren) {
+      if (!reportContent && !togglesSet) return
+      if (!location.trim() && !sirenNumber.trim()) return
+    } else if (!reportContent) {
+      return
+    }
     setLoading(true)
 
     const cs = callsign.toUpperCase().trim()
@@ -62,15 +106,20 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
         }),
       })
     } else if (cs && existing && location.trim() && location.trim() !== (existing.location || '')) {
-      await fetch(`/api/nets/${netId}/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          entry_type: 'station_moved',
-          content: `${cs} moved to ${location.trim()}`,
-          callsign: cs,
-        }),
-      })
+      // Stations are assumed stationary: only log a move when a previously
+      // set location changes. Filling in a blank location just updates the
+      // original check-in.
+      if (existing.location) {
+        await fetch(`/api/nets/${netId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entry_type: 'station_moved',
+            content: `${cs} moved to ${location.trim()}`,
+            callsign: cs,
+          }),
+        })
+      }
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -88,17 +137,18 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
     let metadata: Record<string, unknown> | undefined
     if (isSiren) {
       const sirenPart = sirenNumber.trim() ? `Siren #${sirenNumber.trim()} ` : ''
-      const statusParts = [
-        sound ? 'Sound' : 'No sound',
-        rotation ? 'Rotation' : 'No rotation',
-        ...(visualConfirm ? ['Visual confirmation'] : []),
-      ]
-      content = `${prefix}${sirenPart}${locPrefix}${statusParts.join(', ')} — ${reportContent}`
+      const statusParts: string[] = []
+      if (sound !== null) statusParts.push(sound ? 'Sound' : 'No sound')
+      if (rotation !== null) statusParts.push(rotation ? 'Rotation' : 'No rotation')
+      if (visual !== null) statusParts.push(visual ? 'Visual' : 'No visual')
+      const status = statusParts.join(', ')
+      const body = [status, reportContent].filter(Boolean).join(' — ')
+      content = `${prefix}${sirenPart}${locPrefix}${body}`
       metadata = {
         siren_number: sirenNumber.trim() || null,
         sound,
         rotation,
-        visual_confirmation: visualConfirm,
+        visual,
       }
     } else {
       content = `${prefix}${locPrefix}${reportContent}`
@@ -131,54 +181,51 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
     setCallsign('')
     setLocation('')
     setSirenNumber('')
-    setVisualConfirm(false)
-    setSound(true)
-    setRotation(true)
+    setVisual(null)
+    setSound(null)
+    setRotation(null)
     setSirenContent('')
     setResetKey(k => k + 1)
     setLoading(false)
     onReport()
   }
 
-  const hasContent = (isSkywarn ? reportValid : !!sirenContent.trim()) &&
-    (!isSiren || !!location.trim() || !!sirenNumber.trim())
+  function resetToggles() {
+    setVisual(null)
+    setSound(null)
+    setRotation(null)
+  }
 
-  // Siren: stations that have not reported yet, one tile per siren number.
-  const pendingTiles: { callsign: string; sirenNumber: string | null; location: string | null }[] = []
+  const hasContent = isSiren
+    ? (togglesSet || !!sirenContent.trim()) && (!!location.trim() || !!sirenNumber.trim())
+    : isSkywarn ? reportValid : !!sirenContent.trim()
+
+  // Siren: stations split into Awaiting Report (check-in order) and Reports
+  // Made (reverse check-in order). A station with multiple siren numbers gets
+  // one tile per number. Reported stations stay clickable so they can add
+  // information or report more sirens — each log is an additional entry.
+  type Tile = { callsign: string; sirenNumber: string | null; location: string | null }
+  const pendingTiles: Tile[] = []
+  const reportedTiles: Tile[] = []
   if (isSiren) {
     const reports = logEntries.filter(e => e.entry_type === 'report')
-    for (const s of stations) {
-      const own = reports.filter(r =>
+    const inCheckinOrder = [...stations].sort(
+      (a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime()
+    )
+    function stationTiles(s: Station): Tile[] {
+      if (s.siren_numbers.length === 0) {
+        return [{ callsign: s.callsign, sirenNumber: null, location: s.location }]
+      }
+      return s.siren_numbers.map(n => ({ callsign: s.callsign, sirenNumber: n, location: s.location }))
+    }
+    for (const s of inCheckinOrder) {
+      const hasReported = reports.some(r =>
         (r.station_id && r.station_id === s.station_id) ||
         (!r.station_id && r.content.toUpperCase().startsWith(`${s.callsign.toUpperCase()}:`))
       )
-      // A report without a siren number counts as covering the whole station.
-      const bareReport = own.some(r => !(r.metadata as Record<string, unknown> | null)?.siren_number)
-      if (bareReport) continue
-      const reportedNumbers = new Set(
-        own.map(r => ((r.metadata as Record<string, unknown> | null)?.siren_number as string) || '').filter(Boolean)
-      )
-      if (s.siren_numbers.length > 0) {
-        for (const n of s.siren_numbers) {
-          if (!reportedNumbers.has(n)) {
-            pendingTiles.push({ callsign: s.callsign, sirenNumber: n, location: s.location })
-          }
-        }
-      } else if (own.length === 0) {
-        pendingTiles.push({ callsign: s.callsign, sirenNumber: null, location: s.location })
-      }
+      if (hasReported) reportedTiles.unshift(...stationTiles(s))
+      else pendingTiles.push(...stationTiles(s))
     }
-    pendingTiles.sort((a, b) => {
-      if (a.sirenNumber && b.sirenNumber) {
-        const na = parseInt(a.sirenNumber, 10)
-        const nb = parseInt(b.sirenNumber, 10)
-        if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb
-        return a.sirenNumber.localeCompare(b.sirenNumber)
-      }
-      if (a.sirenNumber) return -1
-      if (b.sirenNumber) return 1
-      return a.callsign.localeCompare(b.callsign)
-    })
   }
 
   function pickTile(tile: { callsign: string; sirenNumber: string | null; location: string | null }) {
@@ -259,37 +306,19 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       ) : (
         <div className="space-y-2">
           {isSiren && (
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="flex items-center gap-1.5 text-gray-300 text-xs cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={visualConfirm}
-                  onChange={e => setVisualConfirm(e.target.checked)}
-                  className="rounded accent-blue-600"
-                />
-                Visual Confirmation
-              </label>
+            <div className="flex items-end gap-4 flex-wrap">
+              <div className="space-y-1.5">
+                <TriToggle label="Sound" value={sound} onChange={setSound} />
+                <TriToggle label="Rotation" value={rotation} onChange={setRotation} />
+                <TriToggle label="Visual" value={visual} onChange={setVisual} />
+              </div>
               <button
                 type="button"
-                onClick={() => setSound(v => !v)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  sound
-                    ? 'bg-green-700 text-white'
-                    : 'bg-red-900/70 text-red-200 border border-red-800'
-                }`}
+                onClick={resetToggles}
+                disabled={sound === null && rotation === null && visual === null}
+                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-800 border border-gray-700 text-gray-400 hover:text-gray-200 disabled:opacity-40 transition-colors"
               >
-                {sound ? 'Sound' : 'No Sound'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setRotation(v => !v)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  rotation
-                    ? 'bg-green-700 text-white'
-                    : 'bg-red-900/70 text-red-200 border border-red-800'
-                }`}
-              >
-                {rotation ? 'Rotation' : 'No Rotation'}
+                Reset
               </button>
             </div>
           )}
@@ -307,7 +336,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
               }
               className="bg-gray-800 border-gray-700 text-white"
               rows={3}
-              required
+              required={!isSiren}
             />
           </div>
         </div>
@@ -341,6 +370,34 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
                   <span className="text-red-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
                 )}
                 <span className="text-white font-mono text-sm">{tile.callsign}</span>
+              </div>
+              {!tile.sirenNumber && tile.location && (
+                <div className="text-gray-500 text-xs truncate">{tile.location}</div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {isSiren && reportedTiles.length > 0 && (
+      <div className="space-y-1.5">
+        <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+          Reports Made ({reportedTiles.length})
+        </h4>
+        <div className="grid grid-cols-2 gap-1.5">
+          {reportedTiles.map(tile => (
+            <button
+              key={`${tile.callsign}-${tile.sirenNumber ?? 'none'}`}
+              type="button"
+              onClick={() => pickTile(tile)}
+              className="text-left px-2.5 py-1.5 bg-green-950/30 hover:bg-green-900/40 border border-green-800/50 rounded-lg transition-colors"
+            >
+              <div className="flex items-center gap-1.5">
+                {tile.sirenNumber && (
+                  <span className="text-green-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
+                )}
+                <span className="text-gray-200 font-mono text-sm">{tile.callsign}</span>
               </div>
               {!tile.sirenNumber && tile.location && (
                 <div className="text-gray-500 text-xs truncate">{tile.location}</div>

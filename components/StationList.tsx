@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { RefreshCw, MapPin, AlertCircle, Pencil } from 'lucide-react'
 import { WeatherReportInputs } from '@/components/WeatherReportInputs'
+import { sirenMapUrl } from '@/lib/sirenLocations'
 import type { Station, NetType, StationType, Quadrant } from '@/types'
 
 type EditReason = 'correction' | 'moved'
@@ -287,9 +288,6 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 {netType === 'skywarn' && (
                   <span className="text-gray-500 text-xs">({station.quadrant || 'Unknown'})</span>
                 )}
-                {isSiren && station.siren_numbers.map(n => (
-                  <Badge key={n} className="bg-red-900/70 text-white text-xs">#{n}</Badge>
-                ))}
                 {station.station_type && (
                   <Badge className={`${typeColor(station.station_type)} text-white text-xs`}>
                     {station.station_type}
@@ -312,6 +310,22 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   <MapPin className="w-3 h-3" />
                   {station.location}
                 </a>
+              )}
+              {isSiren && station.siren_numbers.length > 0 && (
+                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                  {station.siren_numbers.map(n => (
+                    <a
+                      key={n}
+                      href={sirenMapUrl(n)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-red-400 hover:text-red-300 text-xs font-mono underline underline-offset-2"
+                      title={`Siren #${n} on the county siren map`}
+                    >
+                      Siren #{n}
+                    </a>
+                  ))}
+                </div>
               )}
               {(station.first_name || station.last_name) && (
                 <div className="text-gray-500 text-xs mt-0.5">
