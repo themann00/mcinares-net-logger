@@ -77,6 +77,8 @@ export default function NetPage() {
   const [addToLogOpen, setAddToLogOpen] = useState(false)
   const [checkinQueue, setCheckinQueue] = useState<QueuedCheckin[]>([])
   const [committing, setCommitting] = useState(false)
+  const [sirenResetConfirm, setSirenResetConfirm] = useState(false)
+  const [sirenBusy, setSirenBusy] = useState(false)
 
   const stations: DerivedStation[] = useMemo(() => deriveStations(logEntries), [logEntries])
 
@@ -127,9 +129,9 @@ export default function NetPage() {
   useEffect(() => {
     const id = section?.id
     if (!id) return
-    if (id === 'initial_reports' || id === 'continuity') setActiveTab('report')
+    if (id === 'initial_reports' || id === 'continuity' || id === 'post_siren') setActiveTab('report')
     else if (id === 'reports_and_circleback') setActiveTab('stations')
-    else if (id.startsWith('checkin_')) setActiveTab('checkin')
+    else if (id.startsWith('checkin_') || id === 'preamble' || id === 'additional_checkins') setActiveTab('checkin')
   }, [section?.id])
 
   async function saveSectionInputs() {
@@ -184,7 +186,9 @@ export default function NetPage() {
   }
 
   const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining']
-  const useQueue = net?.type === 'ares' && queueSections.includes(section?.id || '')
+  const useQueue =
+    (net?.type === 'ares' && queueSections.includes(section?.id || '')) ||
+    (net?.type === 'siren' && section?.id === 'preamble')
 
   function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) {
     setCheckinQueue(prev => [...prev, {
@@ -268,6 +272,42 @@ export default function NetPage() {
     fetchAll()
   }
 
+  // Siren start/stop status lives in the log as note entries; the button
+  // state persists across pages because it derives from logEntries.
+  const sirenStartEntry = logEntries.find(e => e.entry_type === 'note' && (e.metadata as Record<string, unknown> | null)?.siren_event === 'started')
+  const sirenStopEntry = logEntries.find(e => e.entry_type === 'note' && (e.metadata as Record<string, unknown> | null)?.siren_event === 'stopped')
+
+  async function logSirenEvent(event: 'started' | 'stopped') {
+    if (!net) return
+    setSirenBusy(true)
+    await fetch(`/api/nets/${netId}/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entry_type: 'note',
+        content: `Sirens ${event} — logged by ${net.net_controller}`,
+        metadata: { siren_event: event },
+      }),
+    })
+    setSirenBusy(false)
+    fetchAll()
+  }
+
+  async function resetSirenStatus() {
+    setSirenBusy(true)
+    for (const entry of [sirenStartEntry, sirenStopEntry]) {
+      if (!entry) continue
+      await fetch(`/api/nets/${netId}/log`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_id: entry.id }),
+      })
+    }
+    setSirenBusy(false)
+    setSirenResetConfirm(false)
+    fetchAll()
+  }
+
   async function closeNet() {
     if (!net) return
     setClosing(true)
@@ -300,8 +340,14 @@ export default function NetPage() {
   const mobileStations = stations.filter(s => s.station_type === 'mobile').length
   const reportEntries = logEntries.filter(e => e.entry_type === 'report').length
   const circleBackAvailable = net.type === 'skywarn' || net.type === 'siren'
+  // Siren nets: a station is complete once it has a location or at least one
+  // siren number. Skywarn still needs base/mobile and location.
+  const isIncomplete = (s: DerivedStation) =>
+    net.type === 'siren'
+      ? !s.location && s.siren_numbers.length === 0
+      : !s.station_type || !s.location
   const incompleteStations = (net.type === 'skywarn' || net.type === 'siren')
-    ? stations.filter(s => !s.station_type || !s.location).length
+    ? stations.filter(isIncomplete).length
     : 0
 
   const sectionNav = (position: 'top' | 'bottom' = 'bottom') => (
@@ -332,24 +378,54 @@ export default function NetPage() {
         {sectionIndex + 1} / {sections.length}
       </span>
 
-      {section?.type === 'closenet' ? (
-        <Button
-          onClick={closeNet}
-          disabled={closing}
-          className="bg-red-700 hover:bg-red-600 font-semibold px-8"
-        >
-          {closing ? 'Closing...' : 'Close Net & Generate Report'}
-        </Button>
-      ) : (
-        <Button
-          onClick={() => setSectionIndex(i => Math.min(sections.length - 1, i + 1))}
-          disabled={sectionIndex === sections.length - 1}
-          className="bg-blue-700 hover:bg-blue-600 gap-1"
-        >
-          Next
-          <ChevronRight className="w-4 h-4" />
-        </Button>
-      )}
+      <div className="flex items-center gap-2">
+        {net?.type === 'siren' && (
+          !sirenStartEntry ? (
+            <Button
+              onClick={() => logSirenEvent('started')}
+              disabled={sirenBusy}
+              className="bg-green-700 hover:bg-green-600 font-semibold"
+            >
+              SIRENS STARTED
+            </Button>
+          ) : !sirenStopEntry ? (
+            <Button
+              onClick={() => logSirenEvent('stopped')}
+              disabled={sirenBusy}
+              className="bg-red-700 hover:bg-red-600 font-semibold"
+            >
+              SIRENS STOPPED
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setSirenResetConfirm(true)}
+              disabled={sirenBusy}
+              className="bg-gray-600 hover:bg-gray-500 font-semibold"
+            >
+              RESET SIREN STATUS
+            </Button>
+          )
+        )}
+
+        {section?.type === 'closenet' ? (
+          <Button
+            onClick={closeNet}
+            disabled={closing}
+            className="bg-red-700 hover:bg-red-600 font-semibold px-8"
+          >
+            {closing ? 'Closing...' : 'Close Net & Generate Report'}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => setSectionIndex(i => Math.min(sections.length - 1, i + 1))}
+            disabled={sectionIndex === sections.length - 1}
+            className="bg-blue-700 hover:bg-blue-600 gap-1"
+          >
+            Next
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
     </div>
   )
 
@@ -683,9 +759,9 @@ export default function NetPage() {
           )}
 
           {section?.type === 'closenet' && (net.type === 'skywarn' || net.type === 'siren') && (() => {
-            const incomplete = stations.filter(s => !s.station_type || !s.location).length
+            const incomplete = stations.filter(isIncomplete).length
             if (incomplete === 0) return null
-            const circleBackIdx = sections.findIndex(s => s.id === 'reports_and_circleback')
+            const circleBackIdx = sections.findIndex(s => s.id === 'reports_and_circleback' || s.id === 'post_siren')
             return (
               <div className="bg-red-950/40 border border-red-700 rounded-xl p-4 space-y-2">
                 <div className="text-red-300 text-sm font-medium">
@@ -878,6 +954,7 @@ export default function NetPage() {
                       onCommit={commitQueue}
                       committing={committing}
                       showTrafficInputs={net.type === 'ares' && section.id === 'short_time'}
+                      showFlags={net.type === 'ares'}
                     />
                   )}
                 </>
@@ -891,6 +968,7 @@ export default function NetPage() {
                 stations={stations}
                 onReport={fetchAll}
                 roster={roster}
+                logEntries={logEntries}
               />
             )}
 
@@ -965,6 +1043,35 @@ export default function NetPage() {
                 stations={stations}
                 roster={roster}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {sirenResetConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
+            <h3 className="text-white font-semibold">Reset Siren Status</h3>
+            <p className="text-gray-300 text-sm">
+              This removes both the sirens started and sirens stopped log entries. Continue?
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSirenResetConfirm(false)}
+                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={resetSirenStatus}
+                disabled={sirenBusy}
+                className="bg-red-700 hover:bg-red-600"
+              >
+                {sirenBusy ? 'Removing...' : 'Yes, Remove Entries'}
+              </Button>
             </div>
           </div>
         </div>

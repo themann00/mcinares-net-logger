@@ -30,17 +30,25 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editLocation, setEditLocation] = useState('')
   const [editType, setEditType] = useState<StationType | ''>('')
   const [editQuadrant, setEditQuadrant] = useState<Quadrant | ''>('')
+  const [editSirens, setEditSirens] = useState<string[]>(['', '', '', ''])
   const [editReason, setEditReason] = useState<EditReason>('correction')
   const [editReportFormatted, setEditReportFormatted] = useState('')
   const [editReportValid, setEditReportValid] = useState(false)
   const [editReportResetKey, setEditReportResetKey] = useState(0)
   const [saving, setSaving] = useState(false)
 
+  const isSiren = netType === 'siren'
+
+  // Siren: complete once a location or at least one siren number is set.
+  // Skywarn: still needs base/mobile and location.
+  const stationIncomplete = (s: Station) =>
+    isSiren
+      ? !s.location && s.siren_numbers.length === 0
+      : !s.station_type || !s.location
+
   const needsCircleBack = showCircleBack
     ? stations.filter(
-        s =>
-          (netType === 'skywarn' || netType === 'siren') &&
-          (!s.station_type || !s.location)
+        s => (netType === 'skywarn' || netType === 'siren') && stationIncomplete(s)
       )
     : []
 
@@ -49,6 +57,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     setEditLocation(station.location || '')
     setEditType((station.station_type as StationType) || '')
     setEditQuadrant((station.quadrant as Quadrant) || '')
+    setEditSirens([0, 1, 2, 3].map(i => station.siren_numbers[i] || ''))
     setEditReason(reason)
     setEditReportResetKey(k => k + 1)
     setEditReportFormatted('')
@@ -62,6 +71,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     if (editType) metadata.station_type = editType
     if (editLocation.trim()) metadata.location = editLocation.trim()
     if (editQuadrant) metadata.quadrant = editQuadrant
+    if (isSiren) metadata.siren_numbers = editSirens.map(s => s.trim()).filter(Boolean)
 
     await fetch(`/api/nets/${netId}/log`, {
       method: 'PATCH',
@@ -124,20 +134,26 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         <p className="text-gray-500 text-sm text-center py-4">No stations checked in yet.</p>
       )}
 
-      {([null, 'SW', 'NW', 'NE', 'SE'] as const).map(quadrant => {
-        const group = stations
-          .filter(s => quadrant === null ? !s.quadrant : s.quadrant === quadrant)
-          .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
-        if (group.length === 0) return null
-        return (
-          <div key={quadrant ?? 'unknown'}>
-            <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-2 mb-1">
-              {quadrant ?? 'Unknown'}
+      {netType === 'skywarn' ? (
+        ([null, 'SW', 'NW', 'NE', 'SE'] as const).map(quadrant => {
+          const group = stations
+            .filter(s => quadrant === null ? !s.quadrant : s.quadrant === quadrant)
+            .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
+          if (group.length === 0) return null
+          return (
+            <div key={quadrant ?? 'unknown'}>
+              <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-2 mb-1">
+                {quadrant ?? 'Unknown'}
+              </div>
+              {group.map(station => renderStation(station))}
             </div>
-            {group.map(station => renderStation(station))}
-          </div>
-        )
-      })}
+          )
+        })
+      ) : (
+        [...stations]
+          .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
+          .map(station => renderStation(station))
+      )}
     </div>
   )
 
@@ -145,7 +161,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     const incomplete =
       showCircleBack &&
       (netType === 'skywarn' || netType === 'siren') &&
-      (!station.station_type || !station.location)
+      stationIncomplete(station)
 
     return (
       <div
@@ -167,17 +183,19 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
-                  <SelectValue placeholder="Quad" />
-                </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="SW" className="text-white">SW</SelectItem>
-                  <SelectItem value="NW" className="text-white">NW</SelectItem>
-                  <SelectItem value="NE" className="text-white">NE</SelectItem>
-                  <SelectItem value="SE" className="text-white">SE</SelectItem>
-                </SelectContent>
-              </Select>
+              {netType === 'skywarn' && (
+                <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
+                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
+                    <SelectValue placeholder="Quad" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="SW" className="text-white">SW</SelectItem>
+                    <SelectItem value="NW" className="text-white">NW</SelectItem>
+                    <SelectItem value="NE" className="text-white">NE</SelectItem>
+                    <SelectItem value="SE" className="text-white">SE</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               <Input
                 value={editLocation}
                 onChange={e => setEditLocation(e.target.value)}
@@ -185,6 +203,23 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 className="bg-gray-800 border-gray-700 text-white flex-1"
               />
             </div>
+
+            {isSiren && (
+              <div>
+                <span className="text-gray-400 text-xs font-medium block mb-1">Siren #s (up to 4)</span>
+                <div className="flex gap-2">
+                  {editSirens.map((val, i) => (
+                    <Input
+                      key={i}
+                      value={val}
+                      onChange={e => setEditSirens(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                      placeholder={`#${i + 1}`}
+                      className="bg-gray-800 border-gray-700 text-white w-16 font-mono text-sm"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex rounded-lg overflow-hidden border border-gray-700">
                 <button
@@ -249,7 +284,12 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-white font-mono font-semibold">{station.callsign}</span>
-                <span className="text-gray-500 text-xs">({station.quadrant || 'Unknown'})</span>
+                {netType === 'skywarn' && (
+                  <span className="text-gray-500 text-xs">({station.quadrant || 'Unknown'})</span>
+                )}
+                {isSiren && station.siren_numbers.map(n => (
+                  <Badge key={n} className="bg-red-900/70 text-white text-xs">#{n}</Badge>
+                ))}
                 {station.station_type && (
                   <Badge className={`${typeColor(station.station_type)} text-white text-xs`}>
                     {station.station_type}

@@ -39,9 +39,10 @@ interface CheckinQueueProps {
   onCommit: () => void
   committing: boolean
   showTrafficInputs?: boolean
+  showFlags?: boolean
 }
 
-export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false }: CheckinQueueProps) {
+export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true }: CheckinQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [editData, setEditData] = useState<QueuedCheckin | null>(null)
@@ -95,26 +96,30 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               {item.callsign}
               {item.firstName && <span className="text-gray-500 text-xs font-sans ml-1">{item.firstName}</span>}
             </button>
-            {item.hasTraffic && <span className="text-yellow-500 text-xs">T</span>}
-            {item.hasAnnouncement && <span className="text-teal-500 text-xs">A</span>}
-            <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={item.hasTraffic}
-                onChange={e => onUpdate(queue.map(q => q.id === item.id ? { ...q, hasTraffic: e.target.checked } : q))}
-                className="rounded accent-yellow-500"
-              />
-              Tfc
-            </label>
-            <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={item.hasAnnouncement}
-                onChange={e => onUpdate(queue.map(q => q.id === item.id ? { ...q, hasAnnouncement: e.target.checked } : q))}
-                className="rounded accent-teal-500"
-              />
-              Ann
-            </label>
+            {showFlags && (
+              <>
+                {item.hasTraffic && <span className="text-yellow-500 text-xs">T</span>}
+                {item.hasAnnouncement && <span className="text-teal-500 text-xs">A</span>}
+                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={item.hasTraffic}
+                    onChange={e => onUpdate(queue.map(q => q.id === item.id ? { ...q, hasTraffic: e.target.checked } : q))}
+                    className="rounded accent-yellow-500"
+                  />
+                  Tfc
+                </label>
+                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={item.hasAnnouncement}
+                    onChange={e => onUpdate(queue.map(q => q.id === item.id ? { ...q, hasAnnouncement: e.target.checked } : q))}
+                    className="rounded accent-teal-500"
+                  />
+                  Ann
+                </label>
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -168,16 +173,18 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
             </div>
 
-            <div className="flex gap-4">
-              <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-                <input type="checkbox" checked={editData.hasTraffic} onChange={e => setEditData({ ...editData, hasTraffic: e.target.checked })} className="rounded" />
-                Has Traffic
-              </label>
-              <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
-                <input type="checkbox" checked={editData.hasAnnouncement} onChange={e => setEditData({ ...editData, hasAnnouncement: e.target.checked })} className="rounded" />
-                Has Announcement
-              </label>
-            </div>
+            {showFlags && (
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                  <input type="checkbox" checked={editData.hasTraffic} onChange={e => setEditData({ ...editData, hasTraffic: e.target.checked })} className="rounded" />
+                  Has Traffic
+                </label>
+                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                  <input type="checkbox" checked={editData.hasAnnouncement} onChange={e => setEditData({ ...editData, hasAnnouncement: e.target.checked })} className="rounded" />
+                  Has Announcement
+                </label>
+              </div>
+            )}
 
             {showTrafficInputs && editData.hasTraffic && (
               <div>

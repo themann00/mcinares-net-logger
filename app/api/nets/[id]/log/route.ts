@@ -78,8 +78,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const update: Record<string, unknown> = {}
   if (content !== undefined) update.content = content.trim()
-  if (metadata !== undefined) update.metadata = metadata
   if (station_id !== undefined) update.station_id = station_id
+
+  // Merge metadata keys into the existing object so partial updates
+  // (e.g. just location) don't clobber the rest.
+  if (metadata !== undefined) {
+    const { data: existing } = await getSupabase()
+      .from('mcinares_log_entries')
+      .select('metadata')
+      .eq('id', entry_id)
+      .eq('net_id', id)
+      .single()
+    update.metadata = { ...((existing?.metadata as Record<string, unknown> | null) || {}), ...metadata }
+  }
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'nothing to update' }, { status: 400 })

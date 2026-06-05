@@ -38,6 +38,8 @@ export interface CheckinMetadata {
   station_type?: StationType | null
   location?: string | null
   quadrant?: Quadrant | null
+  /** Siren nets: up to four siren numbers covered by this station */
+  siren_numbers?: string[]
   has_traffic?: boolean
   has_announcements?: boolean
 }
@@ -69,6 +71,7 @@ export interface DerivedStation {
   station_type: StationType | null
   location: string | null
   quadrant: Quadrant | null
+  siren_numbers: string[]
   has_traffic: boolean
   has_announcements: boolean
   checked_in_at: string

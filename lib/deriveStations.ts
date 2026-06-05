@@ -25,6 +25,7 @@ export function deriveStations(entries: LogEntry[]): DerivedStation[] {
         station_type: (meta?.station_type as StationType) || parseTypeFromContent(e.content),
         location: meta?.location || null,
         quadrant: (meta?.quadrant as Quadrant) || null,
+        siren_numbers: meta?.siren_numbers || [],
         has_traffic: meta?.has_traffic || false,
         has_announcements: meta?.has_announcements || false,
         checked_in_at: e.timestamp,
@@ -38,6 +39,7 @@ export function deriveStations(entries: LogEntry[]): DerivedStation[] {
         const meta = e.metadata as Record<string, unknown> | null
         if (meta?.location) station.location = meta.location as string
         if (meta?.quadrant) station.quadrant = meta.quadrant as Quadrant
+        if (meta?.siren_numbers) station.siren_numbers = meta.siren_numbers as string[]
       }
     }
 
@@ -48,6 +50,7 @@ export function deriveStations(entries: LogEntry[]): DerivedStation[] {
         if (meta?.station_type) station.station_type = meta.station_type as StationType
         if (meta?.location) station.location = meta.location as string
         if (meta?.quadrant) station.quadrant = meta.quadrant as Quadrant
+        if (meta?.siren_numbers) station.siren_numbers = meta.siren_numbers as string[]
       }
     }
   }

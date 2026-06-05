@@ -16,25 +16,17 @@ At this time we will take early check-ins — callsign only at this time, please
   {
     id: 'post_siren',
     title: 'Post-Siren (11:00)',
-    type: 'read',
-    allowReports: true,
-    script: () =>
-      `I will take additional check-ins in a moment. First I will go through the current list: when called upon please report the siren number using the map at the bottom of www.mcinares.org/skywarn if possible, or the siren location to the best of your knowledge, if it sounded with rotation, as well as any visual reports such as damage or repair needed.
-
-Log reports using the Report tab.`,
-  },
-  {
-    id: 'list_review',
-    title: 'List Review',
     type: 'report',
     allowCheckins: true,
     allowReports: true,
     allowCircleBack: true,
     script: () =>
-      `Go through each station on the check-in list. When called upon, each station should report:
+      `I will take additional check-ins in a moment. First I will go through the current list: when called upon please report the siren number using the map at the bottom of www.mcinares.org/skywarn if possible, or the siren location to the best of your knowledge. Each station should report:
   • Siren number or nearest cross street
   • Whether it sounded with rotation
   • Any visual observations — damage or repair needed
+
+Log reports using the Report tab.
 
 {{circle-back}}`,
   },
