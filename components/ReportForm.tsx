@@ -130,29 +130,29 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       })
     }
 
+    // Report format: CALLSIGN: [Location] - Siren #N - toggles - text,
+    // omitting missing parts and their separators.
     const prefix = cs ? `${cs}: ` : ''
-    const locPrefix = location.trim() ? `[${location.trim()}] ` : ''
+    const parts: string[] = []
+    if (location.trim()) parts.push(`[${location.trim()}]`)
 
-    let content: string
     let metadata: Record<string, unknown> | undefined
     if (isSiren) {
-      const sirenPart = sirenNumber.trim() ? `Siren #${sirenNumber.trim()} ` : ''
+      if (sirenNumber.trim()) parts.push(`Siren #${sirenNumber.trim()}`)
       const statusParts: string[] = []
       if (sound !== null) statusParts.push(sound ? 'Sound' : 'No sound')
       if (rotation !== null) statusParts.push(rotation ? 'Rotation' : 'No rotation')
       if (visual !== null) statusParts.push(visual ? 'Visual' : 'No visual')
-      const status = statusParts.join(', ')
-      const body = [status, reportContent].filter(Boolean).join(' — ')
-      content = `${prefix}${sirenPart}${locPrefix}${body}`
+      if (statusParts.length > 0) parts.push(statusParts.join(', '))
       metadata = {
         siren_number: sirenNumber.trim() || null,
         sound,
         rotation,
         visual,
       }
-    } else {
-      content = `${prefix}${locPrefix}${reportContent}`
     }
+    if (reportContent) parts.push(reportContent)
+    const content = `${prefix}${parts.join(' - ')}`
 
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',

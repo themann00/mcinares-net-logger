@@ -81,7 +81,7 @@ function parseReportContent(content: string) {
 
   const locMatch = rest.match(/^\[([^\]]*)\]\s*/)
   const location = locMatch ? locMatch[1] : ''
-  const report = locMatch ? rest.slice(locMatch[0].length) : rest
+  const report = (locMatch ? rest.slice(locMatch[0].length) : rest).replace(/^-\s*/, '')
 
   return { callsign, location, report }
 }
@@ -158,11 +158,11 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   async function saveFields(cs: string, stationId?: string | null) {
     if (isReport) {
       const prefix = cs ? `${cs}: ` : ''
-      const locPrefix = location.trim() ? `[${location.trim()}] ` : ''
+      const parts = [location.trim() ? `[${location.trim()}]` : '', report.trim()].filter(Boolean)
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${locPrefix}${report.trim()}` }),
+        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${parts.join(' - ')}` }),
       })
     } else if (isCheckin) {
       const meta = {
