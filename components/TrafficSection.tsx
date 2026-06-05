@@ -64,7 +64,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
       body: JSON.stringify({
         entry_type: 'traffic',
         content: `${station.callsign}: ${state.text.trim()}`,
-        metadata: { callsign: station.callsign },
+        callsign: station.callsign,
       }),
     })
 
@@ -90,7 +90,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
       body: JSON.stringify({
         entry_type: entryType,
         content: `${prefix}${typePrefix}${noteContent.trim()}`,
-        metadata: noteCallsign.trim() ? { callsign: noteCallsign.trim().toUpperCase() } : undefined,
+        callsign: noteCallsign.trim() ? noteCallsign.trim().toUpperCase() : undefined,
       }),
     })
 

@@ -13,11 +13,36 @@ interface RosterEntry {
   first_name: string | null
   last_name: string | null
   email: string | null
+  license: string | null
+  address: string | null
+  county: string | null
   checkin_count: number
   last_checkin: string | null
 }
 
-type SortKey = 'callsign' | 'first_name' | 'last_name' | 'email' | 'checkin_count' | 'last_checkin' | 'qrz'
+type SortKey = 'callsign' | 'first_name' | 'last_name' | 'license' | 'address' | 'county' | 'checkin_count' | 'last_checkin' | 'lookup'
+
+type ToggleColumn = 'first_name' | 'last_name' | 'address' | 'county' | 'license' | 'last_checkin' | 'checkin_count'
+
+const TOGGLE_COLUMNS: { key: ToggleColumn; label: string }[] = [
+  { key: 'first_name', label: 'First' },
+  { key: 'last_name', label: 'Last' },
+  { key: 'address', label: 'Address' },
+  { key: 'county', label: 'County' },
+  { key: 'license', label: 'License' },
+  { key: 'last_checkin', label: 'Last Check-In' },
+  { key: 'checkin_count', label: '# of Check-Ins' },
+]
+
+const DEFAULT_COLUMNS: Record<ToggleColumn, boolean> = {
+  first_name: true,
+  last_name: true,
+  address: false,
+  county: false,
+  license: false,
+  last_checkin: true,
+  checkin_count: false,
+}
 
 export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: boolean; fullPage?: boolean }) {
   const [entries, setEntries] = useState<RosterEntry[]>([])
@@ -33,10 +58,17 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   const [editFirst, setEditFirst] = useState('')
   const [editLast, setEditLast] = useState('')
   const [editEmail, setEditEmail] = useState('')
+  const [editLicense, setEditLicense] = useState('')
+  const [editAddress, setEditAddress] = useState('')
+  const [editCounty, setEditCounty] = useState('')
+  const [columns, setColumns] = useState<Record<ToggleColumn, boolean>>(DEFAULT_COLUMNS)
   const [saving, setSaving] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleteInput, setDeleteInput] = useState('')
   const [deleting, setDeleting] = useState(false)
+  const [conflict, setConflict] = useState<{ id: string; callsign: string } | null>(null)
+  const [renameOther, setRenameOther] = useState('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   async function fetchRoster() {
     const res = await fetch('/api/roster')
@@ -45,6 +77,21 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   }
 
   useEffect(() => { fetchRoster() }, [])
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('roster_columns')
+      if (saved) setColumns({ ...DEFAULT_COLUMNS, ...JSON.parse(saved) })
+    } catch { /* ignore bad saved state */ }
+  }, [])
+
+  function toggleColumn(key: ToggleColumn) {
+    setColumns(prev => {
+      const next = { ...prev, [key]: !prev[key] }
+      try { localStorage.setItem('roster_columns', JSON.stringify(next)) } catch { /* ignore */ }
+      return next
+    })
+  }
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -75,7 +122,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    if (sortKey === 'qrz') {
+    if (sortKey === 'lookup') {
       const aMissing = !a.first_name || !a.last_name ? 0 : 1
       const bMissing = !b.first_name || !b.last_name ? 0 : 1
       const cmp = aMissing - bMissing
@@ -108,14 +155,20 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
     setEditFirst(entry.first_name || '')
     setEditLast(entry.last_name || '')
     setEditEmail(entry.email || '')
+    setEditLicense(entry.license || '')
+    setEditAddress(entry.address || '')
+    setEditCounty(entry.county || '')
     setDeleteConfirm(false)
     setDeleteInput('')
+    setConflict(null)
+    setErrorMsg('')
   }
 
   async function handleSave() {
     if (!editing) return
     setSaving(true)
-    await fetch('/api/roster', {
+    setErrorMsg('')
+    const res = await fetch('/api/roster', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -124,22 +177,87 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
         first_name: editFirst,
         last_name: editLast,
         email: editEmail,
+        license: editLicense,
+        address: editAddress,
+        county: editCounty,
       }),
     })
     setSaving(false)
+    if (res.status === 409) {
+      const body = await res.json()
+      if (body.conflict) {
+        setConflict(body.conflict)
+        setRenameOther(`${body.conflict.callsign}-OLD`)
+        return
+      }
+      setErrorMsg(body.error || 'Conflict')
+      return
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      setErrorMsg(body?.error || 'Save failed')
+      return
+    }
     setEditing(null)
     fetchRoster()
+  }
+
+  async function handleMerge() {
+    if (!editing || !conflict) return
+    setSaving(true)
+    const res = await fetch('/api/roster/merge', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source_id: editing.id, target_id: conflict.id }),
+    })
+    setSaving(false)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      setErrorMsg(body?.error || 'Merge failed')
+      return
+    }
+    setConflict(null)
+    setEditing(null)
+    fetchRoster()
+  }
+
+  async function handleRenameOther() {
+    if (!editing || !conflict || !renameOther.trim()) return
+    setSaving(true)
+    setErrorMsg('')
+    // Move the existing station out of the way, then retry the original rename.
+    const res = await fetch('/api/roster', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: conflict.id, callsign: renameOther.trim() }),
+    })
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      setSaving(false)
+      setErrorMsg(body?.error || 'Rename failed')
+      return
+    }
+    setConflict(null)
+    setSaving(false)
+    await handleSave()
   }
 
   async function handleDelete() {
     if (!editing || (!superAdmin && deleteInput !== 'DELETE')) return
     setDeleting(true)
-    await fetch('/api/roster', {
+    setErrorMsg('')
+    const res = await fetch('/api/roster', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id: editing.id }),
     })
     setDeleting(false)
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      setErrorMsg(body?.error || 'Delete failed')
+      setDeleteConfirm(false)
+      return
+    }
     setEditing(null)
     fetchRoster()
   }
@@ -224,6 +342,20 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
         </div>
       </div>
 
+      <div className="flex items-center gap-3 mb-3 flex-wrap">
+        {TOGGLE_COLUMNS.map(col => (
+          <label key={col.key} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none hover:text-gray-200">
+            <input
+              type="checkbox"
+              checked={columns[col.key]}
+              onChange={() => toggleColumn(col.key)}
+              className="accent-blue-600 w-3.5 h-3.5"
+            />
+            {col.label}
+          </label>
+        ))}
+      </div>
+
       {entries.length === 0 ? (
         <p className="text-gray-500 text-sm">No operators in roster yet.</p>
       ) : (
@@ -233,12 +365,14 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
               <thead>
                 <tr className="border-b border-gray-700">
                   <th className="px-3 py-2 text-left"><SortHeader label="Call" field="callsign" /></th>
-                  <th className="px-3 py-2 text-left"><SortHeader label="First" field="first_name" /></th>
-                  <th className="px-3 py-2 text-left"><SortHeader label="Last" field="last_name" /></th>
-                  <th className="px-3 py-2 text-left"><SortHeader label="Email" field="email" /></th>
-                  <th className="px-3 py-2 text-right"><SortHeader label="#" field="checkin_count" /></th>
-                  <th className="px-3 py-2 text-left"><SortHeader label="Last Check-In" field="last_checkin" /></th>
-                  <th className="px-1 py-2"><SortHeader label="QRZ" field="qrz" /></th>
+                  {columns.first_name && <th className="px-3 py-2 text-left"><SortHeader label="First" field="first_name" /></th>}
+                  {columns.last_name && <th className="px-3 py-2 text-left"><SortHeader label="Last" field="last_name" /></th>}
+                  {columns.address && <th className="px-3 py-2 text-left"><SortHeader label="Address" field="address" /></th>}
+                  {columns.county && <th className="px-3 py-2 text-left"><SortHeader label="County" field="county" /></th>}
+                  {columns.license && <th className="px-3 py-2 text-left"><SortHeader label="License" field="license" /></th>}
+                  {columns.checkin_count && <th className="px-3 py-2 text-right"><SortHeader label="#" field="checkin_count" /></th>}
+                  {columns.last_checkin && <th className="px-3 py-2 text-left"><SortHeader label="Last Check-In" field="last_checkin" /></th>}
+                  <th className="px-1 py-2"><SortHeader label="Lookup" field="lookup" /></th>
                 </tr>
               </thead>
               <tbody>
@@ -259,11 +393,16 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                       {superAdmin && (
                         <button
                           onClick={async () => {
-                            await fetch('/api/roster', {
+                            const res = await fetch('/api/roster', {
                               method: 'DELETE',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ id: entry.id }),
                             })
+                            if (!res.ok) {
+                              const body = await res.json().catch(() => null)
+                              window.alert(body?.error || 'Delete failed')
+                              return
+                            }
                             fetchRoster()
                           }}
                           className="ml-1 text-gray-700 hover:text-red-400 transition-colors align-middle"
@@ -273,22 +412,17 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                         </button>
                       )}
                     </td>
-                    <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>
-                    <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>
-                    <td className="px-3 py-1.5 text-gray-400">
-                      {entry.email ? (
-                        <a
-                          href={`mailto:${entry.email}`}
-                          className="text-blue-400 hover:text-blue-300 underline underline-offset-2 cursor-pointer"
-                        >
-                          {entry.email}
-                        </a>
-                      ) : ''}
-                    </td>
-                    <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>
-                    <td className="px-3 py-1.5 text-gray-500 text-xs">
-                      {entry.last_checkin ? format(new Date(entry.last_checkin), 'MMM d, yyyy') : ''}
-                    </td>
+                    {columns.first_name && <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>}
+                    {columns.last_name && <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>}
+                    {columns.address && <td className="px-3 py-1.5 text-gray-400">{entry.address || ''}</td>}
+                    {columns.county && <td className="px-3 py-1.5 text-gray-400">{entry.county || ''}</td>}
+                    {columns.license && <td className="px-3 py-1.5 text-gray-400">{entry.license || ''}</td>}
+                    {columns.checkin_count && <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>}
+                    {columns.last_checkin && (
+                      <td className="px-3 py-1.5 text-gray-500 text-xs">
+                        {entry.last_checkin ? format(new Date(entry.last_checkin), 'MMM d, yyyy') : ''}
+                      </td>
+                    )}
                     <td className="px-1 py-1.5">
                       {(!entry.first_name || !entry.last_name) && (
                         <a
@@ -298,7 +432,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                           onClick={e => e.stopPropagation()}
                           className="text-blue-500 hover:text-blue-400 text-xs"
                         >
-                          QRZ
+                          Lookup
                         </a>
                       )}
                     </td>
@@ -365,11 +499,76 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                 type="email"
               />
             </div>
+            <div>
+              <Label className="text-gray-400 text-xs mb-1 block">Address</Label>
+              <Input
+                value={editAddress}
+                onChange={e => setEditAddress(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-gray-400 text-xs mb-1 block">County</Label>
+                <Input
+                  value={editCounty}
+                  onChange={e => setEditCounty(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+              <div>
+                <Label className="text-gray-400 text-xs mb-1 block">License</Label>
+                <Input
+                  value={editLicense}
+                  onChange={e => setEditLicense(e.target.value)}
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+              </div>
+            </div>
 
             <div className="text-gray-500 text-xs">
               Check-ins: {editing.checkin_count}
               {editing.last_checkin && ` · Last: ${format(new Date(editing.last_checkin), 'MMM d, yyyy')}`}
             </div>
+
+            {errorMsg && <p className="text-red-400 text-sm">{errorMsg}</p>}
+
+            {conflict && (() => {
+              const other = entries.find(e => e.id === conflict.id)
+              return (
+                <div className="bg-blue-950/40 border border-blue-800 rounded-lg p-3 space-y-3">
+                  <p className="text-sm text-gray-200">
+                    <span className="font-mono font-semibold text-white">{conflict.callsign}</span> already exists in the roster
+                    {other ? ` (${other.checkin_count} check-in${other.checkin_count === 1 ? '' : 's'})` : ''}.
+                    {' '}This entry has {editing.checkin_count} check-in{editing.checkin_count === 1 ? '' : 's'}.
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    <Button size="sm" onClick={handleMerge} disabled={saving} className="bg-blue-700 hover:bg-blue-600 justify-start">
+                      Merge {editing.callsign} into {conflict.callsign} (all history combines, {editing.callsign} deleted)
+                    </Button>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        value={renameOther}
+                        onChange={e => setRenameOther(e.target.value.toUpperCase())}
+                        className="bg-gray-800 border-gray-700 text-white font-mono h-8 text-xs flex-1"
+                      />
+                      <Button size="sm" onClick={handleRenameOther} disabled={saving || !renameOther.trim()} className="bg-amber-700 hover:bg-amber-600 h-8 text-xs">
+                        Rename {conflict.callsign} to this, keep both
+                      </Button>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setConflict(null)}
+                      disabled={saving}
+                      className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white justify-start"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )
+            })()}
 
             <div className="flex gap-2 justify-between">
               <div>

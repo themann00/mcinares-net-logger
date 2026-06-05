@@ -8,7 +8,7 @@ interface Suggestion {
   first_name?: string | null
   last_name?: string | null
   email?: string | null
-  source: 'station' | 'roster'
+  source: 'station' | 'roster' | 'new'
 }
 
 interface CallsignAutocompleteProps {
@@ -84,7 +84,15 @@ export function CallsignAutocomplete({
     }
 
     results.sort((a, b) => a.rank - b.rank)
-    return results.slice(0, 8).map(r => r.suggestion)
+    const top = results.slice(0, 8).map(r => r.suggestion)
+
+    // No exact match: always offer creating the typed callsign as a new
+    // station, so a partial match is never the only way out.
+    const hasExact = top.some(s => s.callsign.toUpperCase() === query)
+    if (!hasExact) {
+      top.push({ callsign: query, source: 'new' })
+    }
+    return top
   }
 
   const matches = getMatches()
@@ -162,14 +170,16 @@ export function CallsignAutocomplete({
                 i === highlightIndex ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
               }`}
             >
-              <span className="font-mono font-semibold">{m.callsign}</span>
+              <span className="font-mono font-semibold">
+                {m.source === 'new' ? <>New station: {m.callsign}</> : m.callsign}
+              </span>
               {(m.first_name || m.last_name) && (
                 <span className="text-gray-400 text-xs">
                   {[m.first_name, m.last_name].filter(Boolean).join(' ')}
                 </span>
               )}
-              <span className={`ml-auto text-xs ${m.source === 'station' ? 'text-green-500' : 'text-gray-600'}`}>
-                {m.source === 'station' ? 'checked in' : 'roster'}
+              <span className={`ml-auto text-xs ${m.source === 'station' ? 'text-green-500' : m.source === 'new' ? 'text-amber-500' : 'text-gray-600'}`}>
+                {m.source === 'station' ? 'checked in' : m.source === 'new' ? 'create' : 'roster'}
               </span>
             </button>
           ))}

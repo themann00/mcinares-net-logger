@@ -162,7 +162,7 @@ export function CheckinForm({
             body: JSON.stringify({
               entry_type: 'traffic',
               content: `${callsign.trim().toUpperCase()}: ${trafficText.trim() || 'N/A'}`,
-              metadata: { callsign: callsign.trim().toUpperCase() },
+              callsign: callsign.trim().toUpperCase(),
             }),
           })
         }
@@ -173,7 +173,7 @@ export function CheckinForm({
             body: JSON.stringify({
               entry_type: 'announcement',
               content: `${callsign.trim().toUpperCase()}: ${announcementText.trim() || 'N/A'}`,
-              metadata: { callsign: callsign.trim().toUpperCase() },
+              callsign: callsign.trim().toUpperCase(),
             }),
           })
         }

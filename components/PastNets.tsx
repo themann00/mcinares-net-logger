@@ -13,7 +13,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import Link from 'next/link'
-import type { Net, LogEntry, LogEntryType } from '@/types'
+import { EditLogModal } from '@/components/EditLogModal'
+import { deriveStations } from '@/lib/deriveStations'
+import type { Net, LogEntry, LogEntryType, CheckinMetadata } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   net_open: { label: 'OPEN', color: 'text-green-400' },
@@ -62,6 +64,11 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [insertSaving, setInsertSaving] = useState(false)
   const [pageSize, setPageSize] = useState(5)
   const [page, setPage] = useState(0)
+  const [modalEntry, setModalEntry] = useState<LogEntry | null>(null)
+  const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
+  const [showOriginal, setShowOriginal] = useState(false)
+  const [rosterList, setRosterList] = useState<{ callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]>([])
+  const [rosterLoaded, setRosterLoaded] = useState(false)
 
   const closedNets = nets.filter(n => n.closed && !n.testing)
   if (closedNets.length === 0) return null
@@ -86,6 +93,21 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     setLoadingLog(false)
   }
 
+  async function refreshLog(netId: string) {
+    const res = await fetch(`/api/nets/${netId}/log`)
+    if (res.ok) {
+      const entries = await res.json()
+      setLogCache(prev => ({ ...prev, [netId]: entries }))
+    }
+  }
+
+  async function ensureRoster() {
+    if (rosterLoaded) return
+    const res = await fetch('/api/roster')
+    if (res.ok) setRosterList(await res.json())
+    setRosterLoaded(true)
+  }
+
   async function saveEdit(netId: string, entryId: string) {
     if (!editContent.trim()) return
     setSaving(true)
@@ -96,11 +118,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     })
     setSaving(false)
     setEditingId(null)
-    const res = await fetch(`/api/nets/${netId}/log`)
-    if (res.ok) {
-      const entries = await res.json()
-      setLogCache(prev => ({ ...prev, [netId]: entries }))
-    }
+    await refreshLog(netId)
   }
 
   function startInsert(idx: number, entries: LogEntry[]) {
@@ -129,12 +147,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
     })
     setInsertSaving(false)
     setInsertAfterIdx(null)
-    const res = await fetch(`/api/nets/${netId}/log`)
-    if (res.ok) {
-      setLogCache(prev => ({ ...prev, [netId]: res.ok ? [] : [] }))
-      const entries = await res.json()
-      setLogCache(prev => ({ ...prev, [netId]: entries }))
-    }
+    await refreshLog(netId)
   }
 
   function getDeletePhrase(net: Net) {
@@ -256,8 +269,8 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                         const callsigns: string[] = []
                         for (const e of entries) {
                           if (e.entry_type !== 'checkin' && e.entry_type !== 'late_checkin') continue
-                          const m = e.content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)\s/)
-                          if (m && !seen.has(m[1])) { seen.add(m[1]); callsigns.push(m[1]) }
+                          const cs = e.station?.callsign || e.content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)\s/)?.[1]
+                          if (cs && !seen.has(cs)) { seen.add(cs); callsigns.push(cs) }
                         }
                         callsigns.sort((a, b) => {
                           const sa = a.match(/\d([A-Z]+)$/)?.[1] || a
@@ -293,7 +306,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setLogPopupNetId(net.id)}
+                      onClick={() => { setLogPopupNetId(net.id); setHighlighted(new Set()); ensureRoster() }}
                       className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
                     >
                       <BookOpen className="w-3.5 h-3.5" />
@@ -375,18 +388,46 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
               <h3 className="text-white font-semibold">Net Log</h3>
-              <button onClick={() => setLogPopupNetId(null)} className="text-gray-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none hover:text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={showOriginal}
+                    onChange={() => setShowOriginal(v => !v)}
+                    className="accent-blue-600 w-3.5 h-3.5"
+                  />
+                  Show original entries
+                </label>
+                {highlighted.size > 0 && (
+                  <button
+                    onClick={() => setHighlighted(new Set())}
+                    className="text-amber-400 hover:text-amber-200 text-xs underline"
+                  >
+                    Clear {highlighted.size} highlighted
+                  </button>
+                )}
+                <button onClick={() => setLogPopupNetId(null)} className="text-gray-400 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
               {(logCache[logPopupNetId] || []).map((entry, idx, arr) => {
                 const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
                 const isEditingThis = editingId === entry.id
                 const isInsertingAfter = insertAfterIdx === idx
+                const meta = entry.metadata as CheckinMetadata | null
+                const asTyped = meta?.callsign_as_typed
+                const currentCs = entry.station?.callsign
+                const wasCorrected = !!asTyped && !!currentCs && asTyped.toUpperCase() !== currentCs.toUpperCase()
                 return (
                   <div key={entry.id}>
-                    <div className="group flex gap-2 text-sm py-1 border-b border-gray-800/50">
+                    <div
+                      onClick={() => setModalEntry(entry)}
+                      className={`group flex gap-2 text-sm py-1 border-b border-gray-800/50 cursor-pointer hover:bg-gray-800/40 rounded px-1 -mx-1 transition-colors ${
+                        highlighted.has(entry.id) ? 'bg-amber-950/40 ring-1 ring-amber-700' : ''
+                      }`}
+                    >
                       <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
                         {format(new Date(entry.timestamp), 'HH:mm:ss')}
                       </span>
@@ -394,7 +435,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                         {cfg.label}
                       </span>
                       {isSuperAdmin && isEditingThis ? (
-                        <div className="flex-1 flex gap-1">
+                        <div className="flex-1 flex gap-1" onClick={e => e.stopPropagation()}>
                           <input
                             value={editContent}
                             onChange={e => setEditContent(e.target.value)}
@@ -414,10 +455,15 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                           </button>
                         </div>
                       ) : (
-                        <span className="text-gray-400 break-all flex-1">{entry.content}</span>
+                        <span className="text-gray-400 break-all flex-1">
+                          {entry.content}
+                          {showOriginal && wasCorrected && (
+                            <span className="text-amber-500/80 text-xs ml-1.5">(typed: {asTyped})</span>
+                          )}
+                        </span>
                       )}
                       {isSuperAdmin && !isEditingThis && (
-                        <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                           <button
                             onClick={() => startInsert(idx, arr)}
                             className="text-gray-600 hover:text-green-400 p-0.5"
@@ -452,7 +498,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                       )}
                     </div>
                     {isSuperAdmin && isInsertingAfter && (
-                      <div className="bg-green-950/30 border border-green-800/40 rounded-lg p-3 my-1 space-y-2">
+                      <div className="bg-green-950/30 border border-green-800/40 rounded-lg p-3 my-1 space-y-2" onClick={e => e.stopPropagation()}>
                         <div className="flex gap-2">
                           <div className="w-40">
                             <label className="text-gray-500 text-xs block mb-0.5">Timestamp</label>
@@ -509,6 +555,37 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
             </div>
           </div>
         </div>
+      )}
+
+      {modalEntry && logPopupNetId && (
+        <EditLogModal
+          entry={modalEntry}
+          station={(() => {
+            const stations = deriveStations(logCache[logPopupNetId] || [])
+            if (modalEntry.station_id) {
+              const byId = stations.find(s => s.station_id === modalEntry.station_id)
+              if (byId) return byId
+            }
+            const meta = modalEntry.metadata as Record<string, unknown> | null
+            const cs = (meta?.callsign as string) || modalEntry.content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)[\s:]/)?.[1]
+            return cs ? stations.find(s => s.callsign === cs) || null : null
+          })()}
+          netId={logPopupNetId}
+          onSave={() => {
+            setHighlighted(prev => {
+              if (!prev.has(modalEntry.id)) return prev
+              const next = new Set(prev)
+              next.delete(modalEntry.id)
+              return next
+            })
+            setModalEntry(null)
+            refreshLog(logPopupNetId)
+          }}
+          onClose={() => setModalEntry(null)}
+          stations={deriveStations(logCache[logPopupNetId] || [])}
+          roster={rosterList}
+          onHighlight={ids => setHighlighted(prev => new Set([...prev, ...ids]))}
+        />
       )}
     </div>
   )

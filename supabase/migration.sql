@@ -1,52 +1,61 @@
--- Marion County ARES Net Logger — Supabase Migration
--- Run this in the Supabase SQL Editor (jacobmann-me project)
+-- Marion County ARES Net Logger — Supabase schema
+-- Mirror of the deployed schema in the jacobmann-me project (regenerated 2026-06-05).
+-- Logs are the single source of truth; stations are derived from log entries.
+-- Station identity: log entries reference mcinares_roster by UUID (docs/station-identity-spec.md).
 
-CREATE TABLE IF NOT EXISTS MCINARES_nets (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  type          TEXT NOT NULL CHECK (type IN ('ares', 'skywarn', 'siren')),
-  net_controller      TEXT NOT NULL,
-  alt_net_controller  TEXT,
-  liaison             TEXT,
-  weather_status      TEXT CHECK (weather_status IN ('approaching', 'imminent')),
-  nws_bulletin        TEXT,
-  started_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
-  closed_at     TIMESTAMPTZ,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS mcinares_nets (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  type            TEXT NOT NULL CHECK (type IN ('ares', 'skywarn', 'siren')),
+  net_controller  TEXT NOT NULL,
+  testing         BOOLEAN NOT NULL DEFAULT FALSE,
+  closed          BOOLEAN DEFAULT FALSE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS MCINARES_stations (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  net_id        UUID NOT NULL REFERENCES MCINARES_nets(id) ON DELETE CASCADE,
-  callsign      TEXT NOT NULL,
-  first_name    TEXT,
-  last_name     TEXT,
-  station_type  TEXT CHECK (station_type IN ('base', 'mobile')),
-  location      TEXT,
-  quadrant      TEXT CHECK (quadrant IN ('SW', 'NW', 'NE', 'SE')),
-  has_traffic         BOOLEAN NOT NULL DEFAULT FALSE,
-  has_announcements   BOOLEAN NOT NULL DEFAULT FALSE,
-  checked_in_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE IF NOT EXISTS mcinares_roster (
+  id                            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  callsign                      TEXT NOT NULL,
+  first_name                    TEXT,
+  last_name                     TEXT,
+  email                         TEXT,
+  license                       TEXT,
+  address                       TEXT,
+  county                        TEXT,
+  last_external_participation   TIMESTAMPTZ,
+  -- net that auto-created this row at check-in; NULL = imported or manually added
+  created_in_net_id             UUID REFERENCES mcinares_nets(id) ON DELETE SET NULL,
+  created_at                    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS MCINARES_log_entries (
-  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  net_id        UUID NOT NULL REFERENCES MCINARES_nets(id) ON DELETE CASCADE,
-  station_id    UUID REFERENCES MCINARES_stations(id) ON DELETE SET NULL,
-  entry_type    TEXT NOT NULL CHECK (entry_type IN (
+-- callsigns are unique case-insensitively; app normalizes to uppercase on entry
+CREATE UNIQUE INDEX IF NOT EXISTS mcinares_roster_callsign_upper_key
+  ON mcinares_roster (upper(callsign));
+
+CREATE TABLE IF NOT EXISTS mcinares_log_entries (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  net_id      UUID NOT NULL REFERENCES mcinares_nets(id) ON DELETE CASCADE,
+  -- identity reference for station-related entries; RESTRICT so roster rows
+  -- with log history cannot be deleted (merge instead)
+  station_id  UUID REFERENCES mcinares_roster(id) ON DELETE RESTRICT,
+  entry_type  TEXT NOT NULL CHECK (entry_type IN (
     'net_open', 'checkin', 'report', 'traffic', 'announcement',
     'liaison', 'alt_nc', 'continuity', 'circle_back',
-    'late_checkin', 'net_close', 'note'
+    'late_checkin', 'station_moved', 'net_close', 'note'
   )),
-  content       TEXT NOT NULL,
-  timestamp     TIMESTAMPTZ NOT NULL DEFAULT now()
+  content     TEXT NOT NULL,
+  -- per-net facts (location, quadrant, station_type, has_traffic,
+  -- has_announcements) plus callsign_as_typed audit snapshot
+  metadata    JSONB,
+  timestamp   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Indexes for common queries
-CREATE INDEX IF NOT EXISTS idx_mcinares_stations_net_id ON MCINARES_stations(net_id);
-CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON MCINARES_log_entries(net_id);
-CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON MCINARES_log_entries(timestamp);
+CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON mcinares_log_entries(net_id);
+CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON mcinares_log_entries(timestamp);
+CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_station_id ON mcinares_log_entries(station_id);
 
--- Disable Row Level Security (app uses service role key on server)
-ALTER TABLE MCINARES_nets DISABLE ROW LEVEL SECURITY;
-ALTER TABLE MCINARES_stations DISABLE ROW LEVEL SECURITY;
-ALTER TABLE MCINARES_log_entries DISABLE ROW LEVEL SECURITY;
+-- RLS: enabled with zero policies (deny-all) by design. The app has no
+-- Supabase Auth; all access goes through Next.js API routes using the
+-- service role key, gated by the app's own PIN/JWT middleware.
+ALTER TABLE mcinares_nets ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcinares_roster ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcinares_log_entries ENABLE ROW LEVEL SECURITY;

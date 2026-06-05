@@ -66,7 +66,7 @@ function deriveFromLogs(log: LogEntry[]) {
   let mobileCount = 0
 
   for (const e of checkinEntries) {
-    const cs = parseCallsignFromLog(e.content)
+    const cs = e.station?.callsign || parseCallsignFromLog(e.content)
     if (cs && !callsignSet.has(cs)) {
       callsignSet.add(cs)
       checkedInCallsigns.push(cs)

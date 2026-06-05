@@ -82,6 +82,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         body: JSON.stringify({
           entry_type: 'station_moved',
           content: `${station.callsign} moved${parts.length ? ' to ' + parts.join(' ') : ''}`,
+          callsign: station.callsign,
         }),
       })
     }
@@ -94,6 +95,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         body: JSON.stringify({
           entry_type: 'report',
           content: `${station.callsign}: ${locPrefix}${editReportFormatted}`,
+          callsign: station.callsign,
         }),
       })
     }

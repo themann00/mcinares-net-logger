@@ -61,6 +61,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
         body: JSON.stringify({
           entry_type: 'station_moved',
           content: `${cs} moved to ${location.trim()}`,
+          callsign: cs,
         }),
       })
       await fetch(`/api/nets/${netId}/log`, {
@@ -81,6 +82,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [] }: 
       body: JSON.stringify({
         entry_type: 'report',
         content: `${prefix}${locPrefix}${reportContent}`,
+        callsign: cs || undefined,
       }),
     })
 

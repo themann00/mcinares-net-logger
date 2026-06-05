@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
+import { resolveStation } from '@/lib/station'
 import type { LogEntryType } from '@/types'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const { data, error } = await getSupabase()
     .from('mcinares_log_entries')
-    .select('*')
+    .select('*, station:mcinares_roster(id, callsign, first_name, last_name)')
     .eq('net_id', id)
     .order('timestamp', { ascending: true })
 
@@ -17,11 +18,13 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const body = await request.json()
-  const { entry_type, content, timestamp, metadata } = body as {
+  const { entry_type, content, timestamp, metadata, station_id, callsign } = body as {
     entry_type: LogEntryType
     content: string
     timestamp?: string
     metadata?: Record<string, unknown>
+    station_id?: string
+    callsign?: string
   }
 
   if (!entry_type || !content) {
@@ -31,6 +34,24 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const insertData: Record<string, unknown> = { net_id: id, entry_type, content }
   if (timestamp) insertData.timestamp = timestamp
   if (metadata) insertData.metadata = metadata
+
+  // Station reference: direct UUID, or resolve a callsign (creating the
+  // roster entry if new, stamped with this net).
+  if (station_id) {
+    insertData.station_id = station_id
+  } else if (callsign?.trim()) {
+    try {
+      const station = await resolveStation(getSupabase(), callsign, { netId: id })
+      insertData.station_id = station.id
+      insertData.metadata = {
+        ...(metadata || {}),
+        callsign: station.callsign,
+        callsign_as_typed: callsign.toUpperCase().trim(),
+      }
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : 'station resolve failed' }, { status: 500 })
+    }
+  }
 
   const { data, error } = await getSupabase()
     .from('mcinares_log_entries')
@@ -44,10 +65,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { entry_id, content, metadata } = await request.json() as {
+  const { entry_id, content, metadata, station_id } = await request.json() as {
     entry_id: string
     content?: string
     metadata?: Record<string, unknown>
+    station_id?: string
   }
 
   if (!entry_id) {
@@ -57,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const update: Record<string, unknown> = {}
   if (content !== undefined) update.content = content.trim()
   if (metadata !== undefined) update.metadata = metadata
+  if (station_id !== undefined) update.station_id = station_id
 
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'nothing to update' }, { status: 400 })

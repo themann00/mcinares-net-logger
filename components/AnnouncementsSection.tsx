@@ -62,7 +62,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
       body: JSON.stringify({
         entry_type: 'announcement',
         content: `${station.callsign}: ${state.text.trim()}`,
-        metadata: { callsign: station.callsign },
+        callsign: station.callsign,
       }),
     })
 

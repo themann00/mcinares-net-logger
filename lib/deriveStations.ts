@@ -3,17 +3,25 @@ import type { LogEntry, DerivedStation, CheckinMetadata, StationType, Quadrant }
 export function deriveStations(entries: LogEntry[]): DerivedStation[] {
   const stationMap = new Map<string, DerivedStation>()
 
+  // Identity comes from the roster join (station) when present; metadata and
+  // content parsing remain as fallback for legacy entries without station_id.
+  function entryKey(e: LogEntry, callsign: string | null): string | null {
+    return e.station_id || callsign
+  }
+
   for (const e of entries) {
     if (e.entry_type === 'checkin' || e.entry_type === 'late_checkin') {
       const meta = e.metadata as CheckinMetadata | null
-      const callsign = meta?.callsign || parseCallsignFromContent(e.content)
+      const callsign = e.station?.callsign || meta?.callsign || parseCallsignFromContent(e.content)
       if (!callsign) continue
-      if (stationMap.has(callsign)) continue
+      const key = entryKey(e, callsign)!
+      if (stationMap.has(key)) continue
 
-      stationMap.set(callsign, {
+      stationMap.set(key, {
+        station_id: e.station_id || null,
         callsign,
-        first_name: meta?.first_name || null,
-        last_name: meta?.last_name || null,
+        first_name: e.station?.first_name ?? meta?.first_name ?? null,
+        last_name: e.station?.last_name ?? meta?.last_name ?? null,
         station_type: (meta?.station_type as StationType) || parseTypeFromContent(e.content),
         location: meta?.location || null,
         quadrant: (meta?.quadrant as Quadrant) || null,
@@ -25,20 +33,18 @@ export function deriveStations(entries: LogEntry[]): DerivedStation[] {
     }
 
     if (e.entry_type === 'station_moved') {
-      const meta = e.metadata as Record<string, unknown> | null
-      const callsign = (meta?.callsign as string) || parseCallsignFromContent(e.content)
-      if (callsign && stationMap.has(callsign)) {
-        const station = stationMap.get(callsign)!
+      const station = findStation(stationMap, e)
+      if (station) {
+        const meta = e.metadata as Record<string, unknown> | null
         if (meta?.location) station.location = meta.location as string
         if (meta?.quadrant) station.quadrant = meta.quadrant as Quadrant
       }
     }
 
     if (e.entry_type === 'circle_back') {
-      const meta = e.metadata as Record<string, unknown> | null
-      const callsign = (meta?.callsign as string) || parseCallsignFromContent(e.content)
-      if (callsign && stationMap.has(callsign)) {
-        const station = stationMap.get(callsign)!
+      const station = findStation(stationMap, e)
+      if (station) {
+        const meta = e.metadata as Record<string, unknown> | null
         if (meta?.station_type) station.station_type = meta.station_type as StationType
         if (meta?.location) station.location = meta.location as string
         if (meta?.quadrant) station.quadrant = meta.quadrant as Quadrant
@@ -47,6 +53,22 @@ export function deriveStations(entries: LogEntry[]): DerivedStation[] {
   }
 
   return Array.from(stationMap.values())
+
+  // Match by UUID key first, then by callsign for mixed legacy/new data
+  // (e.g. an old station_moved without station_id targeting a new checkin).
+  function findStation(map: Map<string, DerivedStation>, e: LogEntry): DerivedStation | undefined {
+    const meta = e.metadata as Record<string, unknown> | null
+    const callsign = e.station?.callsign || (meta?.callsign as string) || parseCallsignFromContent(e.content)
+    const key = entryKey(e, callsign)
+    const direct = key ? map.get(key) : undefined
+    if (direct) return direct
+    if (!callsign) return undefined
+    const cs = callsign.toUpperCase()
+    for (const s of map.values()) {
+      if (s.callsign.toUpperCase() === cs) return s
+    }
+    return undefined
+  }
 }
 
 function parseCallsignFromContent(content: string): string | null {

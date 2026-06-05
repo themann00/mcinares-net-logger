@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
+import { resolveStation, buildCheckinContent } from '@/lib/station'
 import type { StationType, Quadrant } from '@/types'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -39,17 +40,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const db = getSupabase()
   const timestamp = checked_in_at || new Date().toISOString()
 
-  const parts: string[] = [`${cs} checked in`]
-  if (station_type) parts.push(`(${station_type})`)
-  if (location) parts.push(`@ ${location}`)
-  if (quadrant) parts.push(`[${quadrant}]`)
-  if (has_traffic) parts.push('— has traffic')
-  if (has_announcements) parts.push('— has announcement')
+  let station
+  try {
+    station = await resolveStation(db, cs, { netId: id, firstName: first_name, lastName: last_name })
+  } catch (e) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'station resolve failed' }, { status: 500 })
+  }
 
+  // Per-net facts only; identity (callsign, names) lives on the roster.
+  // callsign here is a write-time snapshot for fallback display; the
+  // authoritative value is the roster row referenced by station_id.
   const metadata = {
-    callsign: cs,
-    first_name: first_name || null,
-    last_name: last_name || null,
+    callsign: station.callsign,
+    callsign_as_typed: cs,
     station_type: station_type || null,
     location: location || null,
     quadrant: quadrant || null,
@@ -59,41 +62,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { data: logEntry, error } = await db.from('mcinares_log_entries').insert({
     net_id: id,
+    station_id: station.id,
     entry_type: 'checkin',
-    content: `${manual_prefix || ''}${parts.join(' ')}`,
+    content: `${manual_prefix || ''}${buildCheckinContent(station.callsign, metadata)}`,
     timestamp,
     metadata,
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const { data: existing } = await db
-    .from('mcinares_roster')
-    .select('first_name, last_name')
-    .eq('callsign', cs)
-    .maybeSingle()
-
-  if (!existing) {
-    await db.from('mcinares_roster').insert({
-      callsign: cs,
-      first_name: first_name || null,
-      last_name: last_name || null,
-    })
-  } else {
-    const update: Record<string, unknown> = {}
-    if (first_name && !existing.first_name) update.first_name = first_name
-    if (last_name && !existing.last_name) update.last_name = last_name
-    if (Object.keys(update).length > 0) {
-      await db.from('mcinares_roster').update(update).eq('callsign', cs)
-    }
-  }
-
   if (report?.trim()) {
     await db.from('mcinares_log_entries').insert({
       net_id: id,
+      station_id: station.id,
       entry_type: 'report',
-      content: `${cs}: ${report.trim()}`,
-      metadata: { callsign: cs },
+      content: `${station.callsign}: ${report.trim()}`,
+      metadata: { callsign: station.callsign, callsign_as_typed: cs },
     })
   }
 
