@@ -12,8 +12,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { X, Check } from 'lucide-react'
 import type { StationType, Quadrant } from '@/types'
+
+interface RosterEntry {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+}
 
 export interface QueuedCheckin {
   id: string
@@ -40,9 +48,10 @@ interface CheckinQueueProps {
   committing: boolean
   showTrafficInputs?: boolean
   showFlags?: boolean
+  roster?: RosterEntry[]
 }
 
-export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true }: CheckinQueueProps) {
+export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true, roster = [] }: CheckinQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [editData, setEditData] = useState<QueuedCheckin | null>(null)
@@ -125,7 +134,7 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
       </div>
 
       {editingId && editData && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() } if (e.key === 'Escape') setEditingId(null) }}>
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.defaultPrevented) { e.preventDefault(); saveEdit() } if (e.key === 'Escape') setEditingId(null) }}>
           <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-white font-semibold">Edit Queued Check-in</span>
@@ -137,10 +146,16 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
             <div className="flex gap-2">
               <div className="flex-1">
                 <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
-                <Input
+                <CallsignAutocomplete
                   value={editData.callsign}
-                  onChange={e => setEditData({ ...editData, callsign: e.target.value.toUpperCase() })}
-                  className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+                  onChange={v => setEditData({ ...editData, callsign: v })}
+                  onSelect={s => setEditData({
+                    ...editData,
+                    callsign: s.callsign,
+                    firstName: s.first_name || editData.firstName,
+                    lastName: s.last_name || editData.lastName,
+                  })}
+                  roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
                 />
               </div>
               <div className="w-28">

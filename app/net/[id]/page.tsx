@@ -955,6 +955,7 @@ export default function NetPage() {
                       committing={committing}
                       showTrafficInputs={net.type === 'ares' && section.id === 'short_time'}
                       showFlags={net.type === 'ares'}
+                      roster={roster}
                     />
                   )}
                 </>

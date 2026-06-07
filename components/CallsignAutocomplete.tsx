@@ -148,8 +148,14 @@ export function CallsignAutocomplete({
         ref={inputRef}
         value={value}
         onChange={e => {
+          // Restore the caret after uppercasing, otherwise mid-string edits
+          // jump the cursor to the end.
+          const pos = e.target.selectionStart
           onChange(e.target.value.toUpperCase())
           setOpen(true)
+          requestAnimationFrame(() => {
+            if (inputRef.current && pos !== null) inputRef.current.setSelectionRange(pos, pos)
+          })
         }}
         onFocus={() => { if (query) setOpen(true) }}
         onKeyDown={handleKeyDown}

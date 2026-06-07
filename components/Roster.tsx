@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { UppercaseInput } from '@/components/UppercaseInput'
 import { ChevronUp, ChevronDown, X, Trash2, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
 
@@ -466,9 +467,9 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
 
             <div>
               <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
-              <Input
+              <UppercaseInput
                 value={editCallsign}
-                onChange={e => setEditCallsign(e.target.value.toUpperCase())}
+                onValueChange={setEditCallsign}
                 className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
               />
             </div>
