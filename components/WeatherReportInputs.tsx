@@ -19,11 +19,20 @@ export const REPORT_TYPES = [
 export type ReportType = typeof REPORT_TYPES[number]
 
 const HAIL_SIZES = [
-  '1/4" Pea', '1/2" Mothball', '3/4" Penny', '7/8" Nickel',
-  '1" Quarter', '1.5" Ping Pong', '1.75" Golf Ball', '2" Hen Egg',
-  '2.5" Tennis Ball', '2.75" Baseball', '4" Softball', '4.5" Grapefruit',
-  '5+" End-of-the-world',
-]
+  { name: 'Pea', size: '1/4"' },
+  { name: 'Mothball', size: '1/2"' },
+  { name: 'Penny', size: '3/4"' },
+  { name: 'Nickel', size: '7/8"' },
+  { name: 'Quarter', size: '1"' },
+  { name: 'Ping Pong', size: '1.5"' },
+  { name: 'Golf Ball', size: '1.75"' },
+  { name: 'Hen Egg', size: '2"' },
+  { name: 'Tennis Ball', size: '2.5"' },
+  { name: 'Baseball', size: '2.75"' },
+  { name: 'Softball', size: '4"' },
+  { name: 'Grapefruit', size: '4.5"' },
+  { name: 'End-of-the-world', size: '5+"' },
+].map(h => ({ ...h, value: `${h.name} ${h.size}` }))
 
 const BEAUFORT_SCALE = [
   { value: '12', label: '12 — Hurricane — 73+ mph — Widespread destruction' },
@@ -132,11 +141,25 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
           <Label className="text-gray-400 text-xs mb-1 block">Hail Size</Label>
           <Select value={hailSize} onValueChange={v => setHailSize(v || '')}>
             <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-              <SelectValue placeholder="Select size..." />
+              <SelectValue placeholder="Select size...">
+                {(value: string) => {
+                  const h = HAIL_SIZES.find(x => x.value === value)
+                  if (!h) return <span className="text-muted-foreground">Select size...</span>
+                  return (
+                    <>
+                      <span className="flex-1">{h.name}</span>
+                      <span className="text-gray-400">{h.size}</span>
+                    </>
+                  )
+                }}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
               {HAIL_SIZES.map(s => (
-                <SelectItem key={s} value={s} className="text-white">{s}</SelectItem>
+                <SelectItem key={s.value} value={s.value} className="text-white">
+                  <span className="flex-1">{s.name}</span>
+                  <span className="text-gray-400">{s.size}</span>
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>

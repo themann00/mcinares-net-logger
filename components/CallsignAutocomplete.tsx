@@ -129,12 +129,17 @@ export function CallsignAutocomplete({
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setHighlightIndex(i => Math.max(i - 1, 0))
-    } else if (e.key === 'Tab' || e.key === 'Enter') {
+    } else if (e.key === 'Tab') {
+      // Select the highlighted match, then let focus advance to the next field.
+      if (!e.shiftKey && matches[highlightIndex]) {
+        selectMatch(matches[highlightIndex])
+      }
+    } else if (e.key === 'Enter') {
       e.preventDefault()
       if (matches[highlightIndex]) {
         selectMatch(matches[highlightIndex])
       }
-      if (e.key === 'Enter' && onEnter) {
+      if (onEnter) {
         setTimeout(onEnter, 50)
       }
     } else if (e.key === 'Escape') {

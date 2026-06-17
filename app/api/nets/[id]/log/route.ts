@@ -65,11 +65,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { entry_id, content, metadata, station_id } = await request.json() as {
+  const { entry_id, content, metadata, station_id, timestamp } = await request.json() as {
     entry_id: string
     content?: string
     metadata?: Record<string, unknown>
     station_id?: string
+    timestamp?: string
   }
 
   if (!entry_id) {
@@ -79,6 +80,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const update: Record<string, unknown> = {}
   if (content !== undefined) update.content = content.trim()
   if (station_id !== undefined) update.station_id = station_id
+  if (timestamp !== undefined) {
+    const ts = new Date(timestamp)
+    if (isNaN(ts.getTime())) {
+      return NextResponse.json({ error: 'invalid timestamp' }, { status: 400 })
+    }
+    update.timestamp = ts.toISOString()
+  }
 
   // Merge metadata keys into the existing object so partial updates
   // (e.g. just location) don't clobber the rest.

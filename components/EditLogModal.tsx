@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { X } from 'lucide-react'
+import { X, ChevronDown, ChevronRight } from 'lucide-react'
 import { format } from 'date-fns'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { buildCheckinContent } from '@/lib/station'
@@ -107,6 +107,11 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   const [pending, setPending] = useState<Analysis | null>(null)
   const [orphan, setOrphan] = useState<{ id: string; callsign: string } | null>(null)
 
+  // Date/time is hidden behind a disclosure: rarely needs editing after a net closes.
+  const [showTime, setShowTime] = useState(false)
+  const [timestamp, setTimestamp] = useState(() => format(new Date(entry.timestamp), "yyyy-MM-dd'T'HH:mm"))
+  const originalTimestamp = format(new Date(entry.timestamp), "yyyy-MM-dd'T'HH:mm")
+
   const isReport = entry.entry_type === 'report'
   const isCheckin = entry.entry_type === 'checkin' || entry.entry_type === 'late_checkin'
   const isStructured = isReport || isCheckin
@@ -156,13 +161,15 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   }
 
   async function saveFields(cs: string, stationId?: string | null) {
+    // Only send a timestamp when the operator actually changed it.
+    const ts = timestamp !== originalTimestamp ? { timestamp } : {}
     if (isReport) {
       const prefix = cs ? `${cs}: ` : ''
       const parts = [location.trim() ? `[${location.trim()}]` : '', report.trim()].filter(Boolean)
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${parts.join(' - ')}` }),
+        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${parts.join(' - ')}`, ...ts }),
       })
     } else if (isCheckin) {
       const meta = {
@@ -179,6 +186,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           entry_id: entry.id,
           content: `${manual}${buildCheckinContent(cs, meta as CheckinMetadata)}`,
           metadata: meta,
+          ...ts,
         }),
       })
 
@@ -198,7 +206,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: content.trim() }),
+        body: JSON.stringify({ entry_id: entry.id, content: content.trim(), ...ts }),
       })
     }
   }
@@ -468,6 +476,25 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                 />
               </div>
             )}
+
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowTime(v => !v)}
+                className="flex items-center gap-1 text-gray-400 text-xs hover:text-gray-200"
+              >
+                {showTime ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                Date &amp; Time
+              </button>
+              {showTime && (
+                <Input
+                  type="datetime-local"
+                  value={timestamp}
+                  onChange={e => setTimestamp(e.target.value)}
+                  className="mt-2 bg-gray-800 border-gray-700 text-white"
+                />
+              )}
+            </div>
 
             {confirmDelete ? (
               <div className="bg-red-950/40 border border-red-700 rounded-lg p-3 space-y-2">

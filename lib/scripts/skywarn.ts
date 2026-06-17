@@ -133,7 +133,7 @@ Are there any additional stations wishing to check in, with or without a report?
   },
   {
     id: 'continuity',
-    title: 'Additional Reports',
+    title: 'Continue Running the Net',
     type: 'read',
     allowCheckins: true,
     allowReports: true,

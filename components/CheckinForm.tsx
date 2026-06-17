@@ -51,6 +51,10 @@ export function CheckinForm({
   onQueue,
 }: CheckinFormProps) {
   const callsignRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+  // Fast-submit: Enter selects the highlighted station and logs immediately.
+  // On by default; toggle off to make Enter only pick the suggestion.
+  const [fastSubmit, setFastSubmit] = useState(true)
   const [callsign, setCallsignRaw] = useState('')
   const [dupeWarning, setDupeWarning] = useState(false)
   const setCallsign = (v: string) => { setCallsignRaw(v); if (dupeWarning) setDupeWarning(false) }
@@ -200,7 +204,7 @@ export function CheckinForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
       <div className="flex gap-2">
         <div className="flex-1" ref={callsignRef}>
           <Label className="text-gray-400 text-xs mb-1 block">Callsign *</Label>
@@ -214,6 +218,7 @@ export function CheckinForm({
             }}
             roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
             autoFocus
+            onEnter={fastSubmit ? () => formRef.current?.requestSubmit() : undefined}
           />
         </div>
         {!callsignOnly && (netType === 'skywarn' || netType === 'siren') && (
@@ -403,6 +408,27 @@ export function CheckinForm({
           <UserPlus className="w-4 h-4 mr-2" />
           {loading ? 'Logging...' : 'Log Check-in'}
         </Button>
+      )}
+
+      {!dupeWarning && (
+        <div className="space-y-2 pt-1">
+          <p className="text-gray-500 text-xs leading-relaxed">
+            <span className="text-gray-400 font-medium">Tab</span> selects the highlighted station and moves to the next field.{' '}
+            <span className="text-gray-400 font-medium">Enter</span>{' '}
+            {fastSubmit
+              ? 'selects the highlighted station and logs the check-in right away.'
+              : 'only selects the highlighted station.'}
+          </p>
+          <label className="flex items-center gap-2 text-gray-300 text-xs cursor-pointer">
+            <input
+              type="checkbox"
+              checked={fastSubmit}
+              onChange={e => setFastSubmit(e.target.checked)}
+              className="rounded"
+            />
+            Enter logs the check-in immediately (fast submit)
+          </label>
+        </div>
       )}
     </form>
   )
