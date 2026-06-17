@@ -43,10 +43,13 @@ export async function POST(request: NextRequest) {
       metadata: { callsign: cs, station_type: 'base', location: 'N/A' },
     })
 
-    await db.from('mcinares_roster').upsert(
-      { callsign: cs },
-      { onConflict: 'callsign', ignoreDuplicates: true }
-    )
+    // Testing nets stay ephemeral: don't register the controller's callsign.
+    if (!testing) {
+      await db.from('mcinares_roster').upsert(
+        { callsign: cs },
+        { onConflict: 'callsign', ignoreDuplicates: true }
+      )
+    }
   }
 
   return NextResponse.json(net, { status: 201 })

@@ -14,10 +14,18 @@ export async function GET() {
 
   const { data: logStats, error: logError } = await db
     .from('mcinares_log_entries')
-    .select('station_id, metadata, timestamp')
+    .select('station_id, net_id, metadata, timestamp')
     .in('entry_type', ['checkin', 'late_checkin'])
 
   if (logError) return NextResponse.json({ error: logError.message }, { status: 500 })
+
+  // Testing-net check-ins are ephemeral and must not count toward a registered
+  // station's totals or last-heard date.
+  const { data: testingNets } = await db
+    .from('mcinares_nets')
+    .select('id')
+    .eq('testing', true)
+  const testingNetIds = new Set((testingNets || []).map(n => n.id))
 
   // Key stats by roster UUID; fall back to callsign for legacy entries
   // that predate station_id.
@@ -26,6 +34,7 @@ export async function GET() {
 
   const checkinMap: Record<string, { count: number; last: string }> = {}
   for (const e of logStats || []) {
+    if (testingNetIds.has(e.net_id)) continue
     const meta = e.metadata as Record<string, unknown> | null
     const stationId = e.station_id || idByCallsign[((meta?.callsign as string) || '').toUpperCase()]
     if (!stationId) continue

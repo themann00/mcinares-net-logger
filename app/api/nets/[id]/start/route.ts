@@ -34,10 +34,13 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     metadata: { callsign: net.net_controller, station_type: 'base', location: 'N/A' },
   })
 
-  await db.from('mcinares_roster').upsert(
-    { callsign: net.net_controller },
-    { onConflict: 'callsign', ignoreDuplicates: true }
-  )
+  // Testing nets stay ephemeral: don't register the controller's callsign.
+  if (!net.testing) {
+    await db.from('mcinares_roster').upsert(
+      { callsign: net.net_controller },
+      { onConflict: 'callsign', ignoreDuplicates: true }
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }

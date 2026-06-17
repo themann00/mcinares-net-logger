@@ -1,7 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export interface ResolvedStation {
-  id: string
+  // null when the net is a testing net and the callsign is not already on the
+  // roster: testing nets never persist new roster rows, so the check-in logs
+  // with a null station_id and the callsign carried in metadata/content.
+  id: string | null
   callsign: string
   created: boolean
 }
@@ -37,6 +40,19 @@ export async function resolveStation(
       await db.from('mcinares_roster').update(update).eq('id', existing.id)
     }
     return { id: existing.id, callsign: existing.callsign, created: false }
+  }
+
+  // New callsign. In a testing net, never persist it to the roster — return a
+  // virtual station so the check-in still logs but leaves no permanent trace.
+  if (opts.netId) {
+    const { data: net } = await db
+      .from('mcinares_nets')
+      .select('testing')
+      .eq('id', opts.netId)
+      .maybeSingle()
+    if (net?.testing) {
+      return { id: null, callsign: cs, created: false }
+    }
   }
 
   const { data: inserted, error: insertError } = await db

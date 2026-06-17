@@ -577,6 +577,7 @@ export default function NetPage() {
                 .replace('Check-ins: ', '')
                 .replace(' Quadrant', '')
                 .replace('Closing', 'Close')
+                .replace('Continue Running the Net', 'Continue...')
               return (
                 <button
                   key={s.id}

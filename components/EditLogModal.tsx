@@ -112,9 +112,9 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   // 12-hour field rejects "20" and snaps to "02").
   const [showTime, setShowTime] = useState(false)
   const [dateStr, setDateStr] = useState(() => format(new Date(entry.timestamp), 'yyyy-MM-dd'))
-  const [timeStr, setTimeStr] = useState(() => format(new Date(entry.timestamp), 'HH:mm'))
+  const [timeStr, setTimeStr] = useState(() => format(new Date(entry.timestamp), 'HH:mm:ss'))
   const originalDate = format(new Date(entry.timestamp), 'yyyy-MM-dd')
-  const originalTime = format(new Date(entry.timestamp), 'HH:mm')
+  const originalTime = format(new Date(entry.timestamp), 'HH:mm:ss')
 
   const isReport = entry.entry_type === 'report'
   const isCheckin = entry.entry_type === 'checkin' || entry.entry_type === 'late_checkin'
@@ -505,9 +505,10 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                   <Input
                     type="time"
                     lang="en-GB"
+                    step={1}
                     value={timeStr}
                     onChange={e => setTimeStr(e.target.value)}
-                    className="bg-surface-2 border-surface-3 text-fg w-32"
+                    className="bg-surface-2 border-surface-3 text-fg w-36"
                   />
                 </div>
               )}
