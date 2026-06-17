@@ -20,9 +20,9 @@ interface FullScriptModalProps {
 export function FullScriptModal({ open, onOpenChange, sections, ctx }: FullScriptModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-gray-900 border-gray-700 max-w-3xl max-h-[80vh] overflow-y-auto overflow-x-hidden" style={{ resize: 'horizontal', minWidth: '320px' }}>
+      <DialogContent className="bg-surface-1 border-surface-3 max-w-3xl max-h-[80vh] overflow-y-auto overflow-x-hidden" style={{ resize: 'horizontal', minWidth: '320px' }}>
         <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+          <DialogTitle className="text-fg flex items-center gap-2">
             <ScrollText className="w-5 h-5" />
             Full Script
           </DialogTitle>
@@ -30,10 +30,10 @@ export function FullScriptModal({ open, onOpenChange, sections, ctx }: FullScrip
         <div className="space-y-6 mt-2">
           {sections.map((section, i) => (
             <div key={section.id}>
-              <div className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
+              <div className="text-xs font-semibold text-fg-3 uppercase tracking-widest mb-2">
                 {i + 1}. {section.title}
               </div>
-              <div className="bg-gray-950 rounded-lg p-4 font-mono text-sm leading-7 text-gray-200 whitespace-pre-wrap border border-gray-800">
+              <div className="bg-surface-0 rounded-lg p-4 font-mono text-sm leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
                 {resolveScript(section, ctx)}
               </div>
             </div>

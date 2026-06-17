@@ -175,12 +175,12 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
     }
   }
 
-  if (loading) return <p className="text-gray-500 text-sm py-2">Loading last week...</p>
+  if (loading) return <p className="text-fg-4 text-sm py-2">Loading last week...</p>
 
   if (!prevNet || prevStations.length === 0) {
     return (
       <div className="space-y-2 py-2">
-        <p className="text-gray-500 text-sm">No previous ARES net found within 8 days.</p>
+        <p className="text-fg-4 text-sm">No previous ARES net found within 8 days.</p>
         {onSkip && (
           <button
             onClick={onSkip}
@@ -197,13 +197,13 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
 
   return (
     <div className="space-y-3">
-      <div className="text-gray-400 text-sm">
-        Last week: <span className="text-white font-semibold">{lastWeekCount}</span> stations
+      <div className="text-fg-3 text-sm">
+        Last week: <span className="text-fg font-semibold">{lastWeekCount}</span> stations
         &middot; Tonight: <span className="text-green-400 font-semibold">{checkedCount}</span> confirmed
       </div>
 
       <div className="space-y-0.5">
-        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 text-xs text-gray-500 px-2 pb-1 border-b border-gray-800">
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-1 text-xs text-fg-4 px-2 pb-1 border-b border-surface-2">
           <span>Callsign</span>
           <span className="w-12 text-center">In</span>
           <span className="w-12 text-center">Tfc</span>
@@ -219,15 +219,15 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
             <div
               key={station.callsign}
               className={`grid grid-cols-[1fr_auto_auto_auto] gap-1 items-center px-2 py-1.5 rounded transition-colors ${
-                state.checkedIn ? 'bg-green-950/30' : 'hover:bg-gray-800/50'
+                state.checkedIn ? 'bg-green-950/30' : 'hover:bg-surface-2/50'
               }`}
             >
               <span className={`font-mono text-sm ${
-                state.checkedIn ? 'text-green-400' : 'text-gray-300'
+                state.checkedIn ? 'text-green-400' : 'text-fg-2'
               } ${isSaving ? 'opacity-50' : ''}`}>
                 {station.callsign}
                 {station.first_name && (
-                  <span className="text-gray-600 text-xs ml-1 font-sans">
+                  <span className="text-fg-5 text-xs ml-1 font-sans">
                     {station.first_name}
                   </span>
                 )}

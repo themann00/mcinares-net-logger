@@ -117,17 +117,17 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
   }
 
   if (loading) {
-    return <div className="text-gray-500 text-sm py-4 text-center">Loading setup...</div>
+    return <div className="text-fg-4 text-sm py-4 text-center">Loading setup...</div>
   }
 
   const selectedStyle = 'bg-green-900/30 border border-green-600 text-green-300'
-  const unselectedStyle = 'bg-gray-800 border border-gray-700 text-gray-300 hover:bg-gray-700'
+  const unselectedStyle = 'bg-surface-2 border border-surface-3 text-fg-2 hover:bg-surface-3'
 
   return (
     <div className="space-y-4">
       {/* Previous Check-in List */}
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-2">
-        <h3 className="text-white font-semibold mb-3">Previous Check-in List</h3>
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-2">
+        <h3 className="text-fg font-semibold mb-3">Previous Check-in List</h3>
 
         {autoNet && (
           <button
@@ -152,7 +152,7 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
 
         {checklists.length > 0 && (
           <div className="pt-1">
-            <span className="text-gray-500 text-xs">Download and keep in another window, previous net's check-in logs:</span>
+            <span className="text-fg-4 text-xs">Download and keep in another window, previous net's check-in logs:</span>
             <div className="space-y-1 mt-1 max-h-32 overflow-y-auto">
               {checklists.map(cl => (
                 <a
@@ -185,8 +185,8 @@ export function SetupNet({ netId, onComplete, initialConfig, isResuming = false 
       </div>
 
       {/* Announcements */}
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-2">
-        <h3 className="text-white font-semibold mb-3">Announcements</h3>
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-2">
+        <h3 className="text-fg font-semibold mb-3">Announcements</h3>
 
         {announcements.map(pdf => (
           <button

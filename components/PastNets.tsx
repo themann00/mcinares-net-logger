@@ -30,7 +30,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   late_checkin: { label: 'LATE', color: 'text-blue-300' },
   station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'CLOSE', color: 'text-red-400' },
-  note: { label: 'NOTE', color: 'text-gray-400' },
+  note: { label: 'NOTE', color: 'text-fg-3' },
 }
 
 const NET_LABELS: Record<string, string> = {
@@ -174,8 +174,8 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   return (
     <div>
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <h2 className="text-gray-300 font-medium">
-          Previous Nets <span className="text-gray-500">— {showingFrom}-{showingTo} of {closedNets.length}</span>
+        <h2 className="text-fg-2 font-medium">
+          Previous Nets <span className="text-fg-4">— {showingFrom}-{showingTo} of {closedNets.length}</span>
         </h2>
         <div className="flex items-center gap-2">
           {totalPages > 1 && (
@@ -183,15 +183,15 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+                className="px-2 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-fg-2 hover:text-fg disabled:opacity-40"
               >
                 Prev
               </button>
-              <span className="text-gray-500 text-xs">{page + 1}/{totalPages}</span>
+              <span className="text-fg-4 text-xs">{page + 1}/{totalPages}</span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+                className="px-2 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-fg-2 hover:text-fg disabled:opacity-40"
               >
                 Next
               </button>
@@ -200,7 +200,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
           <select
             value={pageSize}
             onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}
-            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
+            className="bg-surface-2 border border-surface-3 text-fg-1 text-xs rounded px-2 py-1"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -219,28 +219,28 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
             net.type === 'skywarn' ? 'bg-orange-700' : 'bg-red-700'
 
           return (
-            <div key={net.id} className="rounded-lg border border-gray-700 bg-gray-900 overflow-hidden">
+            <div key={net.id} className="rounded-lg border border-surface-3 bg-surface-1 overflow-hidden">
               <div className="flex items-center">
                 <button
                   onClick={() => toggleExpand(net)}
-                  className="flex-1 flex items-center gap-3 p-3 text-left hover:bg-gray-800/50 transition-colors"
+                  className="flex-1 flex items-center gap-3 p-3 text-left hover:bg-surface-2/50 transition-colors"
                 >
-                  <span className={`${typeColor} text-white text-xs font-semibold px-2 py-0.5 rounded`}>
+                  <span className={`${typeColor} text-fg text-xs font-semibold px-2 py-0.5 rounded`}>
                     {net.type.toUpperCase()}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="text-white text-sm font-medium">
+                    <span className="text-fg text-sm font-medium">
                       {NET_LABELS[net.type] || net.type}
                     </span>
-                    <span className="text-gray-500 text-sm ml-2">
+                    <span className="text-fg-4 text-sm ml-2">
                       {format(new Date(net.created_at), 'MMM d, yyyy h:mm a')}
                     </span>
                   </div>
-                  <span className="text-gray-500 text-xs">{net.net_controller}</span>
+                  <span className="text-fg-4 text-xs">{net.net_controller}</span>
                   {isExpanded ? (
-                    <ChevronUp className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <ChevronUp className="w-4 h-4 text-fg-4 flex-shrink-0" />
                   ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                    <ChevronDown className="w-4 h-4 text-fg-4 flex-shrink-0" />
                   )}
                 </button>
                 {isSuperAdmin && (
@@ -249,7 +249,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                       e.stopPropagation()
                       handleDelete(net)
                     }}
-                    className="p-3 text-gray-700 hover:text-red-400 transition-colors flex-shrink-0"
+                    className="p-3 text-fg-5 hover:text-red-400 transition-colors flex-shrink-0"
                     title="Delete net"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -258,9 +258,9 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
               </div>
 
               {isExpanded && (
-                <div className="border-t border-gray-800 p-3">
+                <div className="border-t border-surface-2 p-3">
                   {loadingLog ? (
-                    <p className="text-gray-500 text-sm text-center py-2">Loading...</p>
+                    <p className="text-fg-4 text-sm text-center py-2">Loading...</p>
                   ) : (
                     <div>
                       {(() => {
@@ -279,7 +279,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                         })
                         return (
                           <>
-                            <div className="text-gray-400 text-xs mb-2">
+                            <div className="text-fg-3 text-xs mb-2">
                               {callsigns.length} station{callsigns.length !== 1 ? 's' : ''} checked in
                             </div>
                             {callsigns.length > 0 && (() => {
@@ -289,7 +289,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                               return (
                                 <div className={`grid ${colClass} gap-1 mb-3`}>
                                   {callsigns.map(cs => (
-                                    <span key={cs} className="font-mono text-xs text-gray-300 truncate">
+                                    <span key={cs} className="font-mono text-xs text-fg-2 truncate">
                                       {cs}
                                     </span>
                                   ))}
@@ -302,12 +302,12 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-gray-800">
+                  <div className="flex items-center gap-2 flex-wrap pt-3 border-t border-surface-2">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => { setLogPopupNetId(net.id); setHighlighted(new Set()); ensureRoster() }}
-                      className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+                      className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
                     >
                       <BookOpen className="w-3.5 h-3.5" />
                       Logs
@@ -316,7 +316,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+                        className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         Report
@@ -332,7 +332,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                             value={deleteInput}
                             onChange={e => setDeleteInput(e.target.value)}
                             placeholder={getDeletePhrase(net)}
-                            className="bg-gray-800 border-gray-700 text-white text-sm font-mono"
+                            className="bg-surface-2 border-surface-3 text-fg text-sm font-mono"
                             autoFocus
                             onKeyDown={e => {
                               if (e.key === 'Enter') handleDelete(net)
@@ -357,7 +357,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                               setDeleteConfirmId(null)
                               setDeleteInput('')
                             }}
-                            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                            className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
                           >
                             Cancel
                           </Button>
@@ -385,11 +385,11 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
 
       {logPopupNetId && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
-              <h3 className="text-white font-semibold">Net Log</h3>
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-surface-3">
+              <h3 className="text-fg font-semibold">Net Log</h3>
               <div className="flex items-center gap-3">
-                <label className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none hover:text-gray-200">
+                <label className="flex items-center gap-1.5 text-xs text-fg-3 cursor-pointer select-none hover:text-fg-1">
                   <input
                     type="checkbox"
                     checked={showOriginal}
@@ -406,14 +406,14 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                     Clear {highlighted.size} highlighted
                   </button>
                 )}
-                <button onClick={() => setLogPopupNetId(null)} className="text-gray-400 hover:text-white">
+                <button onClick={() => setLogPopupNetId(null)} className="text-fg-3 hover:text-fg">
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
               {(logCache[logPopupNetId] || []).map((entry, idx, arr) => {
-                const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
+                const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-fg-3' }
                 const isEditingThis = editingId === entry.id
                 const isInsertingAfter = insertAfterIdx === idx
                 const meta = entry.metadata as CheckinMetadata | null
@@ -424,11 +424,11 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                   <div key={entry.id}>
                     <div
                       onClick={() => setModalEntry(entry)}
-                      className={`group flex gap-2 text-sm py-1 border-b border-gray-800/50 cursor-pointer hover:bg-gray-800/40 rounded px-1 -mx-1 transition-colors ${
+                      className={`group flex gap-2 text-sm py-1 border-b border-surface-2/50 cursor-pointer hover:bg-surface-2/40 rounded px-1 -mx-1 transition-colors ${
                         highlighted.has(entry.id) ? 'bg-amber-950/40 ring-1 ring-amber-700' : ''
                       }`}
                     >
-                      <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
+                      <span className="text-fg-5 font-mono text-xs flex-shrink-0 pt-0.5">
                         {format(new Date(entry.timestamp), 'HH:mm:ss')}
                       </span>
                       <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
@@ -443,19 +443,19 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                               if (e.key === 'Enter') saveEdit(logPopupNetId, entry.id)
                               if (e.key === 'Escape') setEditingId(null)
                             }}
-                            className="flex-1 bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-white text-sm"
+                            className="flex-1 bg-surface-2 border border-surface-4 rounded px-2 py-0.5 text-fg text-sm"
                             autoFocus
                             disabled={saving}
                           />
                           <button onClick={() => saveEdit(logPopupNetId, entry.id)} disabled={saving} className="text-green-400 hover:text-green-300 p-0.5">
                             <Check className="w-3.5 h-3.5" />
                           </button>
-                          <button onClick={() => setEditingId(null)} className="text-gray-500 hover:text-gray-300 p-0.5">
+                          <button onClick={() => setEditingId(null)} className="text-fg-4 hover:text-fg-2 p-0.5">
                             <X className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       ) : (
-                        <span className="text-gray-400 break-all flex-1">
+                        <span className="text-fg-3 break-all flex-1">
                           {entry.content}
                           {showOriginal && wasCorrected && (
                             <span className="text-amber-500/80 text-xs ml-1.5">(typed: {asTyped})</span>
@@ -466,14 +466,14 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                         <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
                           <button
                             onClick={() => startInsert(idx, arr)}
-                            className="text-gray-600 hover:text-green-400 p-0.5"
+                            className="text-fg-5 hover:text-green-400 p-0.5"
                             title="Insert log entry after this line"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                           <button
                             onClick={() => { setEditingId(entry.id); setEditContent(entry.content) }}
-                            className="text-gray-600 hover:text-gray-300 p-0.5"
+                            className="text-fg-5 hover:text-fg-2 p-0.5"
                           >
                             <Pencil className="w-3 h-3" />
                           </button>
@@ -490,7 +490,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                                 setLogCache(prev => ({ ...prev, [logPopupNetId]: entries }))
                               }
                             }}
-                            className="text-gray-700 hover:text-red-400 p-0.5"
+                            className="text-fg-5 hover:text-red-400 p-0.5"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -501,32 +501,32 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                       <div className="bg-green-950/30 border border-green-800/40 rounded-lg p-3 my-1 space-y-2" onClick={e => e.stopPropagation()}>
                         <div className="flex gap-2">
                           <div className="w-40">
-                            <label className="text-gray-500 text-xs block mb-0.5">Timestamp</label>
+                            <label className="text-fg-4 text-xs block mb-0.5">Timestamp</label>
                             <input
                               type="datetime-local"
                               step="1"
                               value={insertTimestamp}
                               onChange={e => setInsertTimestamp(e.target.value)}
-                              className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-xs font-mono"
+                              className="w-full bg-surface-2 border border-surface-4 rounded px-2 py-1 text-fg text-xs font-mono"
                             />
                           </div>
                           <div className="w-32">
-                            <label className="text-gray-500 text-xs block mb-0.5">Type</label>
+                            <label className="text-fg-4 text-xs block mb-0.5">Type</label>
                             <Select value={insertType} onValueChange={v => setInsertType(v as LogEntryType)}>
-                              <SelectTrigger className="bg-gray-800 border-gray-600 text-white h-8 text-xs">
+                              <SelectTrigger className="bg-surface-2 border-surface-4 text-fg h-8 text-xs">
                                 <SelectValue />
                               </SelectTrigger>
-                              <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
+                              <SelectContent className="bg-surface-2 border-surface-3 max-h-48">
                                 {Object.entries(TYPE_CONFIG).map(([key, val]) => (
-                                  <SelectItem key={key} value={key} className="text-white text-xs">{val.label}</SelectItem>
+                                  <SelectItem key={key} value={key} className="text-fg text-xs">{val.label}</SelectItem>
                                 ))}
-                                <SelectItem value="station_moved" className="text-white text-xs">MOVED</SelectItem>
+                                <SelectItem value="station_moved" className="text-fg text-xs">MOVED</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
                         <div>
-                          <label className="text-gray-500 text-xs block mb-0.5">Content</label>
+                          <label className="text-fg-4 text-xs block mb-0.5">Content</label>
                           <input
                             value={insertContent}
                             onChange={e => setInsertContent(e.target.value)}
@@ -535,7 +535,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                               if (e.key === 'Escape') setInsertAfterIdx(null)
                             }}
                             placeholder="Log entry content..."
-                            className="w-full bg-gray-800 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                            className="w-full bg-surface-2 border border-surface-4 rounded px-2 py-1 text-fg text-sm"
                             autoFocus
                           />
                         </div>
@@ -543,7 +543,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                           <Button size="sm" onClick={() => saveInsert(logPopupNetId)} disabled={insertSaving || !insertContent.trim()} className="bg-green-700 hover:bg-green-600 text-xs h-7">
                             {insertSaving ? 'Adding...' : 'Add Log Entry'}
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => setInsertAfterIdx(null)} className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 text-xs h-7">
+                          <Button size="sm" variant="outline" onClick={() => setInsertAfterIdx(null)} className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 text-xs h-7">
                             Cancel
                           </Button>
                         </div>

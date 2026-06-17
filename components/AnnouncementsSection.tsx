@@ -95,8 +95,8 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
     <>
     <div className="space-y-4">
       {hasAnnouncements && (
-        <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-4">
-          <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+        <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-4">
+          <div className="bg-surface-0 rounded-lg p-4 font-mono text-base leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
             I will now take announcements from stations that indicated that they had announcements. Stations with traffic will pass after announcements.
           </div>
 
@@ -114,18 +114,18 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
                   <div key={station.callsign} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                     <span className="font-mono text-sm text-green-400 line-through">{station.callsign}</span>
-                    <span className="text-gray-500 text-xs">logged</span>
+                    <span className="text-fg-4 text-xs">logged</span>
                   </div>
                 )
               }
 
               return (
-                <div key={station.callsign} className="bg-gray-800 rounded-lg p-3 space-y-2">
+                <div key={station.callsign} className="bg-surface-2 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-semibold text-white">{station.callsign}</span>
+                    <span className="font-mono font-semibold text-fg">{station.callsign}</span>
                     <button
                       onClick={() => cancelStation(station.callsign)}
-                      className="text-gray-500 hover:text-red-400 text-xs flex items-center gap-1"
+                      className="text-fg-4 hover:text-red-400 text-xs flex items-center gap-1"
                     >
                       <X className="w-3 h-3" />
                       No announcement
@@ -136,7 +136,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
                     onChange={e => handleTextChange(station.callsign, e.target.value)}
                     placeholder="Summarize announcement..."
                     onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
-                    className="bg-gray-900 border-gray-700 text-white text-sm"
+                    className="bg-surface-1 border-surface-3 text-fg text-sm"
                     rows={2}
                   />
                   <Button
@@ -154,8 +154,8 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
         </div>
       )}
 
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
-        <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-3">
+        <div className="bg-surface-0 rounded-lg p-4 font-mono text-base leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
           I will now read this week's Marion County Ham Radio Announcements.
         </div>
 
@@ -207,20 +207,20 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
             </div>
             <iframe
               src={`https://docs.google.com/gview?url=${encodeURIComponent(announcementUrl)}&embedded=true`}
-              className="w-full rounded-lg border border-gray-700 bg-white"
+              className="w-full rounded-lg border border-surface-3 bg-white"
               style={{ height: '70vh', minHeight: '400px' }}
               title="Announcements PDF"
             />
           </div>
         ) : (
-          <p className="text-gray-500 text-sm italic">Read from external source.</p>
+          <p className="text-fg-4 text-sm italic">Read from external source.</p>
         )}
       </div>
     </div>
 
       {pdfZoom && announcementUrl && (
         <div className="fixed inset-0 bg-black/80 z-50 flex flex-col">
-          <div className="flex items-center justify-end gap-3 p-3 bg-gray-900">
+          <div className="flex items-center justify-end gap-3 p-3 bg-surface-1">
             <a
               href={announcementUrl}
               target="_blank"
@@ -231,7 +231,7 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
             </a>
             <button
               onClick={() => setPdfZoom(false)}
-              className="text-gray-400 hover:text-white"
+              className="text-fg-3 hover:text-fg"
             >
               <X className="w-5 h-5" />
             </button>

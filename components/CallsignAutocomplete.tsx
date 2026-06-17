@@ -165,31 +165,31 @@ export function CallsignAutocomplete({
         onFocus={() => { if (query) setOpen(true) }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className={`bg-gray-800 border-gray-700 text-white uppercase font-mono ${className}`}
+        className={`bg-surface-2 border-surface-3 text-fg uppercase font-mono ${className}`}
         autoFocus={autoFocus}
         autoComplete="off"
       />
 
       {open && matches.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-surface-2 border border-surface-4 rounded-lg shadow-xl overflow-hidden max-h-48 overflow-y-auto">
           {matches.map((m, i) => (
             <button
               key={`${m.callsign}-${m.source}`}
               onMouseDown={e => { e.preventDefault(); selectMatch(m) }}
               onMouseEnter={() => setHighlightIndex(i)}
               className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-sm transition-colors ${
-                i === highlightIndex ? 'bg-blue-600 text-white' : 'text-gray-200 hover:bg-gray-700'
+                i === highlightIndex ? 'bg-blue-600 text-white' : 'text-fg-1 hover:bg-surface-3'
               }`}
             >
               <span className="font-mono font-semibold">
                 {m.source === 'new' ? <>New station: {m.callsign}</> : m.callsign}
               </span>
               {(m.first_name || m.last_name) && (
-                <span className="text-gray-400 text-xs">
+                <span className="text-fg-3 text-xs">
                   {[m.first_name, m.last_name].filter(Boolean).join(' ')}
                 </span>
               )}
-              <span className={`ml-auto text-xs ${m.source === 'station' ? 'text-green-500' : m.source === 'new' ? 'text-amber-500' : 'text-gray-600'}`}>
+              <span className={`ml-auto text-xs ${m.source === 'station' ? 'text-green-500' : m.source === 'new' ? 'text-amber-500' : 'text-fg-5'}`}>
                 {m.source === 'station' ? 'checked in' : m.source === 'new' ? 'create' : 'roster'}
               </span>
             </button>

@@ -18,16 +18,16 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-3">
-        <h3 className="text-white font-semibold mb-3">Weather Status</h3>
-        <p className="text-gray-400 text-sm">Select the current severe weather status. If unsure, skip and update during the net.</p>
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-3">
+        <h3 className="text-fg font-semibold mb-3">Weather Status</h3>
+        <p className="text-fg-3 text-sm">Select the current severe weather status. If unsure, skip and update during the net.</p>
         <div className="flex items-center gap-3 flex-wrap">
           <button
             onClick={() => setWeatherStatus(weatherStatus === 'approaching' ? null : 'approaching')}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               weatherStatus === 'approaching'
                 ? 'bg-orange-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
             }`}
           >
             Approaching
@@ -37,7 +37,7 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
               weatherStatus === 'imminent'
                 ? 'bg-red-600 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
             }`}
           >
             Imminent
@@ -45,7 +45,7 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
           {weatherStatus && (
             <button
               onClick={() => setWeatherStatus(null)}
-              className="text-gray-500 hover:text-gray-300 text-xs underline"
+              className="text-fg-4 hover:text-fg-2 text-xs underline"
             >
               Clear
             </button>
@@ -53,9 +53,9 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
         </div>
       </div>
 
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-5 space-y-3">
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-white font-semibold">NWS Bulletin</h3>
+          <h3 className="text-fg font-semibold">NWS Bulletin</h3>
           <a
             href="https://www.weather.gov/ind/hazards"
             target="_blank"
@@ -65,12 +65,12 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
             weather.gov/ind/hazards
           </a>
         </div>
-        <p className="text-gray-400 text-sm">Paste the current NWS bulletin text, or leave blank to read from external source during the net.</p>
+        <p className="text-fg-3 text-sm">Paste the current NWS bulletin text, or leave blank to read from external source during the net.</p>
         <Textarea
           value={bulletin}
           onChange={e => setBulletin(e.target.value)}
           placeholder="Paste NWS bulletin text here..."
-          className="bg-gray-800 border-gray-700 text-white text-sm"
+          className="bg-surface-2 border-surface-3 text-fg text-sm"
           rows={6}
         />
         {bulletin.trim() && (

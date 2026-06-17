@@ -16,7 +16,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   late_checkin: { label: 'LATE', color: 'text-blue-300' },
   station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'CLOSE', color: 'text-red-400' },
-  note: { label: 'NOTE', color: 'text-gray-400' },
+  note: { label: 'NOTE', color: 'text-fg-3' },
 }
 
 interface LogFeedProps {
@@ -27,22 +27,22 @@ export function LogFeed({ entries }: LogFeedProps) {
   return (
     <div className="space-y-1">
       {entries.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-4">No log entries yet.</p>
+        <p className="text-fg-4 text-sm text-center py-4">No log entries yet.</p>
       )}
       {entries.map(entry => {
-        const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
+        const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-fg-3' }
         return (
           <div
             key={entry.id}
-            className="flex gap-2 text-sm border-b border-gray-800 pb-1 last:border-0"
+            className="flex gap-2 text-sm border-b border-surface-2 pb-1 last:border-0"
           >
-            <span className="text-gray-500 font-mono text-xs flex-shrink-0 pt-0.5">
+            <span className="text-fg-4 font-mono text-xs flex-shrink-0 pt-0.5">
               {format(new Date(entry.timestamp), 'HH:mm:ss')}
             </span>
             <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
               {cfg.label}
             </span>
-            <span className="text-gray-300 break-all">{entry.content}</span>
+            <span className="text-fg-2 break-all">{entry.content}</span>
           </div>
         )
       })}

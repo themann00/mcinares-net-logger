@@ -102,7 +102,7 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
   }
 
   if (relevant.length === 0) {
-    return <p className="text-gray-500 text-sm text-center py-4">No stations with traffic or announcements.</p>
+    return <p className="text-fg-4 text-sm text-center py-4">No stations with traffic or announcements.</p>
   }
 
   return (
@@ -123,11 +123,11 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
                     onClick={() => handleClick(station, item.type)}
                     className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors ${
                       done
-                        ? 'bg-gray-800/30 hover:bg-gray-800/50'
-                        : 'bg-gray-800 hover:bg-gray-700'
+                        ? 'bg-surface-2/30 hover:bg-surface-2/50'
+                        : 'bg-surface-2 hover:bg-surface-3'
                     }`}
                   >
-                    <span className={`font-mono font-semibold text-sm ${done ? 'text-gray-600 line-through' : 'text-white'}`}>
+                    <span className={`font-mono font-semibold text-sm ${done ? 'text-fg-5 line-through' : 'text-fg'}`}>
                       {station.callsign}
                     </span>
                     <Badge className={`text-xs ${
@@ -138,7 +138,7 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
                       {item.label}
                     </Badge>
                     {done && (
-                      <span className="text-gray-600 text-xs ml-auto truncate max-w-32">
+                      <span className="text-fg-5 text-xs ml-auto truncate max-w-32">
                         {getSummary(station.callsign, item.type)}
                       </span>
                     )}
@@ -152,24 +152,24 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
 
       {editState && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-white font-mono font-semibold">{editState.callsign}</span>
+                <span className="text-fg font-mono font-semibold">{editState.callsign}</span>
                 <Badge className={editState.type === 'traffic' ? 'bg-yellow-700 text-white' : 'bg-teal-700 text-white'}>
                   {editState.type === 'traffic' ? 'Traffic' : 'Announcement'}
                 </Badge>
               </div>
-              <button onClick={() => setEditState(null)} className="text-gray-400 hover:text-white">
+              <button onClick={() => setEditState(null)} className="text-fg-3 hover:text-fg">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Summary</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Summary</Label>
               <Textarea
                 value={editState.content}
                 onChange={e => setEditState(prev => prev ? { ...prev, content: e.target.value } : null)}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
                 rows={3}
                 autoFocus
                 onFocus={e => {
@@ -182,7 +182,7 @@ export function TrafficList({ stations, logEntries, netId, onUpdate }: TrafficLi
                 size="sm"
                 variant="outline"
                 onClick={() => setEditState(null)}
-                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
               >
                 Cancel
               </Button>

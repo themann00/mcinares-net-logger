@@ -18,7 +18,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   late_checkin: { label: 'LATE', color: 'text-blue-300' },
   station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'CLOSE', color: 'text-red-400' },
-  note: { label: 'NOTE', color: 'text-gray-400' },
+  note: { label: 'NOTE', color: 'text-fg-3' },
 }
 
 interface RecentLogProps {
@@ -42,8 +42,8 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
 
   return (
     <>
-      <div className="bg-gray-900/50 rounded-xl border border-gray-800 p-3">
-        <h3 className="text-gray-500 text-xs font-medium mb-2 uppercase tracking-wider">Recent Log</h3>
+      <div className="bg-surface-1/50 rounded-xl border border-surface-2 p-3">
+        <h3 className="text-fg-4 text-xs font-medium mb-2 uppercase tracking-wider">Recent Log</h3>
         {highlighted.size > 0 && (
           <div className="flex items-center justify-between text-xs text-amber-300 bg-amber-950/30 border border-amber-800/40 rounded px-2 py-1 mb-2">
             <span>{highlighted.size} highlighted entr{highlighted.size === 1 ? 'y' : 'ies'} to review</span>
@@ -54,24 +54,24 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
         )}
         <div className="space-y-0.5">
           {recent.map(entry => {
-            const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
+            const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-fg-3' }
             const isHighlighted = highlighted.has(entry.id)
 
             return (
               <div
                 key={entry.id}
                 onClick={() => setEditingEntry(entry)}
-                className={`flex gap-2 text-sm py-1 border-b border-gray-800/50 last:border-0 cursor-pointer hover:bg-gray-800/50 rounded px-1 -mx-1 transition-colors ${
+                className={`flex gap-2 text-sm py-1 border-b border-surface-2/50 last:border-0 cursor-pointer hover:bg-surface-2/50 rounded px-1 -mx-1 transition-colors ${
                   isHighlighted ? 'bg-amber-950/40 ring-1 ring-amber-700' : ''
                 }`}
               >
-                <span className="text-gray-600 font-mono text-xs flex-shrink-0 pt-0.5">
+                <span className="text-fg-5 font-mono text-xs flex-shrink-0 pt-0.5">
                   {format(new Date(entry.timestamp), 'HH:mm')}
                 </span>
                 <span className={`font-mono text-xs font-semibold flex-shrink-0 pt-0.5 w-16 ${cfg.color}`}>
                   {cfg.label}
                 </span>
-                <span className="text-gray-400 break-all flex-1">
+                <span className="text-fg-3 break-all flex-1">
                   {entry.content}
                 </span>
               </div>

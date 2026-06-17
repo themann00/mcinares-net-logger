@@ -119,7 +119,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const typeColor = (type: string | null) => {
     if (type === 'base') return 'bg-blue-700'
     if (type === 'mobile') return 'bg-purple-700'
-    return 'bg-gray-700'
+    return 'bg-surface-3'
   }
 
   return (
@@ -132,7 +132,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       )}
 
       {stations.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-4">No stations checked in yet.</p>
+        <p className="text-fg-4 text-sm text-center py-4">No stations checked in yet.</p>
       )}
 
       {netType === 'skywarn' ? (
@@ -143,7 +143,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
           if (group.length === 0) return null
           return (
             <div key={quadrant ?? 'unknown'}>
-              <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mt-2 mb-1">
+              <div className="text-fg-4 text-xs font-semibold uppercase tracking-wider mt-2 mb-1">
                 {quadrant ?? 'Unknown'}
               </div>
               {group.map(station => renderStation(station))}
@@ -168,32 +168,32 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       <div
         key={station.callsign}
         className={`rounded-lg border p-3 ${
-          incomplete ? 'border-amber-700/50 bg-amber-950/20' : 'border-gray-700 bg-gray-800/60'
+          incomplete ? 'border-amber-700/50 bg-amber-950/20' : 'border-surface-3 bg-surface-2/60'
         }`}
       >
         {editingId === station.callsign ? (
           <div className="space-y-2">
-            <div className="text-white font-mono font-semibold">{station.callsign}</div>
+            <div className="text-fg font-mono font-semibold">{station.callsign}</div>
             <div className="flex gap-2">
               <Select value={editType} onValueChange={v => setEditType(v as StationType)}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-28">
+                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg w-28">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="base" className="text-white">Base</SelectItem>
-                  <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
+                <SelectContent className="bg-surface-2 border-surface-3">
+                  <SelectItem value="base" className="text-fg">Base</SelectItem>
+                  <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
                 </SelectContent>
               </Select>
               {netType === 'skywarn' && (
                 <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white w-20">
+                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg w-20">
                     <SelectValue placeholder="Quad" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="SW" className="text-white">SW</SelectItem>
-                    <SelectItem value="NW" className="text-white">NW</SelectItem>
-                    <SelectItem value="NE" className="text-white">NE</SelectItem>
-                    <SelectItem value="SE" className="text-white">SE</SelectItem>
+                  <SelectContent className="bg-surface-2 border-surface-3">
+                    <SelectItem value="SW" className="text-fg">SW</SelectItem>
+                    <SelectItem value="NW" className="text-fg">NW</SelectItem>
+                    <SelectItem value="NE" className="text-fg">NE</SelectItem>
+                    <SelectItem value="SE" className="text-fg">SE</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -201,13 +201,13 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 value={editLocation}
                 onChange={e => setEditLocation(e.target.value)}
                 placeholder="Location..."
-                className="bg-gray-800 border-gray-700 text-white flex-1"
+                className="bg-surface-2 border-surface-3 text-fg flex-1"
               />
             </div>
 
             {isSiren && (
               <div>
-                <span className="text-gray-400 text-xs font-medium block mb-1">Siren #s (up to 4)</span>
+                <span className="text-fg-3 text-xs font-medium block mb-1">Siren #s (up to 4)</span>
                 <div className="flex gap-2">
                   {editSirens.map((val, i) => (
                     <Input
@@ -215,21 +215,21 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                       value={val}
                       onChange={e => setEditSirens(prev => prev.map((v, j) => j === i ? e.target.value : v))}
                       placeholder={`#${i + 1}`}
-                      className="bg-gray-800 border-gray-700 text-white w-16 font-mono text-sm"
+                      className="bg-surface-2 border-surface-3 text-fg w-16 font-mono text-sm"
                     />
                   ))}
                 </div>
               </div>
             )}
 
-            <div className="flex rounded-lg overflow-hidden border border-gray-700">
+            <div className="flex rounded-lg overflow-hidden border border-surface-3">
                 <button
                   type="button"
                   onClick={() => setEditReason('correction')}
                   className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                     editReason === 'correction'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                      : 'bg-surface-2 text-fg-3 hover:text-fg-1'
                   }`}
                 >
                   Update inaccurate data
@@ -240,7 +240,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
                     editReason === 'moved'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                      : 'bg-surface-2 text-fg-3 hover:text-fg-1'
                   }`}
                 >
                   Station has moved
@@ -248,8 +248,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
               </div>
 
             {netType === 'skywarn' && (
-              <div className="border-t border-gray-700 pt-2">
-                <span className="text-gray-400 text-xs font-medium">Weather Report (optional)</span>
+              <div className="border-t border-surface-3 pt-2">
+                <span className="text-fg-3 text-xs font-medium">Weather Report (optional)</span>
                 <WeatherReportInputs
                   resetKey={editReportResetKey}
                   compact
@@ -274,7 +274,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 size="sm"
                 variant="outline"
                 onClick={() => setEditingId(null)}
-                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
               >
                 Cancel
               </Button>
@@ -284,12 +284,12 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
           <div className="flex items-center gap-2">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-white font-mono font-semibold">{station.callsign}</span>
+                <span className="text-fg font-mono font-semibold">{station.callsign}</span>
                 {netType === 'skywarn' && (
-                  <span className="text-gray-500 text-xs">({station.quadrant || 'Unknown'})</span>
+                  <span className="text-fg-4 text-xs">({station.quadrant || 'Unknown'})</span>
                 )}
                 {station.station_type && (
-                  <Badge className={`${typeColor(station.station_type)} text-white text-xs`}>
+                  <Badge className={`${typeColor(station.station_type)} text-fg text-xs`}>
                     {station.station_type}
                   </Badge>
                 )}
@@ -328,7 +328,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                 </div>
               )}
               {(station.first_name || station.last_name) && (
-                <div className="text-gray-500 text-xs mt-0.5">
+                <div className="text-fg-4 text-xs mt-0.5">
                   {[station.first_name, station.last_name].filter(Boolean).join(' ')}
                 </div>
               )}
@@ -344,7 +344,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
             ) : (
               <button
                 onClick={() => startEdit(station, 'correction')}
-                className="flex-shrink-0 text-gray-500 hover:text-gray-300 p-1"
+                className="flex-shrink-0 text-fg-4 hover:text-fg-2 p-1"
                 title="Edit station"
               >
                 <Pencil className="w-3.5 h-3.5" />

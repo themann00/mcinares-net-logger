@@ -330,8 +330,8 @@ export default function NetPage() {
 
   if (!net) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="text-gray-400">Loading...</div>
+      <div className="min-h-screen bg-surface-0 flex items-center justify-center">
+        <div className="text-fg-3">Loading...</div>
       </div>
     )
   }
@@ -357,7 +357,7 @@ export default function NetPage() {
           onClick={() => setSectionIndex(i => Math.max(0, i - 1))}
           disabled={sectionIndex === 0}
           variant="outline"
-          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+          className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
         >
           <ChevronLeft className="w-4 h-4" />
           Previous
@@ -367,14 +367,14 @@ export default function NetPage() {
             onClick={() => setSetupComplete(false)}
             size="sm"
             variant="outline"
-            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white text-xs"
+            className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg text-xs"
           >
             Change Setup
           </Button>
         )}
       </div>
 
-      <span className="text-gray-500 text-sm">
+      <span className="text-fg-4 text-sm">
         {sectionIndex + 1} / {sections.length}
       </span>
 
@@ -400,7 +400,7 @@ export default function NetPage() {
             <Button
               onClick={() => setSirenResetConfirm(true)}
               disabled={sirenBusy}
-              className="bg-gray-600 hover:bg-gray-500 font-semibold"
+              className="bg-surface-4 hover:bg-surface-5 font-semibold"
             >
               RESET SIREN STATUS
             </Button>
@@ -463,13 +463,13 @@ export default function NetPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="min-h-screen bg-surface-0 flex flex-col">
       {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 px-4 py-3">
+      <div className="bg-surface-1 border-b border-surface-2 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
             <Badge
-              className={`text-white flex-shrink-0 ${
+              className={`text-fg flex-shrink-0 ${
                 net.type === 'ares'
                   ? 'bg-blue-700'
                   : net.type === 'skywarn'
@@ -482,13 +482,13 @@ export default function NetPage() {
             {net.testing && (
               <Badge className="bg-yellow-600 text-white flex-shrink-0">TESTING</Badge>
             )}
-            <span className="text-white font-semibold truncate">{net.net_controller}</span>
-            <span className="text-gray-500 text-sm hidden sm:block">NC</span>
+            <span className="text-fg font-semibold truncate">{net.net_controller}</span>
+            <span className="text-fg-4 text-sm hidden sm:block">NC</span>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
             {elapsed && (
-              <span className="text-gray-400 text-sm hidden md:block">
+              <span className="text-fg-3 text-sm hidden md:block">
                 Open: {elapsed}
               </span>
             )}
@@ -497,14 +497,14 @@ export default function NetPage() {
               className={`text-xs px-2 py-1 rounded border transition-colors hidden sm:block ${
                 sortBySuffix
                   ? 'bg-blue-600/20 border-blue-600 text-blue-300'
-                  : 'bg-gray-800 border-gray-700 text-gray-400'
+                  : 'bg-surface-2 border-surface-3 text-fg-3'
               }`}
               title="Toggle callsign sort order"
             >
               {sortBySuffix ? 'Suffix' : 'Call'}
             </button>
-            <div className="flex gap-1 text-xs text-gray-400">
-              <span className="bg-gray-800 px-2 py-1 rounded">{stations.length} stns</span>
+            <div className="flex gap-1 text-xs text-fg-3">
+              <span className="bg-surface-2 px-2 py-1 rounded">{stations.length} stns</span>
               {net.type !== 'ares' && (
                 <>
                   <span className="bg-blue-900/50 px-2 py-1 rounded">{baseStations}B</span>
@@ -519,7 +519,7 @@ export default function NetPage() {
               size="sm"
               variant="outline"
               onClick={() => setFullScriptOpen(true)}
-              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white gap-1"
+              className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
             >
               <ScrollText className="w-4 h-4" />
               <span className="hidden sm:inline">Full Script</span>
@@ -585,8 +585,8 @@ export default function NetPage() {
                     i === sectionIndex
                       ? 'bg-blue-600 text-white font-semibold'
                       : i < sectionIndex
-                      ? 'text-gray-300 hover:text-white hover:bg-gray-800'
-                      : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800'
+                      ? 'text-fg-2 hover:text-fg hover:bg-surface-2'
+                      : 'text-fg-4 hover:text-fg-2 hover:bg-surface-2'
                   }`}
                 >
                   {shortLabel}
@@ -604,15 +604,15 @@ export default function NetPage() {
           {sectionNav('top')}
 
           {net?.type === 'skywarn' && section?.id === 'preamble' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
+            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-3">
               <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-gray-400 text-sm font-medium">Weather status:</span>
+                <span className="text-fg-3 text-sm font-medium">Weather status:</span>
                 <button
                   onClick={() => setLocalWeatherStatus(localWeatherStatus === 'approaching' ? null : 'approaching')}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     localWeatherStatus === 'approaching'
                       ? 'bg-orange-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                      : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
                   }`}
                 >
                   Approaching
@@ -622,7 +622,7 @@ export default function NetPage() {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     localWeatherStatus === 'imminent'
                       ? 'bg-red-600 text-white'
-                      : 'bg-gray-800 text-gray-400 hover:text-gray-200 border border-gray-700'
+                      : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
                   }`}
                 >
                   Imminent
@@ -635,7 +635,7 @@ export default function NetPage() {
                     setBulletinDraft(localBulletin)
                     setBulletinModalOpen(true)
                   }}
-                  className="bg-gray-800 hover:bg-gray-700 text-gray-200 border border-gray-700 gap-1"
+                  className="bg-surface-2 hover:bg-surface-3 text-fg-1 border border-surface-3 gap-1"
                 >
                   <FileText className="w-4 h-4" />
                   {localBulletin ? 'Edit NWS Bulletin' : 'Paste current NWS Bulletin'}
@@ -649,8 +649,8 @@ export default function NetPage() {
 
           {bulletinModalOpen && (
             <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-              <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-lg p-5 space-y-4">
-                <h3 className="text-white font-semibold">
+              <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-lg p-5 space-y-4">
+                <h3 className="text-fg font-semibold">
                   NWS Bulletin
                   <a
                     href="https://www.weather.gov/ind/hazards"
@@ -665,7 +665,7 @@ export default function NetPage() {
                   value={bulletinDraft}
                   onChange={e => setBulletinDraft(e.target.value)}
                   placeholder="Paste NWS bulletin text here..."
-                  className="bg-gray-800 border-gray-700 text-white text-sm"
+                  className="bg-surface-2 border-surface-3 text-fg text-sm"
                   rows={8}
                   autoFocus
                 />
@@ -674,7 +674,7 @@ export default function NetPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => setBulletinModalOpen(false)}
-                    className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                    className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
                   >
                     Cancel
                   </Button>
@@ -707,8 +707,8 @@ export default function NetPage() {
           )}
 
           {net.type === 'ares' && section?.id === 'announcements' && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4">
-              <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4">
+              <div className="bg-surface-0 rounded-lg p-4 font-mono text-base leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
                 This is {net.net_controller} for the Marion County ARES Net.
               </div>
             </div>
@@ -725,8 +725,8 @@ export default function NetPage() {
           )}
 
           {net.type === 'ares' && section?.id === 'roll_call' && setupConfig?.checklistUrl && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
-              <p className="text-gray-400 italic font-mono text-sm">
+            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-3">
+              <p className="text-fg-3 italic font-mono text-sm">
                 Read the previously downloaded Check-In spreadsheet from the previous net.
               </p>
               <a
@@ -821,11 +821,11 @@ export default function NetPage() {
 
           {/* Section input fields (non-inline only) */}
           {section?.inputFields && section.inputFields.filter(f => !f.inline).length > 0 && (
-            <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-3">
-              <h3 className="text-white font-medium text-sm">Net Control Inputs</h3>
+            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-3">
+              <h3 className="text-fg font-medium text-sm">Net Control Inputs</h3>
               {section.inputFields.filter(f => !f.inline).map(field => (
                 <div key={field.id}>
-                  <Label className="text-gray-400 text-xs mb-1 block">{field.label}</Label>
+                  <Label className="text-fg-3 text-xs mb-1 block">{field.label}</Label>
                   {field.type === 'textarea' ? (
                     <Textarea
                       value={sectionInputs[field.id] || ''}
@@ -833,7 +833,7 @@ export default function NetPage() {
                         setSectionInputs(prev => ({ ...prev, [field.id]: e.target.value }))
                       }
                       placeholder={field.placeholder}
-                      className="bg-gray-800 border-gray-700 text-white text-sm"
+                      className="bg-surface-2 border-surface-3 text-fg text-sm"
                       rows={4}
                     />
                   ) : field.type === 'select' && field.options ? (
@@ -841,12 +841,12 @@ export default function NetPage() {
                       value={sectionInputs[field.id] || ''}
                       onValueChange={v => setSectionInputs(prev => ({ ...prev, [field.id]: v } as Record<string, string>))}
                     >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
+                      <SelectContent className="bg-surface-2 border-surface-3">
                         {field.options.map(opt => (
-                          <SelectItem key={opt.value} value={opt.value} className="text-white">
+                          <SelectItem key={opt.value} value={opt.value} className="text-fg">
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -862,7 +862,7 @@ export default function NetPage() {
                         }))
                       }
                       placeholder={field.placeholder}
-                      className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+                      className="bg-surface-2 border-surface-3 text-fg uppercase font-mono"
                     />
                   )}
                 </div>
@@ -884,9 +884,9 @@ export default function NetPage() {
         </div>
 
         {/* Right: Tabs panel */}
-        <div className="w-full lg:w-96 flex flex-col gap-0 bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
+        <div className="w-full lg:w-96 flex flex-col gap-0 bg-surface-1 rounded-xl border border-surface-3 overflow-hidden">
           {/* Tab bar */}
-          <div className="flex flex-wrap border-b border-gray-700">
+          <div className="flex flex-wrap border-b border-surface-3">
             {tabs
               .filter(t => t.show)
               .map(tab => (
@@ -895,8 +895,8 @@ export default function NetPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-white'
-                      : 'border-transparent text-gray-400 hover:text-gray-200'
+                      ? 'border-blue-500 text-fg'
+                      : 'border-transparent text-fg-3 hover:text-fg-1'
                   }`}
                 >
                   {tab.icon}
@@ -998,7 +998,7 @@ export default function NetPage() {
                   size="sm"
                   variant="outline"
                   onClick={() => setFullLogOpen(true)}
-                  className="w-full mb-3 border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 gap-1"
+                  className="w-full mb-3 border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 gap-1"
                 >
                   <BookOpen className="w-4 h-4" />
                   View full log
@@ -1027,10 +1027,10 @@ export default function NetPage() {
 
       {fullLogOpen && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
-              <h3 className="text-white font-semibold">Full Net Log</h3>
-              <button onClick={() => setFullLogOpen(false)} className="text-gray-400 hover:text-white">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-surface-3">
+              <h3 className="text-fg font-semibold">Full Net Log</h3>
+              <button onClick={() => setFullLogOpen(false)} className="text-fg-3 hover:text-fg">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1051,9 +1051,9 @@ export default function NetPage() {
 
       {sirenResetConfirm && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
-            <h3 className="text-white font-semibold">Reset Siren Status</h3>
-            <p className="text-gray-300 text-sm">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-4">
+            <h3 className="text-fg font-semibold">Reset Siren Status</h3>
+            <p className="text-fg-2 text-sm">
               This removes both the sirens started and sirens stopped log entries. Continue?
             </p>
             <div className="flex gap-2 justify-end">
@@ -1061,7 +1061,7 @@ export default function NetPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setSirenResetConfirm(false)}
-                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
               >
                 Cancel
               </Button>

@@ -269,7 +269,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
       <button
         onClick={() => handleSort(field)}
         className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${
-          active ? 'text-blue-400' : 'text-gray-500 hover:text-gray-300'
+          active ? 'text-blue-400' : 'text-fg-4 hover:text-fg-2'
         }`}
       >
         {label}
@@ -285,25 +285,25 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           {fullPage ? (
-            <h2 className="text-gray-300 font-medium">Roster — {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</h2>
+            <h2 className="text-fg-2 font-medium">Roster — {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</h2>
           ) : (
-            <h2 className="text-gray-300 font-medium">
-              <a href="/roster" className="hover:text-white underline underline-offset-2">Roster</a>
-              {' '}<span className="text-gray-500">— {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</span>
+            <h2 className="text-fg-2 font-medium">
+              <a href="/roster" className="hover:text-fg underline underline-offset-2">Roster</a>
+              {' '}<span className="text-fg-4">— {showingFrom}-{showingTo} of {filtered.length}{search && ` (${entries.length} total)`}</span>
             </h2>
           )}
           <input
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(0) }}
             placeholder="Search..."
-            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1 w-28"
+            className="bg-surface-2 border border-surface-3 text-fg-1 text-xs rounded px-2 py-1 w-28"
           />
           <button
             onClick={() => setSortBySuffix(!sortBySuffix)}
             className={`text-xs px-2 py-1 rounded border transition-colors ${
               sortBySuffix
                 ? 'bg-blue-600/20 border-blue-600 text-blue-300'
-                : 'bg-gray-800 border-gray-700 text-gray-400 hover:text-gray-200'
+                : 'bg-surface-2 border-surface-3 text-fg-3 hover:text-fg-1'
             }`}
           >
             {sortBySuffix ? 'Suffix' : 'Callsign'}
@@ -315,15 +315,15 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
               <button
                 onClick={() => setPage(p => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+                className="px-2 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-fg-2 hover:text-fg disabled:opacity-40"
               >
                 Prev
               </button>
-              <span className="text-gray-500 text-xs">{page + 1}/{totalPages}</span>
+              <span className="text-fg-4 text-xs">{page + 1}/{totalPages}</span>
               <button
                 onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                 disabled={page >= totalPages - 1}
-                className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded text-gray-300 hover:text-white disabled:opacity-40"
+                className="px-2 py-1 text-xs bg-surface-2 border border-surface-3 rounded text-fg-2 hover:text-fg disabled:opacity-40"
               >
                 Next
               </button>
@@ -332,7 +332,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
           <select
             value={pageSize}
             onChange={e => { setPageSize(Number(e.target.value)); setPage(0) }}
-            className="bg-gray-800 border border-gray-700 text-gray-200 text-xs rounded px-2 py-1"
+            className="bg-surface-2 border border-surface-3 text-fg-1 text-xs rounded px-2 py-1"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -345,7 +345,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
 
       <div className="flex items-center gap-3 mb-3 flex-wrap">
         {TOGGLE_COLUMNS.map(col => (
-          <label key={col.key} className="flex items-center gap-1.5 text-xs text-gray-400 cursor-pointer select-none hover:text-gray-200">
+          <label key={col.key} className="flex items-center gap-1.5 text-xs text-fg-3 cursor-pointer select-none hover:text-fg-1">
             <input
               type="checkbox"
               checked={columns[col.key]}
@@ -358,13 +358,13 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
       </div>
 
       {entries.length === 0 ? (
-        <p className="text-gray-500 text-sm">No operators in roster yet.</p>
+        <p className="text-fg-4 text-sm">No operators in roster yet.</p>
       ) : (
-        <div className="bg-gray-900 rounded-lg border border-gray-700 overflow-hidden">
+        <div className="bg-surface-1 rounded-lg border border-surface-3 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-700">
+                <tr className="border-b border-surface-3">
                   <th className="px-3 py-2 text-left"><SortHeader label="Call" field="callsign" /></th>
                   {columns.first_name && <th className="px-3 py-2 text-left"><SortHeader label="First" field="first_name" /></th>}
                   {columns.last_name && <th className="px-3 py-2 text-left"><SortHeader label="Last" field="last_name" /></th>}
@@ -380,13 +380,13 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                 {visible.map(entry => (
                   <tr
                     key={entry.id}
-                    className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors"
+                    className="border-b border-surface-2 hover:bg-surface-2/50 transition-colors"
                   >
                     <td className="px-3 py-1.5">
-                      <span className="font-mono text-white font-semibold">{entry.callsign}</span>
+                      <span className="font-mono text-fg font-semibold">{entry.callsign}</span>
                       <button
                         onClick={() => openEdit(entry)}
-                        className="ml-1.5 text-gray-600 hover:text-gray-300 transition-colors align-middle"
+                        className="ml-1.5 text-fg-5 hover:text-fg-2 transition-colors align-middle"
                         title="Edit"
                       >
                         <Pencil className="w-3 h-3 inline" />
@@ -406,21 +406,21 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                             }
                             fetchRoster()
                           }}
-                          className="ml-1 text-gray-700 hover:text-red-400 transition-colors align-middle"
+                          className="ml-1 text-fg-5 hover:text-red-400 transition-colors align-middle"
                           title="Delete"
                         >
                           <Trash2 className="w-3 h-3 inline" />
                         </button>
                       )}
                     </td>
-                    {columns.first_name && <td className="px-3 py-1.5 text-gray-300">{entry.first_name || ''}</td>}
-                    {columns.last_name && <td className="px-3 py-1.5 text-gray-300">{entry.last_name || ''}</td>}
-                    {columns.address && <td className="px-3 py-1.5 text-gray-400">{entry.address || ''}</td>}
-                    {columns.county && <td className="px-3 py-1.5 text-gray-400">{entry.county || ''}</td>}
-                    {columns.license && <td className="px-3 py-1.5 text-gray-400">{entry.license || ''}</td>}
-                    {columns.checkin_count && <td className="px-3 py-1.5 text-right text-gray-300">{entry.checkin_count}</td>}
+                    {columns.first_name && <td className="px-3 py-1.5 text-fg-2">{entry.first_name || ''}</td>}
+                    {columns.last_name && <td className="px-3 py-1.5 text-fg-2">{entry.last_name || ''}</td>}
+                    {columns.address && <td className="px-3 py-1.5 text-fg-3">{entry.address || ''}</td>}
+                    {columns.county && <td className="px-3 py-1.5 text-fg-3">{entry.county || ''}</td>}
+                    {columns.license && <td className="px-3 py-1.5 text-fg-3">{entry.license || ''}</td>}
+                    {columns.checkin_count && <td className="px-3 py-1.5 text-right text-fg-2">{entry.checkin_count}</td>}
                     {columns.last_checkin && (
-                      <td className="px-3 py-1.5 text-gray-500 text-xs">
+                      <td className="px-3 py-1.5 text-fg-4 text-xs">
                         {entry.last_checkin ? format(new Date(entry.last_checkin), 'MMM d, yyyy') : ''}
                       </td>
                     )}
@@ -447,10 +447,10 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
 
       {editing && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <span className="text-white font-semibold">Edit Operator</span>
+                <span className="text-fg font-semibold">Edit Operator</span>
                 <a
                   href={`https://www.qrz.com/db/${editing.callsign}`}
                   target="_blank"
@@ -460,74 +460,74 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                   QRZ
                 </a>
               </div>
-              <button onClick={() => setEditing(null)} className="text-gray-400 hover:text-white">
+              <button onClick={() => setEditing(null)} className="text-fg-3 hover:text-fg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
               <UppercaseInput
                 value={editCallsign}
                 onValueChange={setEditCallsign}
-                className="bg-gray-800 border-gray-700 text-white uppercase font-mono"
+                className="bg-surface-2 border-surface-3 text-fg uppercase font-mono"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">First Name</Label>
                 <Input
                   value={editFirst}
                   onChange={e => { const v = e.target.value; setEditFirst(v.charAt(0).toUpperCase() + v.slice(1)) }}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                 />
               </div>
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">Last Name</Label>
                 <Input
                   value={editLast}
                   onChange={e => { const v = e.target.value; setEditLast(v.charAt(0).toUpperCase() + v.slice(1)) }}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                 />
               </div>
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Email</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Email</Label>
               <Input
                 value={editEmail}
                 onChange={e => setEditEmail(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
                 type="email"
               />
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Address</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Address</Label>
               <Input
                 value={editAddress}
                 onChange={e => setEditAddress(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">County</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">County</Label>
                 <Input
                   value={editCounty}
                   onChange={e => setEditCounty(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                 />
               </div>
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">License</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">License</Label>
                 <Input
                   value={editLicense}
                   onChange={e => setEditLicense(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                 />
               </div>
             </div>
 
-            <div className="text-gray-500 text-xs">
+            <div className="text-fg-4 text-xs">
               Check-ins: {editing.checkin_count}
               {editing.last_checkin && ` · Last: ${format(new Date(editing.last_checkin), 'MMM d, yyyy')}`}
             </div>
@@ -538,8 +538,8 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
               const other = entries.find(e => e.id === conflict.id)
               return (
                 <div className="bg-blue-950/40 border border-blue-800 rounded-lg p-3 space-y-3">
-                  <p className="text-sm text-gray-200">
-                    <span className="font-mono font-semibold text-white">{conflict.callsign}</span> already exists in the roster
+                  <p className="text-sm text-fg-1">
+                    <span className="font-mono font-semibold text-fg">{conflict.callsign}</span> already exists in the roster
                     {other ? ` (${other.checkin_count} check-in${other.checkin_count === 1 ? '' : 's'})` : ''}.
                     {' '}This entry has {editing.checkin_count} check-in{editing.checkin_count === 1 ? '' : 's'}.
                   </p>
@@ -551,7 +551,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                       <Input
                         value={renameOther}
                         onChange={e => setRenameOther(e.target.value.toUpperCase())}
-                        className="bg-gray-800 border-gray-700 text-white font-mono h-8 text-xs flex-1"
+                        className="bg-surface-2 border-surface-3 text-fg font-mono h-8 text-xs flex-1"
                       />
                       <Button size="sm" onClick={handleRenameOther} disabled={saving || !renameOther.trim()} className="bg-amber-700 hover:bg-amber-600 h-8 text-xs">
                         Rename {conflict.callsign} to this, keep both
@@ -562,7 +562,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                       variant="outline"
                       onClick={() => setConflict(null)}
                       disabled={saving}
-                      className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white justify-start"
+                      className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg justify-start"
                     >
                       Cancel
                     </Button>
@@ -579,7 +579,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                       value={deleteInput}
                       onChange={e => setDeleteInput(e.target.value.toUpperCase())}
                       placeholder="Type DELETE"
-                      className="bg-gray-800 border-gray-700 text-white font-mono w-28 h-8 text-xs"
+                      className="bg-surface-2 border-surface-3 text-fg font-mono w-28 h-8 text-xs"
                       autoFocus
                       onKeyDown={e => {
                         if (e.key === 'Enter') handleDelete()
@@ -613,7 +613,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                   size="sm"
                   variant="outline"
                   onClick={() => setEditing(null)}
-                  className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                  className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
                 >
                   Cancel
                 </Button>

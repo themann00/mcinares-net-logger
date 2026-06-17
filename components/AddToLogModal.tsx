@@ -64,16 +64,16 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
+      <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <span className="text-white font-semibold">Add to Log</span>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <span className="text-fg font-semibold">Add to Log</span>
+          <button onClick={onClose} className="text-fg-3 hover:text-fg">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Station (optional)</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Station (optional)</Label>
           <CallsignAutocomplete
             value={callsign}
             onChange={setCallsign}
@@ -87,7 +87,7 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
 
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Label className="text-gray-400 text-xs">Type</Label>
+            <Label className="text-fg-3 text-xs">Type</Label>
             {types.map(t => (
               <button
                 key={t.id}
@@ -95,7 +95,7 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
                   noteType === t.id
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                    : 'bg-surface-2 text-fg-4 hover:text-fg-2'
                 }`}
               >
                 {t.label}
@@ -106,7 +106,7 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
             value={content}
             onChange={e => setContent(e.target.value)}
             placeholder="Enter content..."
-            className="bg-gray-800 border-gray-700 text-white text-sm"
+            className="bg-surface-2 border-surface-3 text-fg text-sm"
             rows={3}
           />
         </div>
@@ -116,7 +116,7 @@ export function AddToLogModal({ netId, stations, roster, onSave, onClose }: AddT
             size="sm"
             variant="outline"
             onClick={onClose}
-            className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+            className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
           >
             Cancel
           </Button>

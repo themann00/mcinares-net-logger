@@ -207,7 +207,7 @@ export function CheckinForm({
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
       <div className="flex gap-2">
         <div className="flex-1" ref={callsignRef}>
-          <Label className="text-gray-400 text-xs mb-1 block">Callsign *</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Callsign *</Label>
           <CallsignAutocomplete
             value={callsign}
             onChange={setCallsign}
@@ -223,12 +223,12 @@ export function CheckinForm({
         </div>
         {!callsignOnly && (netType === 'skywarn' || netType === 'siren') && (
           <div className="w-32">
-            <Label className="text-gray-400 text-xs mb-1 block">
+            <Label className="text-fg-3 text-xs mb-1 block">
               Type {requireStationType ? '*' : ''}
             </Label>
             <Select value={stationType} onValueChange={v => setStationType(v as StationType)}>
               <SelectTrigger
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
                 onKeyDown={e => {
                   if (e.key === 'Enter' && stationType) {
                     e.preventDefault()
@@ -238,9 +238,9 @@ export function CheckinForm({
               >
                 <SelectValue placeholder="—" />
               </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="base" className="text-white">Base</SelectItem>
-                <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
+              <SelectContent className="bg-surface-2 border-surface-3">
+                <SelectItem value="base" className="text-fg">Base</SelectItem>
+                <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -251,31 +251,31 @@ export function CheckinForm({
         <>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">First Name</Label>
               <Input
                 value={firstName}
                 onChange={e => { const v = e.target.value; setFirstName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                 placeholder="Optional"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
               />
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Last Name</Label>
               <Input
                 value={lastName}
                 onChange={e => { const v = e.target.value; setLastName(v.charAt(0).toUpperCase() + v.slice(1)) }}
                 placeholder="Optional"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
               />
             </div>
           </div>
 
           {showQuadrant && (
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Quadrant</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Quadrant</Label>
               <Select value={quadrant} onValueChange={v => setQuadrant(v as Quadrant)}>
                 <SelectTrigger
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                   onKeyDown={e => {
                     if (e.key === 'Enter' && quadrant) {
                       e.preventDefault()
@@ -285,36 +285,36 @@ export function CheckinForm({
                 >
                   <SelectValue placeholder="Select quadrant..." />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value="SW" className="text-white">SW — S of Washington, W of Meridian</SelectItem>
-                  <SelectItem value="NW" className="text-white">NW — N of Washington, W of Meridian</SelectItem>
-                  <SelectItem value="NE" className="text-white">NE — N of Washington, E of Meridian</SelectItem>
-                  <SelectItem value="SE" className="text-white">SE — S of Washington, E of Meridian</SelectItem>
+                <SelectContent className="bg-surface-2 border-surface-3">
+                  <SelectItem value="SW" className="text-fg">SW — S of Washington, W of Meridian</SelectItem>
+                  <SelectItem value="NW" className="text-fg">NW — N of Washington, W of Meridian</SelectItem>
+                  <SelectItem value="NE" className="text-fg">NE — N of Washington, E of Meridian</SelectItem>
+                  <SelectItem value="SE" className="text-fg">SE — S of Washington, E of Meridian</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           )}
 
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
+            <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
             <Input
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder={netType === 'siren' ? 'Siren # or cross street...' : 'Optional'}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-surface-2 border-surface-3 text-fg"
             />
           </div>
 
           {(isSkywarn || netType === 'siren') && (
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">
+              <Label className="text-fg-3 text-xs mb-1 block">
                 {netType === 'siren' ? 'Siren Report' : 'Weather Report'}
               </Label>
               <Textarea
                 value={report}
                 onChange={e => setReport(e.target.value)}
                 placeholder="Optional — report at check-in"
-                className="bg-gray-800 border-gray-700 text-white text-sm"
+                className="bg-surface-2 border-surface-3 text-fg text-sm"
                 rows={2}
               />
             </div>
@@ -323,7 +323,7 @@ export function CheckinForm({
           {isAres && (
             <div className="space-y-2">
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-fg-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
                     checked={hasTraffic}
@@ -332,7 +332,7 @@ export function CheckinForm({
                   />
                   Has Traffic
                 </label>
-                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-fg-2 text-sm cursor-pointer">
                   <input
                     type="checkbox"
                     checked={hasAnnouncement}
@@ -349,7 +349,7 @@ export function CheckinForm({
                     value={trafficText}
                     onChange={e => { if (!trafficStarted && e.target.value) setTrafficStarted(new Date().toISOString()); setTrafficText(e.target.value) }}
                     placeholder="Summarize traffic..."
-                    className="bg-gray-800 border-gray-700 text-white text-sm"
+                    className="bg-surface-2 border-surface-3 text-fg text-sm"
                     rows={2}
                   />
                 </div>
@@ -361,7 +361,7 @@ export function CheckinForm({
                     value={announcementText}
                     onChange={e => { if (!announcementStarted && e.target.value) setAnnouncementStarted(new Date().toISOString()); setAnnouncementText(e.target.value) }}
                     placeholder="Summarize announcement..."
-                    className="bg-gray-800 border-gray-700 text-white text-sm"
+                    className="bg-surface-2 border-surface-3 text-fg text-sm"
                     rows={2}
                   />
                 </div>
@@ -391,7 +391,7 @@ export function CheckinForm({
               size="sm"
               variant="outline"
               onClick={() => { setDupeWarning(false); resetForm(); setTimeout(() => callsignRef.current?.querySelector('input')?.focus(), 50) }}
-              className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+              className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
             >
               Cancel
             </Button>
@@ -412,14 +412,14 @@ export function CheckinForm({
 
       {!dupeWarning && (
         <div className="space-y-2 pt-1">
-          <p className="text-gray-500 text-xs leading-relaxed">
-            <span className="text-gray-400 font-medium">Tab</span> selects the highlighted station and moves to the next field.{' '}
-            <span className="text-gray-400 font-medium">Enter</span>{' '}
+          <p className="text-fg-4 text-xs leading-relaxed">
+            <span className="text-fg-3 font-medium">Tab</span> selects the highlighted station and moves to the next field.{' '}
+            <span className="text-fg-3 font-medium">Enter</span>{' '}
             {fastSubmit
               ? 'selects the highlighted station and logs the check-in right away.'
               : 'only selects the highlighted station.'}
           </p>
-          <label className="flex items-center gap-2 text-gray-300 text-xs cursor-pointer">
+          <label className="flex items-center gap-2 text-fg-2 text-xs cursor-pointer">
             <input
               type="checkbox"
               checked={fastSubmit}

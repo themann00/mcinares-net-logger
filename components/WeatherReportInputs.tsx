@@ -123,14 +123,14 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
   return (
     <div className="space-y-2">
       <div>
-        <Label className="text-gray-400 text-xs mb-1 block">Report Type</Label>
+        <Label className="text-fg-3 text-xs mb-1 block">Report Type</Label>
         <Select value={reportType} onValueChange={v => setReportType(v as ReportType)}>
-          <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+          <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="bg-gray-800 border-gray-700">
+          <SelectContent className="bg-surface-2 border-surface-3">
             {REPORT_TYPES.map(t => (
-              <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>
+              <SelectItem key={t} value={t} className="text-fg">{t}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -138,9 +138,9 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
 
       {reportType === 'Hail' && (
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Hail Size</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Hail Size</Label>
           <Select value={hailSize} onValueChange={v => setHailSize(v || '')}>
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
               <SelectValue placeholder="Select size...">
                 {(value: string) => {
                   const h = HAIL_SIZES.find(x => x.value === value)
@@ -148,17 +148,17 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
                   return (
                     <>
                       <span className="flex-1">{h.name}</span>
-                      <span className="text-gray-400">{h.size}</span>
+                      <span className="text-fg-3">{h.size}</span>
                     </>
                   )
                 }}
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
+            <SelectContent className="bg-surface-2 border-surface-3 max-h-60">
               {HAIL_SIZES.map(s => (
-                <SelectItem key={s.value} value={s.value} className="text-white">
+                <SelectItem key={s.value} value={s.value} className="text-fg">
                   <span className="flex-1">{s.name}</span>
-                  <span className="text-gray-400">{s.size}</span>
+                  <span className="text-fg-3">{s.size}</span>
                 </SelectItem>
               ))}
             </SelectContent>
@@ -168,14 +168,14 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
 
       {reportType === 'Wind' && (
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Beaufort Scale</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Beaufort Scale</Label>
           <Select value={windForce} onValueChange={v => setWindForce(v || '')}>
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
               <SelectValue placeholder="Select wind force..." />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
+            <SelectContent className="bg-surface-2 border-surface-3 max-h-60">
               {BEAUFORT_SCALE.map(b => (
-                <SelectItem key={b.value} value={b.value} className="text-white text-xs">{b.label}</SelectItem>
+                <SelectItem key={b.value} value={b.value} className="text-fg text-xs">{b.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -186,51 +186,51 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">What is flooding</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">What is flooding</Label>
               <Select value={floodSource} onValueChange={v => setFloodSource(v || '')}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-surface-2 border-surface-3">
                   {FLOOD_SOURCES.map(s => (
-                    <SelectItem key={s} value={s} className="text-white">{s}</SelectItem>
+                    <SelectItem key={s} value={s} className="text-fg">{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Depth (inches)</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Depth (inches)</Label>
               <Input
                 value={floodDepth}
                 onChange={e => setFloodDepth(e.target.value)}
                 placeholder="e.g. 6"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-surface-2 border-surface-3 text-fg"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Water type</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Water type</Label>
               <Select value={floodFlow} onValueChange={v => setFloodFlow(v || '')}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-surface-2 border-surface-3">
                   {FLOOD_FLOW.map(f => (
-                    <SelectItem key={f} value={f} className="text-white">{f}</SelectItem>
+                    <SelectItem key={f} value={f} className="text-fg">{f}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Trend</Label>
+              <Label className="text-fg-3 text-xs mb-1 block">Trend</Label>
               <Select value={floodTrend} onValueChange={v => setFloodTrend(v || '')}>
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                   <SelectValue placeholder="Select..." />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-surface-2 border-surface-3">
                   {FLOOD_TREND.map(t => (
-                    <SelectItem key={t} value={t} className="text-white">{t}</SelectItem>
+                    <SelectItem key={t} value={t} className="text-fg">{t}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -241,14 +241,14 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
 
       {reportType === 'Damage' && (
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Damage to</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Damage to</Label>
           <Select value={damageTarget} onValueChange={v => setDamageTarget(v || '')}>
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
               <SelectValue placeholder="Select..." />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-700">
+            <SelectContent className="bg-surface-2 border-surface-3">
               {DAMAGE_TARGETS.map(d => (
-                <SelectItem key={d} value={d} className="text-white">{d}</SelectItem>
+                <SelectItem key={d} value={d} className="text-fg">{d}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -256,12 +256,12 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
       )}
 
       <div>
-        <Label className="text-gray-400 text-xs mb-1 block">Details</Label>
+        <Label className="text-fg-3 text-xs mb-1 block">Details</Label>
         <Textarea
           value={freeText}
           onChange={e => setFreeText(e.target.value)}
           placeholder="Location, time, additional details..."
-          className="bg-gray-800 border-gray-700 text-white text-sm"
+          className="bg-surface-2 border-surface-3 text-fg text-sm"
           rows={rows}
         />
       </div>

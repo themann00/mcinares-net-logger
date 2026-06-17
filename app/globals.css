@@ -39,6 +39,18 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --color-fg: var(--text-strong);
+  --color-fg-1: var(--text-1);
+  --color-fg-2: var(--text-2);
+  --color-fg-3: var(--text-3);
+  --color-fg-4: var(--text-4);
+  --color-fg-5: var(--text-5);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -81,6 +93,20 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+
+  /* Light theme surfaces (slate scale) and text. */
+  --surface-0: #f8fafc;
+  --surface-1: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #e2e8f0;
+  --surface-4: #cbd5e1;
+  --surface-5: #94a3b8;
+  --text-strong: #0f172a;
+  --text-1: #1e293b;
+  --text-2: #334155;
+  --text-3: #475569;
+  --text-4: #64748b;
+  --text-5: #94a3b8;
 }
 
 .dark {
@@ -115,6 +141,21 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+
+  /* Dark theme surfaces/text equal the original hardcoded gray scale, so dark
+     mode is visually unchanged after the token migration. */
+  --surface-0: #030712;
+  --surface-1: #111827;
+  --surface-2: #1f2937;
+  --surface-3: #374151;
+  --surface-4: #4b5563;
+  --surface-5: #6b7280;
+  --text-strong: #ffffff;
+  --text-1: #e5e7eb;
+  --text-2: #d1d5db;
+  --text-3: #9ca3af;
+  --text-4: #6b7280;
+  --text-5: #4b5563;
 }
 
 @media print {

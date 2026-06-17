@@ -78,7 +78,7 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
   return (
     <div className="mt-4 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+        <span className="text-fg-3 text-xs font-semibold uppercase tracking-wider">
           Queue ({queue.length})
         </span>
         <Button
@@ -96,20 +96,20 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
         {queue.map(item => (
           <div
             key={item.id}
-            className="flex items-center gap-2 px-2 py-1.5 bg-gray-800 rounded-lg"
+            className="flex items-center gap-2 px-2 py-1.5 bg-surface-2 rounded-lg"
           >
             <button
               onClick={() => openEdit(item)}
-              className="flex-1 text-left font-mono text-sm text-white font-semibold hover:text-blue-300 transition-colors"
+              className="flex-1 text-left font-mono text-sm text-fg font-semibold hover:text-blue-300 transition-colors"
             >
               {item.callsign}
-              {item.firstName && <span className="text-gray-500 text-xs font-sans ml-1">{item.firstName}</span>}
+              {item.firstName && <span className="text-fg-4 text-xs font-sans ml-1">{item.firstName}</span>}
             </button>
             {showFlags && (
               <>
                 {item.hasTraffic && <span className="text-yellow-500 text-xs">T</span>}
                 {item.hasAnnouncement && <span className="text-teal-500 text-xs">A</span>}
-                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-1 text-xs text-fg-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={item.hasTraffic}
@@ -118,7 +118,7 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
                   />
                   Tfc
                 </label>
-                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-1 text-xs text-fg-3 cursor-pointer">
                   <input
                     type="checkbox"
                     checked={item.hasAnnouncement}
@@ -135,17 +135,17 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
 
       {editingId && editData && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.defaultPrevented) { e.preventDefault(); saveEdit() } if (e.key === 'Escape') setEditingId(null) }}>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-3">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-white font-semibold">Edit Queued Check-in</span>
-              <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-white">
+              <span className="text-fg font-semibold">Edit Queued Check-in</span>
+              <button onClick={() => setEditingId(null)} className="text-fg-3 hover:text-fg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
                 <CallsignAutocomplete
                   value={editData.callsign}
                   onChange={v => setEditData({ ...editData, callsign: v })}
@@ -159,14 +159,14 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
                 />
               </div>
               <div className="w-28">
-                <Label className="text-gray-400 text-xs mb-1 block">Type</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">Type</Label>
                 <Select value={editData.stationType} onValueChange={v => setEditData({ ...editData, stationType: (v || '') as StationType | '' })}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                     <SelectValue placeholder="—" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="base" className="text-white">Base</SelectItem>
-                    <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
+                  <SelectContent className="bg-surface-2 border-surface-3">
+                    <SelectItem value="base" className="text-fg">Base</SelectItem>
+                    <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -174,27 +174,27 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
-                <Input value={editData.firstName} onChange={e => { const v = e.target.value; setEditData({ ...editData, firstName: v.charAt(0).toUpperCase() + v.slice(1) }) }} className="bg-gray-800 border-gray-700 text-white" />
+                <Label className="text-fg-3 text-xs mb-1 block">First Name</Label>
+                <Input value={editData.firstName} onChange={e => { const v = e.target.value; setEditData({ ...editData, firstName: v.charAt(0).toUpperCase() + v.slice(1) }) }} className="bg-surface-2 border-surface-3 text-fg" />
               </div>
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
-                <Input value={editData.lastName} onChange={e => { const v = e.target.value; setEditData({ ...editData, lastName: v.charAt(0).toUpperCase() + v.slice(1) }) }} className="bg-gray-800 border-gray-700 text-white" />
+                <Label className="text-fg-3 text-xs mb-1 block">Last Name</Label>
+                <Input value={editData.lastName} onChange={e => { const v = e.target.value; setEditData({ ...editData, lastName: v.charAt(0).toUpperCase() + v.slice(1) }) }} className="bg-surface-2 border-surface-3 text-fg" />
               </div>
             </div>
 
             <div>
-              <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
-              <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+              <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
+              <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-surface-2 border-surface-3 text-fg" />
             </div>
 
             {showFlags && (
               <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-fg-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={editData.hasTraffic} onChange={e => setEditData({ ...editData, hasTraffic: e.target.checked })} className="rounded" />
                   Has Traffic
                 </label>
-                <label className="flex items-center gap-2 text-gray-300 text-sm cursor-pointer">
+                <label className="flex items-center gap-2 text-fg-2 text-sm cursor-pointer">
                   <input type="checkbox" checked={editData.hasAnnouncement} onChange={e => setEditData({ ...editData, hasAnnouncement: e.target.checked })} className="rounded" />
                   Has Announcement
                 </label>
@@ -204,13 +204,13 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
             {showTrafficInputs && editData.hasTraffic && (
               <div>
                 <Label className="text-yellow-400 text-xs mb-1 block">Traffic Summary</Label>
-                <Textarea value={editData.trafficText} onChange={e => setEditData({ ...editData, trafficText: e.target.value })} className="bg-gray-800 border-gray-700 text-white text-sm" rows={2} />
+                <Textarea value={editData.trafficText} onChange={e => setEditData({ ...editData, trafficText: e.target.value })} className="bg-surface-2 border-surface-3 text-fg text-sm" rows={2} />
               </div>
             )}
             {showTrafficInputs && editData.hasAnnouncement && (
               <div>
                 <Label className="text-teal-400 text-xs mb-1 block">Announcement Summary</Label>
-                <Textarea value={editData.announcementText} onChange={e => setEditData({ ...editData, announcementText: e.target.value })} className="bg-gray-800 border-gray-700 text-white text-sm" rows={2} />
+                <Textarea value={editData.announcementText} onChange={e => setEditData({ ...editData, announcementText: e.target.value })} className="bg-surface-2 border-surface-3 text-fg text-sm" rows={2} />
               </div>
             )}
 
@@ -219,13 +219,13 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
                 <div className="flex gap-2 items-center text-sm">
                   <span className="text-red-400">Delete?</span>
                   <Button size="sm" onClick={() => { deleteItem(editData.id); setEditingId(null) }} className="bg-red-700 hover:bg-red-600 text-xs h-7">Yes</Button>
-                  <Button size="sm" variant="outline" onClick={() => setDeleteConfirmId(null)} className="border-gray-600 bg-gray-800 text-gray-200 text-xs h-7">No</Button>
+                  <Button size="sm" variant="outline" onClick={() => setDeleteConfirmId(null)} className="border-surface-4 bg-surface-2 text-fg-1 text-xs h-7">No</Button>
                 </div>
               ) : (
                 <Button size="sm" variant="outline" onClick={() => setDeleteConfirmId(editData.id)} className="border-red-800 text-red-400 hover:bg-red-950 text-xs">Delete</Button>
               )}
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white">Cancel</Button>
+                <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg">Cancel</Button>
                 <Button size="sm" onClick={saveEdit} className="bg-blue-700 hover:bg-blue-600">Save</Button>
               </div>
             </div>

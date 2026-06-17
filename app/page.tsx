@@ -145,21 +145,21 @@ export default function HomePage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center p-4">
-        <Card className="w-full max-w-sm bg-gray-900 border-gray-800">
+      <div className="min-h-screen bg-surface-0 flex items-center justify-center p-4">
+        <Card className="w-full max-w-sm bg-surface-1 border-surface-2">
           <CardHeader className="text-center">
             <div className="flex justify-center mb-2">
               <div className="bg-blue-600 p-3 rounded-full">
-                <Lock className="w-6 h-6 text-white" />
+                <Lock className="w-6 h-6 text-fg" />
               </div>
             </div>
-            <CardTitle className="text-white text-xl">Marion County ARES</CardTitle>
-            <p className="text-gray-400 text-sm">Net Logger</p>
+            <CardTitle className="text-fg text-xl">Marion County ARES</CardTitle>
+            <p className="text-fg-3 text-sm">Net Logger</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handlePinSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="pin" className="text-gray-300">
+                <Label htmlFor="pin" className="text-fg-2">
                   Access PIN
                 </Label>
                 <Input
@@ -168,7 +168,7 @@ export default function HomePage() {
                   value={pin}
                   onChange={e => setPin(e.target.value)}
                   placeholder="Enter PIN"
-                  className="bg-gray-800 border-gray-700 text-white mt-1"
+                  className="bg-surface-2 border-surface-3 text-fg mt-1"
                   autoFocus
                 />
                 {pinError && <p className="text-red-400 text-sm mt-1">{pinError}</p>}
@@ -184,12 +184,12 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950">
+    <div className="min-h-screen bg-surface-0">
       <div className="p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Marion County ARES</h1>
-          <p className="text-gray-400 mt-1">Net Logger</p>
+          <h1 className="text-3xl font-bold text-fg">Marion County ARES</h1>
+          <p className="text-fg-3 mt-1">Net Logger</p>
         </div>
 
         <div className="space-y-6">
@@ -217,7 +217,7 @@ export default function HomePage() {
                         <div className={`${net.testing ? 'text-yellow-400' : 'text-amber-400'} font-bold text-lg`}>
                           RESUME: {net.testing ? 'TESTING - ' : ''}{netInfo?.label || net.type.toUpperCase()}
                         </div>
-                        <div className="text-gray-400 text-sm">
+                        <div className="text-fg-3 text-sm">
                           NC: {net.net_controller} &middot; Started {new Date(net.created_at).toLocaleString()}
                         </div>
                       </div>
@@ -254,7 +254,7 @@ export default function HomePage() {
           )}
 
           <div>
-            <h2 className="text-gray-300 font-medium mb-3">Select Net Type</h2>
+            <h2 className="text-fg-2 font-medium mb-3">Select Net Type</h2>
             <div className="grid gap-3">
               {NET_TYPES.map(({ type, label, description, icon, color }) => (
                 <button
@@ -263,13 +263,13 @@ export default function HomePage() {
                   className={`flex items-center gap-4 p-4 rounded-lg border transition-all text-left ${
                     selectedNet === type
                       ? 'border-blue-500 bg-blue-500/10'
-                      : 'border-gray-700 bg-gray-900 hover:border-gray-500'
+                      : 'border-surface-3 bg-surface-1 hover:border-surface-5'
                   }`}
                 >
-                  <div className={`${color} p-2 rounded-lg text-white flex-shrink-0`}>{icon}</div>
+                  <div className={`${color} p-2 rounded-lg text-fg flex-shrink-0`}>{icon}</div>
                   <div>
-                    <div className="text-white font-medium">{label}</div>
-                    <div className="text-gray-400 text-sm">{description}</div>
+                    <div className="text-fg font-medium">{label}</div>
+                    <div className="text-fg-3 text-sm">{description}</div>
                   </div>
                   {selectedNet === type && (
                     <Badge className="ml-auto bg-blue-600 text-white">Selected</Badge>
@@ -282,7 +282,7 @@ export default function HomePage() {
           {selectedNet && (
             <form onSubmit={handleStartNet} className="space-y-4">
               <div>
-                <Label htmlFor="callsign" className="text-gray-300">
+                <Label htmlFor="callsign" className="text-fg-2">
                   Net Controller Callsign
                 </Label>
                 <div className="mt-1">

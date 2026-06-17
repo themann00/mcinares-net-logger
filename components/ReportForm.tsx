@@ -30,21 +30,21 @@ interface ReportFormProps {
 function TriToggle({ label, value, onChange }: { label: string; value: boolean | null; onChange: (v: boolean) => void }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="text-gray-300 text-xs w-14">{label}</span>
+      <span className="text-fg-2 text-xs w-14">{label}</span>
       <div
         className={`flex w-24 h-7 rounded-full border text-xs font-medium select-none overflow-hidden ${
           value === true
             ? 'border-green-700'
             : value === false
             ? 'border-red-800'
-            : 'border-gray-700'
+            : 'border-surface-3'
         }`}
       >
         <button
           type="button"
           onClick={() => onChange(true)}
           className={`flex-1 transition-colors ${
-            value === true ? 'bg-green-700 text-white font-semibold' : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+            value === true ? 'bg-green-700 text-white font-semibold' : 'bg-surface-2 text-fg-4 hover:text-fg-2'
           }`}
         >
           Yes
@@ -53,7 +53,7 @@ function TriToggle({ label, value, onChange }: { label: string; value: boolean |
           type="button"
           onClick={() => onChange(false)}
           className={`flex-1 transition-colors ${
-            value === false ? 'bg-red-700 text-white font-semibold' : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+            value === false ? 'bg-red-700 text-white font-semibold' : 'bg-surface-2 text-fg-4 hover:text-fg-2'
           }`}
         >
           No
@@ -240,7 +240,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
     <div className="space-y-4">
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>
-        <Label className="text-gray-400 text-xs mb-1 block">Station Callsign</Label>
+        <Label className="text-fg-3 text-xs mb-1 block">Station Callsign</Label>
         <CallsignAutocomplete
           value={callsign}
           onChange={setCallsign}
@@ -261,38 +261,38 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       {isSiren ? (
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
+            <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
             <Input
               value={location}
               onChange={e => setLocation(e.target.value)}
               placeholder="e.g. 38th & Meridian"
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-surface-2 border-surface-3 text-fg"
             />
           </div>
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">Siren Number</Label>
+            <Label className="text-fg-3 text-xs mb-1 block">Siren Number</Label>
             <Input
               value={sirenNumber}
               onChange={e => setSirenNumber(e.target.value)}
               placeholder="e.g. 12"
-              className="bg-gray-800 border-gray-700 text-white font-mono"
+              className="bg-surface-2 border-surface-3 text-fg font-mono"
             />
           </div>
         </div>
       ) : (
         <div>
-          <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
+          <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
           <Input
             value={location}
             onChange={e => setLocation(e.target.value)}
             placeholder="e.g. 38th & Meridian"
-            className="bg-gray-800 border-gray-700 text-white"
+            className="bg-surface-2 border-surface-3 text-fg"
           />
         </div>
       )}
 
       {isSiren && (
-        <p className="text-gray-500 text-xs -mt-1">Location or siren number required.</p>
+        <p className="text-fg-4 text-xs -mt-1">Location or siren number required.</p>
       )}
 
       {isSkywarn ? (
@@ -316,14 +316,14 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
                 type="button"
                 onClick={resetToggles}
                 disabled={sound === null && rotation === null && visual === null}
-                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-gray-800 border border-gray-700 text-gray-400 hover:text-gray-200 disabled:opacity-40 transition-colors"
+                className="px-2.5 py-1 rounded-lg text-xs font-medium bg-surface-2 border border-surface-3 text-fg-3 hover:text-fg-1 disabled:opacity-40 transition-colors"
               >
                 Reset
               </button>
             </div>
           )}
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">
+            <Label className="text-fg-3 text-xs mb-1 block">
               {netType === 'siren' ? 'Siren Report' : 'Weather Report'} *
             </Label>
             <Textarea
@@ -334,7 +334,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
                   ? 'Damage/repair notes, observations...'
                   : 'Event type, measurement, time...'
               }
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-surface-2 border-surface-3 text-fg"
               rows={3}
               required={!isSiren}
             />
@@ -354,7 +354,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
 
     {isSiren && pendingTiles.length > 0 && (
       <div className="space-y-1.5">
-        <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+        <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider">
           Awaiting Report ({pendingTiles.length})
         </h4>
         <div className="grid grid-cols-2 gap-1.5">
@@ -363,16 +363,16 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
               key={`${tile.callsign}-${tile.sirenNumber ?? 'none'}`}
               type="button"
               onClick={() => pickTile(tile)}
-              className="text-left px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg transition-colors"
+              className="text-left px-2.5 py-1.5 bg-surface-2 hover:bg-surface-3 border border-surface-3 rounded-lg transition-colors"
             >
               <div className="flex items-center gap-1.5">
                 {tile.sirenNumber && (
                   <span className="text-red-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
                 )}
-                <span className="text-white font-mono text-sm">{tile.callsign}</span>
+                <span className="text-fg font-mono text-sm">{tile.callsign}</span>
               </div>
               {!tile.sirenNumber && tile.location && (
-                <div className="text-gray-500 text-xs truncate">{tile.location}</div>
+                <div className="text-fg-4 text-xs truncate">{tile.location}</div>
               )}
             </button>
           ))}
@@ -382,7 +382,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
 
     {isSiren && reportedTiles.length > 0 && (
       <div className="space-y-1.5">
-        <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">
+        <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider">
           Reports Made ({reportedTiles.length})
         </h4>
         <div className="grid grid-cols-2 gap-1.5">
@@ -397,10 +397,10 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
                 {tile.sirenNumber && (
                   <span className="text-green-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
                 )}
-                <span className="text-gray-200 font-mono text-sm">{tile.callsign}</span>
+                <span className="text-fg-1 font-mono text-sm">{tile.callsign}</span>
               </div>
               {!tile.sirenNumber && tile.location && (
-                <div className="text-gray-500 text-xs truncate">{tile.location}</div>
+                <div className="text-fg-4 text-xs truncate">{tile.location}</div>
               )}
             </button>
           ))}

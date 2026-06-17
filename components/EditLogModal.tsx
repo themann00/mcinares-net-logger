@@ -31,7 +31,7 @@ const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   late_checkin: { label: 'LATE CHECK-IN', color: 'text-blue-300' },
   station_moved: { label: 'MOVED', color: 'text-orange-300' },
   net_close: { label: 'NET CLOSE', color: 'text-red-400' },
-  note: { label: 'NOTE', color: 'text-gray-400' },
+  note: { label: 'NOTE', color: 'text-fg-3' },
 }
 
 interface RosterEntry {
@@ -292,19 +292,19 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
     onSave()
   }
 
-  const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-gray-400' }
+  const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-fg-3' }
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 border border-gray-700 rounded-xl w-full max-w-md p-5 space-y-4">
+      <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-md p-5 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className={`font-mono text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
-            <span className="text-gray-500 text-xs">
+            <span className="text-fg-4 text-xs">
               {format(new Date(entry.timestamp), 'HH:mm:ss')}
             </span>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">
+          <button onClick={onClose} className="text-fg-3 hover:text-fg">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -323,7 +323,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                 size="sm"
                 variant="outline"
                 onClick={() => resolveOrphan(false)}
-                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
               >
                 Keep
               </Button>
@@ -331,16 +331,16 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           </div>
         ) : pending ? (
           <div className="bg-blue-950/40 border border-blue-800 rounded-lg p-3 space-y-3">
-            <div className="text-sm text-gray-200 space-y-1">
+            <div className="text-sm text-fg-1 space-y-1">
               <p>
                 {pending.correct.exists ? (
-                  <>Pointing this entry at existing station <span className="font-mono font-semibold text-white">{pending.correct.callsign}</span>.</>
+                  <>Pointing this entry at existing station <span className="font-mono font-semibold text-fg">{pending.correct.callsign}</span>.</>
                 ) : (
-                  <>Creating new station <span className="font-mono font-semibold text-white">{pending.correct.callsign}</span> for this entry.</>
+                  <>Creating new station <span className="font-mono font-semibold text-fg">{pending.correct.callsign}</span> for this entry.</>
                 )}
               </p>
               {pending.incorrect && (
-                <p className="text-gray-400 text-xs">
+                <p className="text-fg-3 text-xs">
                   <span className="font-mono">{pending.incorrect.callsign}</span>
                   {': '}{pending.incorrect.entries_in_net} entr{pending.incorrect.entries_in_net === 1 ? 'y' : 'ies'} in this net
                   {pending.incorrect.entries_elsewhere > 0 && (
@@ -359,7 +359,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                   Change this entry, highlight the rest for review
                 </Button>
               )}
-              <Button size="sm" onClick={() => resolvePrompt('skip')} disabled={saving} className="bg-gray-700 hover:bg-gray-600 justify-start">
+              <Button size="sm" onClick={() => resolvePrompt('skip')} disabled={saving} className="bg-surface-3 hover:bg-surface-4 justify-start">
                 Change this entry only
               </Button>
               <Button
@@ -367,7 +367,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                 variant="outline"
                 onClick={() => setPending(null)}
                 disabled={saving}
-                className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white justify-start"
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg justify-start"
               >
                 Cancel
               </Button>
@@ -378,7 +378,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
             {isReport && (
               <>
                 <div>
-                  <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
+                  <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
                   <CallsignAutocomplete
                     value={callsign}
                     onChange={setCallsign}
@@ -392,19 +392,19 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
+                  <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
                   <Input
                     value={location}
                     onChange={e => setLocation(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white"
+                    className="bg-surface-2 border-surface-3 text-fg"
                   />
                 </div>
                 <div>
-                  <Label className="text-gray-400 text-xs mb-1 block">Report</Label>
+                  <Label className="text-fg-3 text-xs mb-1 block">Report</Label>
                   <Textarea
                     value={report}
                     onChange={e => setReport(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white"
+                    className="bg-surface-2 border-surface-3 text-fg"
                     rows={3}
                   />
                 </div>
@@ -414,7 +414,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
             {isCheckin && (
               <>
                 <div>
-                  <Label className="text-gray-400 text-xs mb-1 block">Callsign</Label>
+                  <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
                   <CallsignAutocomplete
                     value={callsign}
                     onChange={setCallsign}
@@ -432,41 +432,41 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-gray-400 text-xs mb-1 block">First Name</Label>
+                    <Label className="text-fg-3 text-xs mb-1 block">First Name</Label>
                     <Input
                       value={firstName}
                       onChange={e => { const v = e.target.value; setFirstName(v.charAt(0).toUpperCase() + v.slice(1)) }}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-surface-2 border-surface-3 text-fg"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-400 text-xs mb-1 block">Last Name</Label>
+                    <Label className="text-fg-3 text-xs mb-1 block">Last Name</Label>
                     <Input
                       value={lastName}
                       onChange={e => { const v = e.target.value; setLastName(v.charAt(0).toUpperCase() + v.slice(1)) }}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-surface-2 border-surface-3 text-fg"
                     />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-gray-400 text-xs mb-1 block">Base / Mobile</Label>
+                    <Label className="text-fg-3 text-xs mb-1 block">Base / Mobile</Label>
                     <Select value={stationType} onValueChange={v => setStationType(v || '')}>
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
                         <SelectValue placeholder="Select..." />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-800 border-gray-700">
-                        <SelectItem value="base" className="text-white">Base</SelectItem>
-                        <SelectItem value="mobile" className="text-white">Mobile</SelectItem>
+                      <SelectContent className="bg-surface-2 border-surface-3">
+                        <SelectItem value="base" className="text-fg">Base</SelectItem>
+                        <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-gray-400 text-xs mb-1 block">Location</Label>
+                    <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
                     <Input
                       value={location}
                       onChange={e => setLocation(e.target.value)}
-                      className="bg-gray-800 border-gray-700 text-white"
+                      className="bg-surface-2 border-surface-3 text-fg"
                     />
                   </div>
                 </div>
@@ -475,11 +475,11 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
 
             {!isStructured && (
               <div>
-                <Label className="text-gray-400 text-xs mb-1 block">Content</Label>
+                <Label className="text-fg-3 text-xs mb-1 block">Content</Label>
                 <Textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  className="bg-gray-800 border-gray-700 text-white"
+                  className="bg-surface-2 border-surface-3 text-fg"
                   rows={3}
                 />
               </div>
@@ -489,7 +489,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
               <button
                 type="button"
                 onClick={() => setShowTime(v => !v)}
-                className="flex items-center gap-1 text-gray-400 text-xs hover:text-gray-200"
+                className="flex items-center gap-1 text-fg-3 text-xs hover:text-fg-1"
               >
                 {showTime ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 Date &amp; Time
@@ -500,14 +500,14 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                     type="date"
                     value={dateStr}
                     onChange={e => setDateStr(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white"
+                    className="bg-surface-2 border-surface-3 text-fg"
                   />
                   <Input
                     type="time"
                     lang="en-GB"
                     value={timeStr}
                     onChange={e => setTimeStr(e.target.value)}
-                    className="bg-gray-800 border-gray-700 text-white w-32"
+                    className="bg-surface-2 border-surface-3 text-fg w-32"
                   />
                 </div>
               )}
@@ -520,7 +520,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                   <Button size="sm" onClick={handleDelete} disabled={deleting} className="bg-red-700 hover:bg-red-600">
                     {deleting ? 'Deleting...' : 'Yes, Delete'}
                   </Button>
-                  <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)} className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white">
+                  <Button size="sm" variant="outline" onClick={() => setConfirmDelete(false)} className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg">
                     No
                   </Button>
                 </div>
@@ -540,7 +540,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                     size="sm"
                     variant="outline"
                     onClick={onClose}
-                    className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 hover:text-white"
+                    className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
                   >
                     Cancel
                   </Button>

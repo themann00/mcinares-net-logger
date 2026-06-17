@@ -36,7 +36,7 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
 
     if (match[1]) {
       parts.push(
-        <em key={match.index} className="text-gray-400">
+        <em key={match.index} className="text-fg-3">
           {match[1]}
         </em>
       )
@@ -71,7 +71,7 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
           onClick={opts.onNext}
           size="sm"
           variant="outline"
-          className="border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700 gap-1 my-1"
+          className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 gap-1 my-1"
         >
           No check-ins
           <ChevronRight className="w-4 h-4" />
@@ -81,7 +81,7 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
       const field = opts.inlineInputs[match[6]]
       parts.push(
         <span key={match.index} className="flex items-center gap-2 my-2">
-          {field.label && <span className="text-gray-400 text-sm">{field.label}:</span>}
+          {field.label && <span className="text-fg-3 text-sm">{field.label}:</span>}
           {field.roster ? (
             <div className="w-40">
               <CallsignAutocomplete
@@ -99,7 +99,7 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
               value={field.value}
               onChange={e => field.onChange(e.target.value.toUpperCase())}
               placeholder={field.placeholder}
-              className="bg-gray-800 border-gray-600 text-white uppercase font-mono w-40 h-8 text-sm inline-flex"
+              className="bg-surface-2 border-surface-4 text-fg uppercase font-mono w-40 h-8 text-sm inline-flex"
               onKeyDown={e => { if (e.key === 'Enter') field.onSave() }}
             />
           )}
@@ -176,8 +176,8 @@ function ContinuityTimer({ onLog }: { onLog: () => void }) {
   return (
     <div className="mt-3 space-y-2">
       <div className="flex items-center gap-3 text-sm">
-        <span className="text-gray-400">Next read in:</span>
-        <span className={`font-mono font-semibold ${secondsLeft <= 60 ? 'text-red-400' : secondsLeft <= 180 ? 'text-amber-400' : 'text-gray-200'}`}>
+        <span className="text-fg-3">Next read in:</span>
+        <span className={`font-mono font-semibold ${secondsLeft <= 60 ? 'text-red-400' : secondsLeft <= 180 ? 'text-amber-400' : 'text-fg-1'}`}>
           {mins}:{secs.toString().padStart(2, '0')}
         </span>
       </div>
@@ -213,19 +213,19 @@ export function ScriptCard({ section, ctx, sectionIndex, totalSections, onNext, 
   const typeInfo = TYPE_LABELS[section.type] || TYPE_LABELS.read
 
   return (
-    <div className="bg-gray-900 rounded-xl border border-gray-700 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800">
+    <div className="bg-surface-1 rounded-xl border border-surface-3 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-surface-3 bg-surface-2">
         <div className="flex items-center gap-3">
-          <span className="text-gray-400 text-sm">
+          <span className="text-fg-3 text-sm">
             {sectionIndex + 1} / {totalSections}
           </span>
-          <h2 className="text-white font-semibold text-lg">{section.title}</h2>
+          <h2 className="text-fg font-semibold text-lg">{section.title}</h2>
         </div>
-        <Badge className={`${typeInfo.color} text-white text-xs`}>{typeInfo.label}</Badge>
+        <Badge className={`${typeInfo.color} text-fg text-xs`}>{typeInfo.label}</Badge>
       </div>
 
       <div className="p-5">
-        <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+        <div className="bg-surface-0 rounded-lg p-4 font-mono text-base leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
           {renderScriptText(scriptText, { onNext, onTakeReports, hideNoCheckins: stationCount > 1, inlineInputs, onCircleBack })}
         </div>
 

@@ -103,14 +103,14 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-900 rounded-xl border border-gray-700 p-4 space-y-4">
-        <div className="bg-gray-950 rounded-lg p-4 font-mono text-base leading-7 text-gray-100 whitespace-pre-wrap border border-gray-800">
+      <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-4">
+        <div className="bg-surface-0 rounded-lg p-4 font-mono text-base leading-7 text-fg-1 whitespace-pre-wrap border border-surface-2">
           Are there any questions, comments, or traffic for the net?
         </div>
 
         {trafficStations.length > 0 && (
           <div className="space-y-3">
-            <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider">Stations with Traffic</h4>
+            <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider">Stations with Traffic</h4>
             <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
               <span>Enter a summary for each station (or leave as N/A) and click Log Traffic, or it will not appear in the net logs.</span>
             </div>
@@ -123,18 +123,18 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                   <div key={station.callsign} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
                     <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
                     <span className="font-mono text-sm text-green-400 line-through">{station.callsign}</span>
-                    <span className="text-gray-500 text-xs">logged</span>
+                    <span className="text-fg-4 text-xs">logged</span>
                   </div>
                 )
               }
 
               return (
-                <div key={station.callsign} className="bg-gray-800 rounded-lg p-3 space-y-2">
+                <div key={station.callsign} className="bg-surface-2 rounded-lg p-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-semibold text-white">{station.callsign}</span>
+                    <span className="font-mono font-semibold text-fg">{station.callsign}</span>
                     <button
                       onClick={() => setTrafficState(prev => ({ ...prev, [station.callsign]: { ...prev[station.callsign], cancelled: true } }))}
-                      className="text-gray-500 hover:text-red-400 text-xs flex items-center gap-1"
+                      className="text-fg-4 hover:text-red-400 text-xs flex items-center gap-1"
                     >
                       <X className="w-3 h-3" />
                       No traffic
@@ -145,7 +145,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                     onChange={e => setTrafficState(prev => ({ ...prev, [station.callsign]: { ...prev[station.callsign], text: e.target.value } }))}
                     placeholder="Summarize traffic..."
                     onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
-                    className="bg-gray-900 border-gray-700 text-white text-sm"
+                    className="bg-surface-1 border-surface-3 text-fg text-sm"
                     rows={2}
                   />
                   <Button
@@ -162,13 +162,13 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
           </div>
         )}
 
-        <div className="border-t border-gray-700 pt-4 space-y-3">
-          <h4 className="text-gray-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1">
+        <div className="border-t border-surface-3 pt-4 space-y-3">
+          <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider flex items-center gap-1">
             <Plus className="w-3 h-3" />
             Log Question, Comment, or Traffic
           </h4>
           <div>
-            <Label className="text-gray-400 text-xs mb-1 block">Station (optional)</Label>
+            <Label className="text-fg-3 text-xs mb-1 block">Station (optional)</Label>
             <CallsignAutocomplete
               value={noteCallsign}
               onChange={setNoteCallsign}
@@ -180,7 +180,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Label className="text-gray-400 text-xs">Content</Label>
+              <Label className="text-fg-3 text-xs">Content</Label>
               {(['traffic', 'question', 'comment', 'note'] as const).map(t => {
                 const labels: Record<string, string> = { traffic: 'Traffic', question: 'Question', comment: 'Comment', note: 'Note' }
                 return (
@@ -190,7 +190,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                     className={`px-2 py-0.5 text-xs rounded transition-colors ${
                       noteType === t
                         ? 'bg-blue-600 text-white'
-                        : 'bg-gray-800 text-gray-500 hover:text-gray-300'
+                        : 'bg-surface-2 text-fg-4 hover:text-fg-2'
                     }`}
                   >
                     {labels[t]}
@@ -202,7 +202,7 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
               value={noteContent}
               onChange={e => setNoteContent(e.target.value)}
               placeholder="Question, comment, or traffic details..."
-              className="bg-gray-800 border-gray-700 text-white text-sm"
+              className="bg-surface-2 border-surface-3 text-fg text-sm"
               rows={2}
             />
           </div>
