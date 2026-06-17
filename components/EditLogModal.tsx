@@ -108,9 +108,13 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   const [orphan, setOrphan] = useState<{ id: string; callsign: string } | null>(null)
 
   // Date/time is hidden behind a disclosure: rarely needs editing after a net closes.
+  // Split date and 24-hour time so the hour accepts values past 12 (a single
+  // 12-hour field rejects "20" and snaps to "02").
   const [showTime, setShowTime] = useState(false)
-  const [timestamp, setTimestamp] = useState(() => format(new Date(entry.timestamp), "yyyy-MM-dd'T'HH:mm"))
-  const originalTimestamp = format(new Date(entry.timestamp), "yyyy-MM-dd'T'HH:mm")
+  const [dateStr, setDateStr] = useState(() => format(new Date(entry.timestamp), 'yyyy-MM-dd'))
+  const [timeStr, setTimeStr] = useState(() => format(new Date(entry.timestamp), 'HH:mm'))
+  const originalDate = format(new Date(entry.timestamp), 'yyyy-MM-dd')
+  const originalTime = format(new Date(entry.timestamp), 'HH:mm')
 
   const isReport = entry.entry_type === 'report'
   const isCheckin = entry.entry_type === 'checkin' || entry.entry_type === 'late_checkin'
@@ -161,8 +165,12 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   }
 
   async function saveFields(cs: string, stationId?: string | null) {
-    // Only send a timestamp when the operator actually changed it.
-    const ts = timestamp !== originalTimestamp ? { timestamp } : {}
+    // Only send a timestamp when the operator actually changed it. Convert the
+    // wall-clock date/time to an absolute ISO instant here (browser-local), so
+    // the server stores the same moment the operator sees, not a value re-parsed
+    // in the server's timezone.
+    const tsChanged = dateStr !== originalDate || timeStr !== originalTime
+    const ts = tsChanged ? { timestamp: new Date(`${dateStr}T${timeStr}`).toISOString() } : {}
     if (isReport) {
       const prefix = cs ? `${cs}: ` : ''
       const parts = [location.trim() ? `[${location.trim()}]` : '', report.trim()].filter(Boolean)
@@ -487,12 +495,21 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                 Date &amp; Time
               </button>
               {showTime && (
-                <Input
-                  type="datetime-local"
-                  value={timestamp}
-                  onChange={e => setTimestamp(e.target.value)}
-                  className="mt-2 bg-gray-800 border-gray-700 text-white"
-                />
+                <div className="mt-2 flex gap-2">
+                  <Input
+                    type="date"
+                    value={dateStr}
+                    onChange={e => setDateStr(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white"
+                  />
+                  <Input
+                    type="time"
+                    lang="en-GB"
+                    value={timeStr}
+                    onChange={e => setTimeStr(e.target.value)}
+                    className="bg-gray-800 border-gray-700 text-white w-32"
+                  />
+                </div>
               )}
             </div>
 
