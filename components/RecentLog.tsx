@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { format } from 'date-fns'
 import { EditLogModal } from '@/components/EditLogModal'
-import type { LogEntry, LogEntryType, Station } from '@/types'
+import type { LogEntry, LogEntryType, NetType, Station } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   net_open: { label: 'OPEN', color: 'text-green-400' },
@@ -29,9 +29,10 @@ interface RecentLogProps {
   reversed?: boolean
   stations?: Station[]
   roster?: { callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]
+  netType?: NetType | null
 }
 
-export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [], roster = [] }: RecentLogProps) {
+export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [], roster = [], netType }: RecentLogProps) {
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
 
@@ -107,6 +108,8 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
           stations={stations}
           roster={roster}
           onHighlight={ids => setHighlighted(prev => new Set([...prev, ...ids]))}
+          netType={netType}
+          allEntries={entries}
         />
       )}
     </>

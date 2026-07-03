@@ -275,7 +275,7 @@ export default function ReportPage() {
                   {cols.map((col, ci) => (
                     <div key={ci} className="space-y-0">
                       {col.map(cs => (
-                        <div key={cs} className="py-0.5 font-mono">{cs}</div>
+                        <div key={cs} className="py-0.5 font-mono text-gray-900">{cs}</div>
                       ))}
                     </div>
                   ))}

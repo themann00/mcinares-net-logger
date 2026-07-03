@@ -65,12 +65,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { entry_id, content, metadata, station_id, timestamp } = await request.json() as {
+  const { entry_id, content, metadata, station_id, timestamp, entry_type } = await request.json() as {
     entry_id: string
     content?: string
     metadata?: Record<string, unknown>
     station_id?: string
     timestamp?: string
+    entry_type?: LogEntryType
   }
 
   if (!entry_id) {
@@ -80,6 +81,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const update: Record<string, unknown> = {}
   if (content !== undefined) update.content = content.trim()
   if (station_id !== undefined) update.station_id = station_id
+  if (entry_type !== undefined) update.entry_type = entry_type
   if (timestamp !== undefined) {
     const ts = new Date(timestamp)
     if (isNaN(ts.getTime())) {

@@ -14,7 +14,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { X, Check } from 'lucide-react'
-import type { StationType, Quadrant } from '@/types'
+import type { NetType, Station, StationType, Quadrant } from '@/types'
 
 interface RosterEntry {
   callsign: string
@@ -31,6 +31,8 @@ export interface QueuedCheckin {
   stationType: StationType | ''
   location: string
   quadrant: Quadrant | ''
+  sirenNumbers: string[]
+  moved: boolean
   hasTraffic: boolean
   hasAnnouncement: boolean
   trafficText: string
@@ -49,9 +51,11 @@ interface CheckinQueueProps {
   showTrafficInputs?: boolean
   showFlags?: boolean
   roster?: RosterEntry[]
+  netType?: NetType
+  stations?: Station[]
 }
 
-export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true, roster = [] }: CheckinQueueProps) {
+export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true, roster = [], netType, stations = [] }: CheckinQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [editData, setEditData] = useState<QueuedCheckin | null>(null)
@@ -143,33 +147,28 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               </button>
             </div>
 
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
-                <CallsignAutocomplete
-                  value={editData.callsign}
-                  onChange={v => setEditData({ ...editData, callsign: v })}
-                  onSelect={s => setEditData({
+            <div>
+              <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
+              <CallsignAutocomplete
+                value={editData.callsign}
+                onChange={v => setEditData({ ...editData, callsign: v })}
+                onSelect={s => {
+                  // Autofill identity and per-net facts from the selected
+                  // station; location falls back to N/A when unknown.
+                  const known = stations.find(st => st.callsign.toUpperCase() === s.callsign.toUpperCase())
+                  setEditData({
                     ...editData,
                     callsign: s.callsign,
                     firstName: s.first_name || editData.firstName,
                     lastName: s.last_name || editData.lastName,
-                  })}
-                  roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
-                />
-              </div>
-              <div className="w-28">
-                <Label className="text-fg-3 text-xs mb-1 block">Type</Label>
-                <Select value={editData.stationType} onValueChange={v => setEditData({ ...editData, stationType: (v || '') as StationType | '' })}>
-                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
-                    <SelectValue placeholder="—" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-surface-2 border-surface-3">
-                    <SelectItem value="base" className="text-fg">Base</SelectItem>
-                    <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                    location: (known?.location && known.location !== 'N/A' ? known.location : editData.location) || 'N/A',
+                    stationType: (known?.station_type as StationType) || editData.stationType,
+                    sirenNumbers: known?.siren_numbers?.length ? known.siren_numbers : editData.sirenNumbers,
+                  })
+                }}
+                stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+                roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -183,9 +182,64 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               </div>
             </div>
 
-            <div>
-              <Label className="text-fg-3 text-xs mb-1 block">Location</Label>
-              <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-surface-2 border-surface-3 text-fg" />
+            <div className="flex gap-2">
+              <div className="w-28">
+                <Label className="text-fg-3 text-xs mb-1 block">Base / Mobile</Label>
+                <Select value={editData.stationType} onValueChange={v => setEditData({ ...editData, stationType: (v || '') as StationType | '' })}>
+                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                    <SelectValue placeholder="—" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-surface-2 border-surface-3">
+                    <SelectItem value="base" className="text-fg">Base</SelectItem>
+                    <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label className="text-fg-3 text-xs mb-1 block">Location (where operating from)</Label>
+                <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-surface-2 border-surface-3 text-fg" />
+              </div>
+            </div>
+
+            {netType === 'siren' && (
+              <div>
+                <Label className="text-fg-3 text-xs mb-1 block">Siren #s (up to 4)</Label>
+                <div className="flex gap-2">
+                  {[0, 1, 2, 3].map(i => (
+                    <Input
+                      key={i}
+                      value={editData.sirenNumbers[i] || ''}
+                      onChange={e => {
+                        const next = [0, 1, 2, 3].map(j => (j === i ? e.target.value : editData.sirenNumbers[j] || ''))
+                        setEditData({ ...editData, sirenNumbers: next })
+                      }}
+                      placeholder={`#${i + 1}`}
+                      className="bg-surface-2 border-surface-3 text-fg w-16 font-mono text-sm"
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex rounded-lg overflow-hidden border border-surface-3">
+              <button
+                type="button"
+                onClick={() => setEditData({ ...editData, moved: false })}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  !editData.moved ? 'bg-blue-600 text-white' : 'bg-surface-2 text-fg-3 hover:text-fg-1'
+                }`}
+              >
+                Update inaccurate data
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditData({ ...editData, moved: true })}
+                className={`flex-1 px-3 py-1.5 text-xs font-medium transition-colors ${
+                  editData.moved ? 'bg-orange-600 text-white' : 'bg-surface-2 text-fg-3 hover:text-fg-1'
+                }`}
+              >
+                Station has moved
+              </button>
             </div>
 
             {showFlags && (

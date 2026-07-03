@@ -53,9 +53,29 @@ CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON mcinares_log_entri
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON mcinares_log_entries(timestamp);
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_station_id ON mcinares_log_entries(station_id);
 
+-- Running log of siren checks across all siren check nets (added 2026-07-03).
+-- One row per siren report that names a siren; survives net deletion.
+CREATE TABLE IF NOT EXISTS mcinares_siren_status (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  net_id        UUID REFERENCES mcinares_nets(id) ON DELETE SET NULL,
+  callsign      TEXT,
+  siren_number  TEXT NOT NULL,
+  sound         BOOLEAN,
+  rotation      BOOLEAN,
+  visual        BOOLEAN,
+  notes         TEXT,
+  timestamp     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_siren
+  ON mcinares_siren_status(siren_number);
+CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_timestamp
+  ON mcinares_siren_status(timestamp);
+
 -- RLS: enabled with zero policies (deny-all) by design. The app has no
 -- Supabase Auth; all access goes through Next.js API routes using the
 -- service role key, gated by the app's own PIN/JWT middleware.
 ALTER TABLE mcinares_nets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_roster ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_log_entries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcinares_siren_status ENABLE ROW LEVEL SECURITY;

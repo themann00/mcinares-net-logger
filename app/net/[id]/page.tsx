@@ -199,6 +199,8 @@ export default function NetPage() {
       stationType: entry.stationType as QueuedCheckin['stationType'],
       location: entry.location,
       quadrant: entry.quadrant as QueuedCheckin['quadrant'],
+      sirenNumbers: [],
+      moved: false,
       hasTraffic: entry.hasTraffic,
       hasAnnouncement: entry.hasAnnouncement,
       trafficText: entry.trafficText,
@@ -243,6 +245,7 @@ export default function NetPage() {
             station_type: evt.item.stationType || undefined,
             location: evt.item.location || undefined,
             quadrant: evt.item.quadrant || undefined,
+            siren_numbers: evt.item.sirenNumbers.map(s => s.trim()).filter(Boolean),
             has_traffic: evt.item.hasTraffic,
             has_announcements: evt.item.hasAnnouncement,
             checked_in_at: evt.timestamp,
@@ -252,6 +255,17 @@ export default function NetPage() {
         if (res.ok) {
           const logEntry = await res.json()
           stationIds[evt.item.callsign] = logEntry.id
+        }
+        if (evt.item.moved) {
+          await fetch(`/api/nets/${netId}/log`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              entry_type: 'station_moved',
+              content: `${evt.item.callsign} moved${evt.item.location ? ' to ' + evt.item.location : ''}`,
+              callsign: evt.item.callsign,
+            }),
+          })
         }
       } else {
         await fetch(`/api/nets/${netId}/log`, {
@@ -881,7 +895,7 @@ export default function NetPage() {
 
           {sectionNav('bottom')}
 
-          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} />
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} netType={net.type} />
         </div>
 
         {/* Right: Tabs panel */}
@@ -957,6 +971,8 @@ export default function NetPage() {
                       showTrafficInputs={net.type === 'ares' && section.id === 'short_time'}
                       showFlags={net.type === 'ares'}
                       roster={roster}
+                      netType={net.type}
+                      stations={stations}
                     />
                   )}
                 </>
@@ -971,6 +987,7 @@ export default function NetPage() {
                 onReport={fetchAll}
                 roster={roster}
                 logEntries={logEntries}
+                testing={net.testing}
               />
             )}
 
@@ -981,6 +998,7 @@ export default function NetPage() {
                 netType={net.type}
                 showCircleBack={circleBackAvailable}
                 onUpdate={fetchAll}
+                roster={roster}
               />
             )}
 
@@ -1012,6 +1030,7 @@ export default function NetPage() {
                   reversed
                   stations={stations}
                   roster={roster}
+                  netType={net.type}
                 />
               </div>
             )}
@@ -1044,6 +1063,7 @@ export default function NetPage() {
                 reversed
                 stations={stations}
                 roster={roster}
+                netType={net.type}
               />
             </div>
           </div>

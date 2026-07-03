@@ -24,6 +24,8 @@ interface ReportFormProps {
   onReport: () => void
   roster?: RosterEntry[]
   logEntries?: LogEntry[]
+  /** Testing nets leave no permanent trace, so siren status rows are skipped */
+  testing?: boolean
 }
 
 // Tri-state toggle switch: yes on the left, no on the right, unset in between.
@@ -63,7 +65,7 @@ function TriToggle({ label, value, onChange }: { label: string; value: boolean |
   )
 }
 
-export function ReportForm({ netId, netType, stations, onReport, roster = [], logEntries = [] }: ReportFormProps) {
+export function ReportForm({ netId, netType, stations, onReport, roster = [], logEntries = [], testing = false }: ReportFormProps) {
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
   const [sirenNumber, setSirenNumber] = useState('')
@@ -164,6 +166,23 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
         metadata,
       }),
     })
+
+    // Append to the permanent per-siren check history.
+    if (isSiren && sirenNumber.trim() && !testing) {
+      await fetch('/api/siren-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          net_id: netId,
+          callsign: cs || undefined,
+          siren_number: sirenNumber.trim(),
+          sound,
+          rotation,
+          visual,
+          notes: sirenContent.trim() || undefined,
+        }),
+      })
+    }
 
     // Remember the siren number on the station's check-in so future reports
     // and the pending list can use it.

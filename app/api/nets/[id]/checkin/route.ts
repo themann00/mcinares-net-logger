@@ -13,6 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     station_type,
     location,
     quadrant,
+    siren_numbers,
     has_traffic,
     has_announcements,
     report,
@@ -25,6 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     station_type?: StationType
     location?: string
     quadrant?: Quadrant
+    siren_numbers?: string[]
     has_traffic?: boolean
     has_announcements?: boolean
     report?: string
@@ -56,6 +58,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     station_type: station_type || null,
     location: location || null,
     quadrant: quadrant || null,
+    ...(siren_numbers?.length ? { siren_numbers } : {}),
     has_traffic: has_traffic || false,
     has_announcements: has_announcements || false,
   }

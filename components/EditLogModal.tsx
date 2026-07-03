@@ -12,11 +12,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { X, ChevronDown, ChevronRight } from 'lucide-react'
+import { X, ChevronDown, ChevronRight, AlertTriangle } from 'lucide-react'
 import { format } from 'date-fns'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { buildCheckinContent } from '@/lib/station'
-import type { LogEntry, Station, LogEntryType, CheckinMetadata } from '@/types'
+import { typesForNet, openCloseWarnings, LOG_TYPE_META } from '@/lib/logTypes'
+import type { LogEntry, Station, LogEntryType, CheckinMetadata, NetType } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
   net_open: { label: 'NET OPEN', color: 'text-green-400' },
@@ -72,6 +73,10 @@ interface EditLogModalProps {
   stations?: Station[]
   roster?: RosterEntry[]
   onHighlight?: (entryIds: string[]) => void
+  /** Enables the net-specific entry type selector */
+  netType?: NetType | null
+  /** Full log for open/close sanity warnings; omit to skip the checks */
+  allEntries?: LogEntry[]
 }
 
 function parseReportContent(content: string) {
@@ -91,11 +96,13 @@ function parseCheckinContent(content: string) {
   return callMatch ? callMatch[1] : ''
 }
 
-export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [], onHighlight }: EditLogModalProps) {
+export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [], onHighlight, netType, allEntries }: EditLogModalProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [content, setContent] = useState(entry.content)
+  const [entryType, setEntryType] = useState<LogEntryType>(entry.entry_type)
+  const [warnings, setWarnings] = useState<string[] | null>(null)
 
   const [callsign, setCallsign] = useState('')
   const [location, setLocation] = useState('')
@@ -171,13 +178,14 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
     // in the server's timezone.
     const tsChanged = dateStr !== originalDate || timeStr !== originalTime
     const ts = tsChanged ? { timestamp: new Date(`${dateStr}T${timeStr}`).toISOString() } : {}
+    const typeChange = entryType !== entry.entry_type ? { entry_type: entryType } : {}
     if (isReport) {
       const prefix = cs ? `${cs}: ` : ''
       const parts = [location.trim() ? `[${location.trim()}]` : '', report.trim()].filter(Boolean)
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${parts.join(' - ')}`, ...ts }),
+        body: JSON.stringify({ entry_id: entry.id, content: `${prefix}${parts.join(' - ')}`, ...ts, ...typeChange }),
       })
     } else if (isCheckin) {
       const meta = {
@@ -195,6 +203,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           content: `${manual}${buildCheckinContent(cs, meta as CheckinMetadata)}`,
           metadata: meta,
           ...ts,
+          ...typeChange,
         }),
       })
 
@@ -214,12 +223,23 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       await fetch(`/api/nets/${netId}/log`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entry_id: entry.id, content: content.trim(), ...ts }),
+        body: JSON.stringify({ entry_id: entry.id, content: content.trim(), ...ts, ...typeChange }),
       })
     }
   }
 
-  async function handleSave() {
+  async function handleSave(force = false) {
+    // Sanity-check open/close placement before anything else; the operator can
+    // force the save through from the warning box.
+    if (!force && allEntries) {
+      const iso = new Date(`${dateStr}T${timeStr}`).toISOString()
+      const w = openCloseWarnings(allEntries, { id: entry.id, entry_type: entryType, timestamp: iso })
+      if (w.length > 0) {
+        setWarnings(w)
+        return
+      }
+    }
+
     setSaving(true)
     const cs = newCallsign()
     const changed = isStructured && !!cs && cs !== originalCallsign
@@ -309,7 +329,34 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           </button>
         </div>
 
-        {orphan ? (
+        {warnings ? (
+          <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div className="text-amber-300 text-sm space-y-1">
+                {warnings.map((w, i) => <p key={i}>{w}</p>)}
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={() => { setWarnings(null); handleSave(true) }}
+                disabled={saving}
+                className="bg-amber-700 hover:bg-amber-600"
+              >
+                Save Anyway
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setWarnings(null)}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+              >
+                Go Back
+              </Button>
+            </div>
+          </div>
+        ) : orphan ? (
           <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-2">
             <p className="text-amber-300 text-sm">
               <span className="font-mono font-semibold">{orphan.callsign}</span> is no longer referenced by any
@@ -375,6 +422,24 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
           </div>
         ) : (
           <>
+            <div>
+              <Label className="text-fg-3 text-xs mb-1 block">Type</Label>
+              <Select value={entryType} onValueChange={v => setEntryType(v as LogEntryType)}>
+                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-surface-2 border-surface-3 max-h-64">
+                  {typesForNet(netType, entry.entry_type).map(t => (
+                    <SelectItem key={t} value={t} className="text-fg">
+                      <span className={`font-mono text-xs font-semibold ${LOG_TYPE_META[t].color}`}>
+                        {LOG_TYPE_META[t].label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {isReport && (
               <>
                 <div>
@@ -547,7 +612,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleSave}
+                    onClick={() => handleSave()}
                     disabled={saving}
                     className="bg-blue-700 hover:bg-blue-600"
                   >

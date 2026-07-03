@@ -7,6 +7,7 @@ import { Home } from 'lucide-react'
 import { useAppState } from '@/components/AppContext'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import Link from 'next/link'
+import { version } from '@/package.json'
 
 export function AppNav() {
   const { testingMode, setTestingMode, superAdmin, setSuperAdmin } = useAppState()
@@ -31,6 +32,7 @@ export function AppNav() {
           <Home className="w-4 h-4" />
         </Link>
         <ThemeToggle />
+        <span className="text-fg-4 text-xs font-mono select-none">v. {version}</span>
         <div className="flex-1" />
         <label className="flex items-center gap-1.5 cursor-pointer">
           <span className={`text-xs ${testingMode ? 'text-yellow-400' : 'text-fg-2'}`}>Testing</span>

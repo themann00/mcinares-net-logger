@@ -14,7 +14,9 @@ import {
 } from '@/components/ui/select'
 import Link from 'next/link'
 import { EditLogModal } from '@/components/EditLogModal'
+import { AddLogEntryModal } from '@/components/AddLogEntryModal'
 import { deriveStations } from '@/lib/deriveStations'
+import { typesForNet, LOG_TYPE_META } from '@/lib/logTypes'
 import type { Net, LogEntry, LogEntryType, CheckinMetadata } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
@@ -65,12 +67,14 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [pageSize, setPageSize] = useState(5)
   const [page, setPage] = useState(0)
   const [modalEntry, setModalEntry] = useState<LogEntry | null>(null)
+  const [addingEntry, setAddingEntry] = useState(false)
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
   const [showOriginal, setShowOriginal] = useState(false)
   const [rosterList, setRosterList] = useState<{ callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]>([])
   const [rosterLoaded, setRosterLoaded] = useState(false)
 
   const closedNets = nets.filter(n => n.closed && !n.testing)
+  const popupNet = logPopupNetId ? nets.find(n => n.id === logPopupNetId) || null : null
   if (closedNets.length === 0) return null
 
   async function toggleExpand(net: Net) {
@@ -389,6 +393,14 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
             <div className="flex items-center justify-between px-5 py-3 border-b border-surface-3">
               <h3 className="text-fg font-semibold">Net Log</h3>
               <div className="flex items-center gap-3">
+                <Button
+                  size="sm"
+                  onClick={() => setAddingEntry(true)}
+                  className="bg-green-700 hover:bg-green-600 gap-1 h-7 text-xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Entry
+                </Button>
                 <label className="flex items-center gap-1.5 text-xs text-fg-3 cursor-pointer select-none hover:text-fg-1">
                   <input
                     type="checkbox"
@@ -517,10 +529,9 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-surface-2 border-surface-3 max-h-48">
-                                {Object.entries(TYPE_CONFIG).map(([key, val]) => (
-                                  <SelectItem key={key} value={key} className="text-fg text-xs">{val.label}</SelectItem>
+                                {typesForNet(popupNet?.type).map(t => (
+                                  <SelectItem key={t} value={t} className="text-fg text-xs">{LOG_TYPE_META[t].label}</SelectItem>
                                 ))}
-                                <SelectItem value="station_moved" className="text-fg text-xs">MOVED</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -585,6 +596,23 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
           stations={deriveStations(logCache[logPopupNetId] || [])}
           roster={rosterList}
           onHighlight={ids => setHighlighted(prev => new Set([...prev, ...ids]))}
+          netType={popupNet?.type}
+          allEntries={logCache[logPopupNetId] || []}
+        />
+      )}
+
+      {addingEntry && logPopupNetId && (
+        <AddLogEntryModal
+          netId={logPopupNetId}
+          netType={popupNet?.type}
+          entries={logCache[logPopupNetId] || []}
+          stations={deriveStations(logCache[logPopupNetId] || [])}
+          roster={rosterList}
+          onSave={() => {
+            setAddingEntry(false)
+            refreshLog(logPopupNetId)
+          }}
+          onClose={() => setAddingEntry(false)}
         />
       )}
     </div>

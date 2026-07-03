@@ -11,12 +11,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RefreshCw, MapPin, AlertCircle, Pencil } from 'lucide-react'
+import { Label } from '@/components/ui/label'
+import { RefreshCw, MapPin, AlertCircle, Pencil, AlertTriangle } from 'lucide-react'
 import { WeatherReportInputs } from '@/components/WeatherReportInputs'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { sirenMapUrl } from '@/lib/sirenLocations'
 import type { Station, NetType, StationType, Quadrant } from '@/types'
 
 type EditReason = 'correction' | 'moved'
+
+interface RosterEntry {
+  callsign: string
+  first_name?: string | null
+  last_name?: string | null
+  email?: string | null
+}
 
 interface StationListProps {
   stations: Station[]
@@ -24,10 +33,17 @@ interface StationListProps {
   netType: NetType
   showCircleBack?: boolean
   onUpdate: () => void
+  roster?: RosterEntry[]
 }
 
-export function StationList({ stations, netId, netType, showCircleBack = false, onUpdate }: StationListProps) {
+export function StationList({ stations, netId, netType, showCircleBack = false, onUpdate, roster = [] }: StationListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [editCallsign, setEditCallsign] = useState('')
+  const [editFirstName, setEditFirstName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  // Names as they were autofilled (roster values); edits past this baseline
+  // are permanent roster changes and get a confirmation warning.
+  const [nameBaseline, setNameBaseline] = useState<{ first: string; last: string }>({ first: '', last: '' })
   const [editLocation, setEditLocation] = useState('')
   const [editType, setEditType] = useState<StationType | ''>('')
   const [editQuadrant, setEditQuadrant] = useState<Quadrant | ''>('')
@@ -36,6 +52,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editReportFormatted, setEditReportFormatted] = useState('')
   const [editReportValid, setEditReportValid] = useState(false)
   const [editReportResetKey, setEditReportResetKey] = useState(0)
+  const [confirmMsgs, setConfirmMsgs] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
 
   const isSiren = netType === 'siren'
@@ -55,7 +72,11 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
 
   function startEdit(station: Station, reason: EditReason) {
     setEditingId(station.callsign)
-    setEditLocation(station.location || '')
+    setEditCallsign(station.callsign)
+    setEditFirstName(station.first_name || '')
+    setEditLastName(station.last_name || '')
+    setNameBaseline({ first: station.first_name || '', last: station.last_name || '' })
+    setEditLocation(station.location || 'N/A')
     setEditType((station.station_type as StationType) || '')
     setEditQuadrant((station.quadrant as Quadrant) || '')
     setEditSirens([0, 1, 2, 3].map(i => station.siren_numbers[i] || ''))
@@ -63,10 +84,46 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     setEditReportResetKey(k => k + 1)
     setEditReportFormatted('')
     setEditReportValid(false)
+    setConfirmMsgs(null)
   }
 
-  async function saveEdit(station: Station) {
+  async function saveEdit(station: Station, confirmed = false) {
+    const newCs = editCallsign.trim().toUpperCase()
+    const csChanged = !!newCs && newCs !== station.callsign.toUpperCase()
+    const nameChanged =
+      editFirstName.trim() !== nameBaseline.first ||
+      editLastName.trim() !== nameBaseline.last
+
+    // Permanent changes (station identity, roster names) get one confirmation
+    // step; per-net facts (type, location, sirens) save straight through.
+    if (!confirmed && (csChanged || nameChanged)) {
+      const msgs: string[] = []
+      if (csChanged) {
+        msgs.push(`Callsign changes from ${station.callsign} to ${newCs}: every entry for this station in this net is updated.`)
+      }
+      if (nameChanged) {
+        msgs.push('Name change is a permanent update to this station’s roster record, affecting all past and future nets.')
+      }
+      setConfirmMsgs(msgs)
+      return
+    }
+    setConfirmMsgs(null)
     setSaving(true)
+
+    let targetStationId = station.station_id
+    let targetCs = station.callsign
+    if (csChanged) {
+      const res = await fetch(`/api/nets/${netId}/station-edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'apply', entry_id: station.log_entry_id, new_callsign: newCs, scope: 'net' }),
+      })
+      if (res.ok) {
+        const result = await res.json()
+        targetStationId = result.station_id || targetStationId
+        targetCs = result.callsign || newCs
+      }
+    }
 
     const metadata: Record<string, unknown> = {}
     if (editType) metadata.station_type = editType
@@ -83,6 +140,15 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       }),
     })
 
+    // Names live on the roster: fixing them here fixes them everywhere.
+    if (nameChanged && targetStationId) {
+      await fetch('/api/roster', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: targetStationId, first_name: editFirstName.trim(), last_name: editLastName.trim() }),
+      })
+    }
+
     if (editReason === 'moved') {
       const parts: string[] = []
       if (editLocation.trim()) parts.push(editLocation.trim())
@@ -92,8 +158,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entry_type: 'station_moved',
-          content: `${station.callsign} moved${parts.length ? ' to ' + parts.join(' ') : ''}`,
-          callsign: station.callsign,
+          content: `${targetCs} moved${parts.length ? ' to ' + parts.join(' ') : ''}`,
+          callsign: targetCs,
         }),
       })
     }
@@ -105,8 +171,8 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entry_type: 'report',
-          content: `${station.callsign}: ${locPrefix}${editReportFormatted}`,
-          callsign: station.callsign,
+          content: `${targetCs}: ${locPrefix}${editReportFormatted}`,
+          callsign: targetCs,
         }),
       })
     }
@@ -173,41 +239,92 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       >
         {editingId === station.callsign ? (
           <div className="space-y-2">
-            <div className="text-fg font-mono font-semibold">{station.callsign}</div>
+            <div>
+              <Label className="text-fg-3 text-xs mb-1 block">Callsign</Label>
+              <CallsignAutocomplete
+                value={editCallsign}
+                onChange={setEditCallsign}
+                onSelect={s => {
+                  // Autofill identity from the selection; edits past these
+                  // values are what trigger the roster-update warning.
+                  setEditCallsign(s.callsign)
+                  const first = s.first_name || ''
+                  const last = s.last_name || ''
+                  setEditFirstName(first)
+                  setEditLastName(last)
+                  setNameBaseline({ first, last })
+                  const known = stations.find(st => st.callsign.toUpperCase() === s.callsign.toUpperCase())
+                  if (known && known.callsign !== station.callsign) {
+                    setEditLocation(known.location && known.location !== 'N/A' ? known.location : 'N/A')
+                    if (known.station_type) setEditType(known.station_type as StationType)
+                  }
+                }}
+                stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+                roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-fg-3 text-xs mb-1 block">First Name</Label>
+                <Input
+                  value={editFirstName}
+                  onChange={e => { const v = e.target.value; setEditFirstName(v.charAt(0).toUpperCase() + v.slice(1)) }}
+                  className="bg-surface-2 border-surface-3 text-fg"
+                />
+              </div>
+              <div>
+                <Label className="text-fg-3 text-xs mb-1 block">Last Name</Label>
+                <Input
+                  value={editLastName}
+                  onChange={e => { const v = e.target.value; setEditLastName(v.charAt(0).toUpperCase() + v.slice(1)) }}
+                  className="bg-surface-2 border-surface-3 text-fg"
+                />
+              </div>
+            </div>
+
             <div className="flex gap-2">
-              <Select value={editType} onValueChange={v => setEditType(v as StationType)}>
-                <SelectTrigger className="bg-surface-2 border-surface-3 text-fg w-28">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-surface-2 border-surface-3">
-                  <SelectItem value="base" className="text-fg">Base</SelectItem>
-                  <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
-                </SelectContent>
-              </Select>
-              {netType === 'skywarn' && (
-                <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
-                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg w-20">
-                    <SelectValue placeholder="Quad" />
+              <div className="w-28">
+                <Label className="text-fg-3 text-xs mb-1 block">Base / Mobile</Label>
+                <Select value={editType} onValueChange={v => setEditType(v as StationType)}>
+                  <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                    <SelectValue placeholder="—" />
                   </SelectTrigger>
                   <SelectContent className="bg-surface-2 border-surface-3">
-                    <SelectItem value="SW" className="text-fg">SW</SelectItem>
-                    <SelectItem value="NW" className="text-fg">NW</SelectItem>
-                    <SelectItem value="NE" className="text-fg">NE</SelectItem>
-                    <SelectItem value="SE" className="text-fg">SE</SelectItem>
+                    <SelectItem value="base" className="text-fg">Base</SelectItem>
+                    <SelectItem value="mobile" className="text-fg">Mobile</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              {netType === 'skywarn' && (
+                <div className="w-20">
+                  <Label className="text-fg-3 text-xs mb-1 block">Quad</Label>
+                  <Select value={editQuadrant} onValueChange={v => setEditQuadrant(v as Quadrant)}>
+                    <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-surface-2 border-surface-3">
+                      <SelectItem value="SW" className="text-fg">SW</SelectItem>
+                      <SelectItem value="NW" className="text-fg">NW</SelectItem>
+                      <SelectItem value="NE" className="text-fg">NE</SelectItem>
+                      <SelectItem value="SE" className="text-fg">SE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-              <Input
-                value={editLocation}
-                onChange={e => setEditLocation(e.target.value)}
-                placeholder="Location..."
-                className="bg-surface-2 border-surface-3 text-fg flex-1"
-              />
+              <div className="flex-1">
+                <Label className="text-fg-3 text-xs mb-1 block">Location (where operating from)</Label>
+                <Input
+                  value={editLocation}
+                  onChange={e => setEditLocation(e.target.value)}
+                  className="bg-surface-2 border-surface-3 text-fg"
+                />
+              </div>
             </div>
 
             {isSiren && (
               <div>
-                <span className="text-fg-3 text-xs font-medium block mb-1">Siren #s (up to 4)</span>
+                <Label className="text-fg-3 text-xs mb-1 block">Siren #s (up to 4)</Label>
                 <div className="flex gap-2">
                   {editSirens.map((val, i) => (
                     <Input
@@ -261,24 +378,53 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
               </div>
             )}
 
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={() => saveEdit(station)}
-                disabled={saving}
-                className="bg-green-700 hover:bg-green-600"
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setEditingId(null)}
-                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
-              >
-                Cancel
-              </Button>
-            </div>
+            {confirmMsgs ? (
+              <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-3">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-amber-300 text-sm space-y-1">
+                    {confirmMsgs.map((m, i) => <p key={i}>{m}</p>)}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => saveEdit(station, true)}
+                    disabled={saving}
+                    className="bg-amber-700 hover:bg-amber-600"
+                  >
+                    {saving ? 'Saving...' : 'Confirm & Save'}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setConfirmMsgs(null)}
+                    className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+                  >
+                    Go Back
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => saveEdit(station)}
+                  disabled={saving}
+                  className="bg-green-700 hover:bg-green-600"
+                >
+                  {saving ? 'Saving...' : 'Save'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingId(null)}
+                  className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex items-center gap-2">
