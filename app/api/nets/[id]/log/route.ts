@@ -12,6 +12,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     .select('*, station:mcinares_roster(id, callsign, first_name, last_name)')
     .eq('net_id', id)
     .order('timestamp', { ascending: true })
+    .order('id', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json(data)

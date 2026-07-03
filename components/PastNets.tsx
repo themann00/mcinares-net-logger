@@ -433,7 +433,9 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4 space-y-0.5">
-              {(logCache[logPopupNetId] || []).map((entry, idx, arr) => {
+              {[...(logCache[logPopupNetId] || [])]
+                .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+                .map((entry, idx, arr) => {
                 const cfg = TYPE_CONFIG[entry.entry_type] || { label: entry.entry_type.toUpperCase(), color: 'text-fg-3' }
                 const isEditingThis = editingId === entry.id
                 const isInsertingAfter = insertAfterIdx === idx

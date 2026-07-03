@@ -38,7 +38,12 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
 
-  const sliced = entries.slice(-limit)
+  // Sort locally so timestamp edits reorder immediately, without depending on
+  // the server's ordering or a refetch race.
+  const ordered = [...entries].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  )
+  const sliced = ordered.slice(-limit)
   const recent = reversed ? [...sliced].reverse() : sliced
 
   if (recent.length === 0) return null
