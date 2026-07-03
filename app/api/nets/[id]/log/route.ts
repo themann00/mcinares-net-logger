@@ -168,7 +168,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (!entry_id) return NextResponse.json({ error: 'entry_id required' }, { status: 400 })
 
   // Deleting a report entry retracts its siren check history row too —
-  // net-level deletes bypass this route and keep history via SET NULL.
+  // whole-net deletes cascade at the DB level via net_id.
   await getSupabase()
     .from('mcinares_siren_status')
     .delete()

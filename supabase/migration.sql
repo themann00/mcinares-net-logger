@@ -54,12 +54,13 @@ CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON mcinares_log_en
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_station_id ON mcinares_log_entries(station_id);
 
 -- Running log of siren checks across all siren check nets (added 2026-07-03).
--- One row per siren report that names a siren; survives net deletion.
+-- One row per siren report that names a siren; deleting a net deletes its
+-- siren check rows with it.
 CREATE TABLE IF NOT EXISTS mcinares_siren_status (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  net_id        UUID REFERENCES mcinares_nets(id) ON DELETE SET NULL,
+  net_id        UUID REFERENCES mcinares_nets(id) ON DELETE CASCADE,
   -- report entry that produced this row; log timestamp edits carry the row
-  -- along, SET NULL keeps history when whole nets are deleted
+  -- along (net deletion removes rows via the net_id cascade)
   log_entry_id  UUID REFERENCES mcinares_log_entries(id) ON DELETE SET NULL,
   callsign      TEXT,
   siren_number  TEXT NOT NULL,
