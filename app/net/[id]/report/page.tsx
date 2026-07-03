@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { format, differenceInMinutes } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Printer, Download } from 'lucide-react'
+import { Printer, Download, Check, X } from 'lucide-react'
+import { normalizeSirenId } from '@/lib/sirenLocations'
 import type { Net, Station, LogEntry } from '@/types'
 
 function NA() {
@@ -40,6 +41,48 @@ const LOG_TYPE_LABELS: Record<string, string> = {
   late_checkin: 'LATE CHECK-IN',
   net_close: 'NET CLOSE',
   note: 'NOTE',
+}
+
+interface SirenResult {
+  siren: string
+  sound: boolean | null
+  rotation: boolean | null
+  visual: boolean | null
+}
+
+/**
+ * One row per siren reported this net, numerically ordered. Multiple reports
+ * for the same siren merge with the latest non-null value per field winning.
+ */
+function deriveSirenReports(log: LogEntry[]): SirenResult[] {
+  const map = new Map<string, SirenResult>()
+  for (const e of log) {
+    if (e.entry_type !== 'report') continue
+    const meta = e.metadata as Record<string, unknown> | null
+    if (!meta || typeof meta.siren_number !== 'string' || !meta.siren_number.trim()) continue
+    const key = normalizeSirenId(meta.siren_number).toUpperCase()
+    const prev = map.get(key) || { siren: normalizeSirenId(meta.siren_number), sound: null, rotation: null, visual: null }
+    map.set(key, {
+      siren: prev.siren,
+      sound: typeof meta.sound === 'boolean' ? meta.sound : prev.sound,
+      rotation: typeof meta.rotation === 'boolean' ? meta.rotation : prev.rotation,
+      visual: typeof meta.visual === 'boolean' ? meta.visual : prev.visual,
+    })
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    const na = /^\d+$/.test(a.siren) ? parseInt(a.siren, 10) : null
+    const nb = /^\d+$/.test(b.siren) ? parseInt(b.siren, 10) : null
+    if (na !== null && nb !== null) return na - nb
+    if (na !== null) return -1
+    if (nb !== null) return 1
+    return a.siren.localeCompare(b.siren)
+  })
+}
+
+function YesNo({ value }: { value: boolean | null }) {
+  if (value === true) return <Check className="w-4 h-4 text-green-600 inline-block" />
+  if (value === false) return <X className="w-4 h-4 text-red-600 inline-block" />
+  return <span className="text-gray-400">&mdash;</span>
 }
 
 function getSuffix(cs: string) {
@@ -141,6 +184,7 @@ export default function ReportPage() {
   }
 
   const derived = deriveFromLogs(log)
+  const sirenReports = deriveSirenReports(log)
   const isAres = net.type === 'ares'
   const isSiren = net.type === 'siren'
   const isSkywarn = net.type === 'skywarn'
@@ -174,6 +218,16 @@ export default function ReportPage() {
       'STATIONS',
       'Callsign',
       ...derived.sortedCallsigns,
+      ...(sirenReports.length > 0
+        ? [
+            '',
+            'SIREN REPORTS',
+            'Siren,Sound,Rotation,Visual',
+            ...sirenReports.map(r =>
+              [r.siren, ...[r.sound, r.rotation, r.visual].map(v => (v === true ? 'Yes' : v === false ? 'No' : ''))].join(',')
+            ),
+          ]
+        : []),
       '',
       'DETAILED LOG',
       'Timestamp,Type,Content',
@@ -283,6 +337,34 @@ export default function ReportPage() {
               )
             })()}
           </div>
+
+          {sirenReports.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
+                Siren Reports ({sirenReports.length})
+              </h3>
+              <table className="w-full max-w-md text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Siren</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-20 text-center">Sound</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-20 text-center">Rotation</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-28 text-center">Visual Insp.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sirenReports.map(r => (
+                    <tr key={r.siren} className="border-b border-gray-50">
+                      <td className="py-1.5 px-3 border border-gray-200 font-mono text-gray-900">{r.siren}</td>
+                      <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.sound} /></td>
+                      <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.rotation} /></td>
+                      <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.visual} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div>
             <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
