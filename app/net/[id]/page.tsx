@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -115,6 +115,43 @@ export default function NetPage() {
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
+
+  // Siren nets don't auto-check-in the controller at open; seed them into the
+  // check-in queue instead (timestamped just after net open) so the operator
+  // can add siren numbers and commit now or later. Seed once per page load.
+  const ncSeededRef = useRef(false)
+  useEffect(() => {
+    if (ncSeededRef.current || !net || net.type !== 'siren') return
+    const openEntry = logEntries.find(e => e.entry_type === 'net_open')
+    if (!openEntry) return
+    ncSeededRef.current = true
+
+    const nc = net.net_controller.toUpperCase()
+    const alreadyLogged = logEntries.some(e =>
+      (e.entry_type === 'checkin' || e.entry_type === 'late_checkin') &&
+      ((e.station?.callsign || ((e.metadata as Record<string, unknown> | null)?.callsign as string) || '').toUpperCase() === nc)
+    )
+    if (alreadyLogged || checkinQueue.some(q => q.callsign.toUpperCase() === nc)) return
+
+    const rosterEntry = roster.find(r => r.callsign.toUpperCase() === nc)
+    setCheckinQueue(prev => [...prev, {
+      id: `q-nc-${Date.now()}`,
+      callsign: nc,
+      firstName: rosterEntry?.first_name || '',
+      lastName: rosterEntry?.last_name || '',
+      stationType: 'base',
+      location: 'N/A',
+      quadrant: '',
+      sirenNumbers: [],
+      moved: false,
+      hasTraffic: false,
+      hasAnnouncement: false,
+      trafficText: '',
+      announcementText: '',
+      timestamp: new Date(new Date(openEntry.timestamp).getTime() + 1000).toISOString(),
+    }])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net, logEntries, roster])
 
   // Live elapsed timer - derive started_at from first net_open log entry
   const startedAt = derivedCtx?.started_at ?? null
@@ -962,7 +999,7 @@ export default function NetPage() {
                     currentStations={stations}
                     onQueue={useQueue ? addToQueue : undefined}
                   />
-                  {useQueue && (
+                  {(useQueue || checkinQueue.length > 0) && (
                     <CheckinQueue
                       queue={checkinQueue}
                       onUpdate={setCheckinQueue}

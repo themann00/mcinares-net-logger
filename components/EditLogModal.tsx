@@ -110,6 +110,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   const [stationType, setStationType] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [sirens, setSirens] = useState<string[]>(['', '', '', ''])
 
   const [pending, setPending] = useState<Analysis | null>(null)
   const [orphan, setOrphan] = useState<{ id: string; callsign: string } | null>(null)
@@ -142,6 +143,8 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
       setLocation(meta?.location || station?.location || '')
       setFirstName(entry.station?.first_name || station?.first_name || '')
       setLastName(entry.station?.last_name || station?.last_name || '')
+      const nums = meta?.siren_numbers || station?.siren_numbers || []
+      setSirens([0, 1, 2, 3].map(i => nums[i] || ''))
     } else {
       setContent(entry.content)
     }
@@ -193,6 +196,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
         callsign: cs,
         station_type: stationType || null,
         location: location.trim() || null,
+        ...(netType === 'siren' ? { siren_numbers: sirens.map(s => s.trim()).filter(Boolean) } : {}),
       }
       const manual = entry.content.startsWith('MANUAL:') ? 'MANUAL: ' : ''
       await fetch(`/api/nets/${netId}/log`, {
@@ -535,6 +539,22 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
                     />
                   </div>
                 </div>
+                {netType === 'siren' && (
+                  <div>
+                    <Label className="text-fg-3 text-xs mb-1 block">Siren #s (up to 4)</Label>
+                    <div className="flex gap-2">
+                      {sirens.map((val, i) => (
+                        <Input
+                          key={i}
+                          value={val}
+                          onChange={e => setSirens(prev => prev.map((v, j) => j === i ? e.target.value : v))}
+                          placeholder={`#${i + 1}`}
+                          className="bg-surface-2 border-surface-3 text-fg w-16 font-mono text-sm"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </>
             )}
 

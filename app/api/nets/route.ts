@@ -35,13 +35,17 @@ export async function POST(request: NextRequest) {
       metadata: { net_controller: cs },
     })
 
-    await db.from('mcinares_log_entries').insert({
-      net_id: net.id,
-      entry_type: 'checkin',
-      content: `${cs} checked in (net control)`,
-      timestamp: checkinTime.toISOString(),
-      metadata: { callsign: cs, station_type: 'base', location: 'N/A' },
-    })
+    // Siren nets queue the controller's check-in client-side instead so the
+    // operator can fill in siren numbers before committing.
+    if (type !== 'siren') {
+      await db.from('mcinares_log_entries').insert({
+        net_id: net.id,
+        entry_type: 'checkin',
+        content: `${cs} checked in (net control)`,
+        timestamp: checkinTime.toISOString(),
+        metadata: { callsign: cs, station_type: 'base', location: 'N/A' },
+      })
+    }
 
     // Testing nets stay ephemeral: don't register the controller's callsign.
     if (!testing) {
