@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
       metadata: { net_controller: cs },
     })
 
-    // Siren nets queue the controller's check-in client-side instead so the
-    // operator can fill in siren numbers before committing.
+    // Siren nets queue the controller's check-in instead of logging it, so
+    // the operator can fill in siren numbers before committing.
     if (type !== 'siren') {
       await db.from('mcinares_log_entries').insert({
         net_id: net.id,
@@ -44,6 +44,30 @@ export async function POST(request: NextRequest) {
         content: `${cs} checked in (net control)`,
         timestamp: checkinTime.toISOString(),
         metadata: { callsign: cs, station_type: 'base', location: 'N/A' },
+      })
+    } else {
+      const { data: rosterEntry } = await db
+        .from('mcinares_roster')
+        .select('first_name, last_name')
+        .ilike('callsign', cs)
+        .maybeSingle()
+      await db.from('mcinares_checkin_queue').insert({
+        net_id: net.id,
+        payload: {
+          callsign: cs,
+          firstName: rosterEntry?.first_name || '',
+          lastName: rosterEntry?.last_name || '',
+          stationType: 'base',
+          location: 'N/A',
+          quadrant: '',
+          sirenNumbers: [],
+          moved: false,
+          hasTraffic: false,
+          hasAnnouncement: false,
+          trafficText: '',
+          announcementText: '',
+          timestamp: checkinTime.toISOString(),
+        },
       })
     }
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -99,10 +99,11 @@ export default function NetPage() {
   }
 
   const fetchAll = useCallback(async () => {
-    const [netRes, logRes, rosterRes] = await Promise.all([
+    const [netRes, logRes, rosterRes, queueRes] = await Promise.all([
       fetch(`/api/nets/${netId}`),
       fetch(`/api/nets/${netId}/log`),
       fetch('/api/roster'),
+      fetch(`/api/nets/${netId}/queue`),
     ])
     if (!netRes.ok) return
     setNet(await netRes.json())
@@ -110,48 +111,15 @@ export default function NetPage() {
     setLogEntries(entries)
     if (entries.length > 2) setSetupComplete(true)
     if (rosterRes.ok) setRoster(await rosterRes.json())
+    if (queueRes.ok) {
+      const rows = await queueRes.json() as { id: string; payload: Omit<QueuedCheckin, 'id'> }[]
+      setCheckinQueue(rows.map(r => ({ ...r.payload, id: r.id })))
+    }
   }, [netId])
 
   useEffect(() => {
     fetchAll()
   }, [fetchAll])
-
-  // Siren nets don't auto-check-in the controller at open; seed them into the
-  // check-in queue instead (timestamped just after net open) so the operator
-  // can add siren numbers and commit now or later. Seed once per page load.
-  const ncSeededRef = useRef(false)
-  useEffect(() => {
-    if (ncSeededRef.current || !net || net.type !== 'siren') return
-    const openEntry = logEntries.find(e => e.entry_type === 'net_open')
-    if (!openEntry) return
-    ncSeededRef.current = true
-
-    const nc = net.net_controller.toUpperCase()
-    const alreadyLogged = logEntries.some(e =>
-      (e.entry_type === 'checkin' || e.entry_type === 'late_checkin') &&
-      ((e.station?.callsign || ((e.metadata as Record<string, unknown> | null)?.callsign as string) || '').toUpperCase() === nc)
-    )
-    if (alreadyLogged || checkinQueue.some(q => q.callsign.toUpperCase() === nc)) return
-
-    const rosterEntry = roster.find(r => r.callsign.toUpperCase() === nc)
-    setCheckinQueue(prev => [...prev, {
-      id: `q-nc-${Date.now()}`,
-      callsign: nc,
-      firstName: rosterEntry?.first_name || '',
-      lastName: rosterEntry?.last_name || '',
-      stationType: 'base',
-      location: 'N/A',
-      quadrant: '',
-      sirenNumbers: [],
-      moved: false,
-      hasTraffic: false,
-      hasAnnouncement: false,
-      trafficText: '',
-      announcementText: '',
-      timestamp: new Date(new Date(openEntry.timestamp).getTime() + 1000).toISOString(),
-    }])
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [net, logEntries, roster])
 
   // Live elapsed timer - derive started_at from first net_open log entry
   const startedAt = derivedCtx?.started_at ?? null
@@ -227,9 +195,8 @@ export default function NetPage() {
     (net?.type === 'ares' && queueSections.includes(section?.id || '')) ||
     (net?.type === 'siren' && section?.id === 'preamble')
 
-  function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) {
-    setCheckinQueue(prev => [...prev, {
-      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+  async function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) {
+    const payload: Omit<QueuedCheckin, 'id'> = {
       callsign: entry.callsign,
       firstName: entry.firstName,
       lastName: entry.lastName,
@@ -246,7 +213,49 @@ export default function NetPage() {
       trafficTimestamp: entry.trafficTimestamp,
       announcementTimestamp: entry.announcementTimestamp,
       forceManual: entry.forceManual,
-    }])
+    }
+    // Optimistic append with a temporary id; swap in the DB row id when the
+    // insert lands so later edits/deletes address the right row.
+    const tempId = `q-tmp-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    setCheckinQueue(prev => [...prev, { ...payload, id: tempId }])
+    const res = await fetch(`/api/nets/${netId}/queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payload }),
+    })
+    if (res.ok) {
+      const row = await res.json()
+      setCheckinQueue(prev => prev.map(q => q.id === tempId ? { ...q, id: row.id } : q))
+    }
+  }
+
+  // Persist queue edits/deletes coming back from the CheckinQueue component:
+  // diff against current state, PATCH changed rows, DELETE removed ones.
+  function syncQueue(next: QueuedCheckin[]) {
+    const prev = checkinQueue
+    setCheckinQueue(next)
+    const nextIds = new Set(next.map(q => q.id))
+    for (const item of prev) {
+      if (!nextIds.has(item.id) && !item.id.startsWith('q-tmp-')) {
+        fetch(`/api/nets/${netId}/queue`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: item.id }),
+        })
+      }
+    }
+    for (const item of next) {
+      const before = prev.find(q => q.id === item.id)
+      if (before && before !== item && !item.id.startsWith('q-tmp-')) {
+        const payload: Record<string, unknown> = { ...item }
+        delete payload.id
+        fetch(`/api/nets/${netId}/queue`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: item.id, payload }),
+        })
+      }
+    }
   }
 
   async function commitQueue() {
@@ -318,6 +327,11 @@ export default function NetPage() {
       }
     }
 
+    await fetch(`/api/nets/${netId}/queue`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    })
     setCheckinQueue([])
     setCommitting(false)
     fetchAll()
@@ -1002,7 +1016,7 @@ export default function NetPage() {
                   {(useQueue || checkinQueue.length > 0) && (
                     <CheckinQueue
                       queue={checkinQueue}
-                      onUpdate={setCheckinQueue}
+                      onUpdate={syncQueue}
                       onCommit={commitQueue}
                       committing={committing}
                       showTrafficInputs={net.type === 'ares' && section.id === 'short_time'}

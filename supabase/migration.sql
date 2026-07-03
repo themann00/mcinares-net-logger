@@ -72,6 +72,21 @@ CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_siren
 CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_timestamp
   ON mcinares_siren_status(timestamp);
 
+-- Uncommitted check-in queue, persisted so a page refresh (or second device)
+-- doesn't lose queued stations (added 2026-07-03). Rows are deleted when
+-- committed to the log; net deletion cascades.
+CREATE TABLE IF NOT EXISTS mcinares_checkin_queue (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  net_id      UUID NOT NULL REFERENCES mcinares_nets(id) ON DELETE CASCADE,
+  -- QueuedCheckin fields (callsign, names, type, location, sirens, flags,
+  -- timestamps); stored as a blob since only the client interprets it
+  payload     JSONB NOT NULL,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_mcinares_checkin_queue_net_id
+  ON mcinares_checkin_queue(net_id);
+
 -- RLS: enabled with zero policies (deny-all) by design. The app has no
 -- Supabase Auth; all access goes through Next.js API routes using the
 -- service role key, gated by the app's own PIN/JWT middleware.
@@ -79,3 +94,4 @@ ALTER TABLE mcinares_nets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_roster ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_log_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_siren_status ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcinares_checkin_queue ENABLE ROW LEVEL SECURITY;
