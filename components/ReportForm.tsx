@@ -9,6 +9,7 @@ import { FileText, AlertTriangle } from 'lucide-react'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { WeatherReportInputs } from '@/components/WeatherReportInputs'
 import { isKnownSiren, unkName, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
+import { normalizeSirenId } from '@/lib/sirenLocations'
 import type { NetType, Station, LogEntry } from '@/types'
 
 interface RosterEntry {
@@ -245,8 +246,10 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
 
   // Siren: stations split into Awaiting Report (check-in order) and Reports
   // Made (reverse check-in order). A station with multiple siren numbers gets
-  // one tile per number. Reported stations stay clickable so they can add
-  // information or report more sirens — each log is an additional entry.
+  // one tile per number, and each siren moves to Reports Made only when a
+  // report names that specific siren — one station can report #12 with sound
+  // and still owe a report for #14. Reported tiles stay clickable so more
+  // information can be added — each log is an additional entry.
   type Tile = { callsign: string; sirenNumber: string | null; location: string | null }
   const pendingTiles: Tile[] = []
   const reportedTiles: Tile[] = []
@@ -261,13 +264,25 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       }
       return s.siren_numbers.map(n => ({ callsign: s.callsign, sirenNumber: n, location: s.location }))
     }
+    const sirenMatches = (r: LogEntry, tileSiren: string) => {
+      const meta = r.metadata as Record<string, unknown> | null
+      const num = typeof meta?.siren_number === 'string' ? meta.siren_number : ''
+      if (num && normalizeSirenId(num).toUpperCase() === normalizeSirenId(tileSiren).toUpperCase()) return true
+      // Legacy reports without metadata: match "Siren #12" in the content.
+      return new RegExp(`SIREN #${normalizeSirenId(tileSiren).replace(/^0+/, '')}(?!\\d)|SIREN #${normalizeSirenId(tileSiren)}(?!\\d)`, 'i').test(r.content)
+    }
     for (const s of inCheckinOrder) {
-      const hasReported = reports.some(r =>
+      const stationReports = reports.filter(r =>
         (r.station_id && r.station_id === s.station_id) ||
         (!r.station_id && r.content.toUpperCase().startsWith(`${s.callsign.toUpperCase()}:`))
       )
-      if (hasReported) reportedTiles.unshift(...stationTiles(s))
-      else pendingTiles.push(...stationTiles(s))
+      for (const tile of stationTiles(s)) {
+        const reported = tile.sirenNumber
+          ? stationReports.some(r => sirenMatches(r, tile.sirenNumber!))
+          : stationReports.length > 0
+        if (reported) reportedTiles.unshift(tile)
+        else pendingTiles.push(tile)
+      }
     }
   }
 
