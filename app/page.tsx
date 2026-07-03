@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { Radio, CloudLightning, Siren, Lock, AlertTriangle, X } from 'lucide-react'
+import { Radio, CloudLightning, Siren, Lock, AlertTriangle, X, Database } from 'lucide-react'
+import Link from 'next/link'
 import { PastNets } from '@/components/PastNets'
 import { Roster } from '@/components/Roster'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
@@ -308,6 +309,24 @@ export default function HomePage() {
           )}
 
           <PastNets nets={allNets} onDelete={fetchNets} superAdmin={superAdmin} />
+
+          <div className="flex gap-3 flex-wrap">
+            <Link href="/siren-report" className="flex-1 min-w-48">
+              <Button className="w-full bg-red-700 hover:bg-red-600 gap-2">
+                <Siren className="w-4 h-4" />
+                SIREN REPORT
+              </Button>
+            </Link>
+            <Link href="/sirens" className="flex-1 min-w-48">
+              <Button
+                variant="outline"
+                className="w-full border-surface-4 bg-surface-1 text-fg-1 hover:bg-surface-2 hover:text-fg gap-2"
+              >
+                <Database className="w-4 h-4" />
+                Siren Database
+              </Button>
+            </Link>
+          </div>
 
           <Roster superAdmin={superAdmin} />
         </div>

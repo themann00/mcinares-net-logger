@@ -87,6 +87,21 @@ CREATE TABLE IF NOT EXISTS mcinares_checkin_queue (
 CREATE INDEX IF NOT EXISTS idx_mcinares_checkin_queue_net_id
   ON mcinares_checkin_queue(net_id);
 
+-- Siren registry (added 2026-07-03): editable copy of the county siren map,
+-- plus UNK:### rows created when an operator confirms an off-map siren
+-- number. Seeded from lib/sirenLocations.ts (187 rows).
+CREATE TABLE IF NOT EXISTS mcinares_sirens (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT NOT NULL,
+  location    TEXT,
+  lat         DOUBLE PRECISION,
+  lng         DOUBLE PRECISION,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS mcinares_sirens_name_upper_key
+  ON mcinares_sirens (upper(name));
+
 -- RLS: enabled with zero policies (deny-all) by design. The app has no
 -- Supabase Auth; all access goes through Next.js API routes using the
 -- service role key, gated by the app's own PIN/JWT middleware.
@@ -95,3 +110,4 @@ ALTER TABLE mcinares_roster ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_log_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_siren_status ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mcinares_checkin_queue ENABLE ROW LEVEL SECURITY;
+ALTER TABLE mcinares_sirens ENABLE ROW LEVEL SECURITY;

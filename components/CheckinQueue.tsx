@@ -13,7 +13,8 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
-import { X, Check } from 'lucide-react'
+import { X, Check, AlertTriangle } from 'lucide-react'
+import { unknownSirens, unkName, toRegisteredNames, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
 import type { NetType, Station, StationType, Quadrant } from '@/types'
 
 interface RosterEntry {
@@ -53,21 +54,37 @@ interface CheckinQueueProps {
   roster?: RosterEntry[]
   netType?: NetType
   stations?: Station[]
+  sirens?: SirenListItem[]
 }
 
-export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true, roster = [], netType, stations = [] }: CheckinQueueProps) {
+export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTrafficInputs = false, showFlags = true, roster = [], netType, stations = [], sirens = [] }: CheckinQueueProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [editData, setEditData] = useState<QueuedCheckin | null>(null)
+  const [unkPrompt, setUnkPrompt] = useState<string[] | null>(null)
 
   function openEdit(item: QueuedCheckin) {
     setEditingId(item.id)
     setEditData({ ...item })
+    setUnkPrompt(null)
   }
 
-  function saveEdit() {
+  async function saveEdit(confirmed = false) {
     if (!editData) return
-    onUpdate(queue.map(q => q.id === editData.id ? editData : q))
+    let data = editData
+    if (netType === 'siren') {
+      const unknowns = unknownSirens(data.sirenNumbers, sirens)
+      if (unknowns.length > 0 && !confirmed) {
+        setUnkPrompt(unknowns)
+        return
+      }
+      if (unknowns.length > 0) {
+        await registerUnknownSirens(unknowns)
+        data = { ...data, sirenNumbers: toRegisteredNames(data.sirenNumbers, sirens) }
+      }
+    }
+    onUpdate(queue.map(q => q.id === data.id ? data : q))
+    setUnkPrompt(null)
     setEditingId(null)
     setEditData(null)
   }
@@ -268,6 +285,29 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               </div>
             )}
 
+            {unkPrompt && (
+              <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-2">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <p className="text-amber-300 text-sm">
+                    {unkPrompt.length === 1 ? 'Siren' : 'Sirens'}{' '}
+                    <span className="font-mono font-semibold">{unkPrompt.join(', ')}</span>{' '}
+                    {unkPrompt.length === 1 ? 'is' : 'are'} not in the siren database. Log as{' '}
+                    <span className="font-mono font-semibold">{unkPrompt.map(unkName).join(', ')}</span>?
+                    They will be added to the database under those names.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => saveEdit(true)} className="bg-amber-700 hover:bg-amber-600 text-xs h-7">
+                    Confirm
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => setUnkPrompt(null)} className="border-surface-4 bg-surface-2 text-fg-1 text-xs h-7">
+                    Go Back
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between pt-2">
               {deleteConfirmId === editData.id ? (
                 <div className="flex gap-2 items-center text-sm">
@@ -280,7 +320,7 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               )}
               <div className="flex gap-2">
                 <Button size="sm" variant="outline" onClick={() => setEditingId(null)} className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg">Cancel</Button>
-                <Button size="sm" onClick={saveEdit} className="bg-blue-700 hover:bg-blue-600">Save</Button>
+                <Button size="sm" onClick={() => saveEdit()} className="bg-blue-700 hover:bg-blue-600">Save</Button>
               </div>
             </div>
           </div>

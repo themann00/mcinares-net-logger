@@ -17,6 +17,7 @@ import { EditLogModal } from '@/components/EditLogModal'
 import { AddLogEntryModal } from '@/components/AddLogEntryModal'
 import { deriveStations } from '@/lib/deriveStations'
 import { typesForNet, LOG_TYPE_META } from '@/lib/logTypes'
+import type { SirenListItem } from '@/lib/sirenClient'
 import type { Net, LogEntry, LogEntryType, CheckinMetadata } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
@@ -72,6 +73,8 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   const [showOriginal, setShowOriginal] = useState(false)
   const [rosterList, setRosterList] = useState<{ callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]>([])
   const [rosterLoaded, setRosterLoaded] = useState(false)
+  const [sirenList, setSirenList] = useState<SirenListItem[]>([])
+  const [sirensLoaded, setSirensLoaded] = useState(false)
 
   const closedNets = nets.filter(n => n.closed && !n.testing)
   const popupNet = logPopupNetId ? nets.find(n => n.id === logPopupNetId) || null : null
@@ -106,10 +109,16 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
   }
 
   async function ensureRoster() {
-    if (rosterLoaded) return
-    const res = await fetch('/api/roster')
-    if (res.ok) setRosterList(await res.json())
-    setRosterLoaded(true)
+    if (!rosterLoaded) {
+      const res = await fetch('/api/roster')
+      if (res.ok) setRosterList(await res.json())
+      setRosterLoaded(true)
+    }
+    if (!sirensLoaded) {
+      const res = await fetch('/api/sirens')
+      if (res.ok) setSirenList(await res.json())
+      setSirensLoaded(true)
+    }
   }
 
   async function saveEdit(netId: string, entryId: string) {
@@ -598,6 +607,7 @@ export function PastNets({ nets, onDelete, superAdmin = false }: PastNetsProps) 
           onHighlight={ids => setHighlighted(prev => new Set([...prev, ...ids]))}
           netType={popupNet?.type}
           allEntries={logCache[logPopupNetId] || []}
+          sirenList={sirenList}
         />
       )}
 

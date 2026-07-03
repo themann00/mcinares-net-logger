@@ -47,6 +47,7 @@ import { SetupSkywarn } from '@/components/SetupSkywarn'
 import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
 import type { Net, DerivedStation, LogEntry, NetContext } from '@/types'
 import { deriveStations, deriveNetContext } from '@/lib/deriveStations'
+import type { SirenListItem } from '@/lib/sirenClient'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
@@ -79,6 +80,7 @@ export default function NetPage() {
   const [committing, setCommitting] = useState(false)
   const [sirenResetConfirm, setSirenResetConfirm] = useState(false)
   const [sirenBusy, setSirenBusy] = useState(false)
+  const [sirens, setSirens] = useState<SirenListItem[]>([])
 
   const stations: DerivedStation[] = useMemo(() => deriveStations(logEntries), [logEntries])
 
@@ -99,11 +101,12 @@ export default function NetPage() {
   }
 
   const fetchAll = useCallback(async () => {
-    const [netRes, logRes, rosterRes, queueRes] = await Promise.all([
+    const [netRes, logRes, rosterRes, queueRes, sirensRes] = await Promise.all([
       fetch(`/api/nets/${netId}`),
       fetch(`/api/nets/${netId}/log`),
       fetch('/api/roster'),
       fetch(`/api/nets/${netId}/queue`),
+      fetch('/api/sirens'),
     ])
     if (!netRes.ok) return
     setNet(await netRes.json())
@@ -111,6 +114,7 @@ export default function NetPage() {
     setLogEntries(entries)
     if (entries.length > 2) setSetupComplete(true)
     if (rosterRes.ok) setRoster(await rosterRes.json())
+    if (sirensRes.ok) setSirens(await sirensRes.json())
     if (queueRes.ok) {
       const rows = await queueRes.json() as { id: string; payload: Omit<QueuedCheckin, 'id'> }[]
       setCheckinQueue(rows.map(r => ({ ...r.payload, id: r.id })))
@@ -946,7 +950,7 @@ export default function NetPage() {
 
           {sectionNav('bottom')}
 
-          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} netType={net.type} />
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} netType={net.type} sirens={sirens} />
         </div>
 
         {/* Right: Tabs panel */}
@@ -1024,6 +1028,7 @@ export default function NetPage() {
                       roster={roster}
                       netType={net.type}
                       stations={stations}
+                      sirens={sirens}
                     />
                   )}
                 </>
@@ -1039,6 +1044,7 @@ export default function NetPage() {
                 roster={roster}
                 logEntries={logEntries}
                 testing={net.testing}
+                sirens={sirens}
               />
             )}
 
@@ -1050,6 +1056,7 @@ export default function NetPage() {
                 showCircleBack={circleBackAvailable}
                 onUpdate={fetchAll}
                 roster={roster}
+                sirens={sirens}
               />
             )}
 
@@ -1082,6 +1089,7 @@ export default function NetPage() {
                   stations={stations}
                   roster={roster}
                   netType={net.type}
+                  sirens={sirens}
                 />
               </div>
             )}
@@ -1115,6 +1123,7 @@ export default function NetPage() {
                 stations={stations}
                 roster={roster}
                 netType={net.type}
+                sirens={sirens}
               />
             </div>
           </div>

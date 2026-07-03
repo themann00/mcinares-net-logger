@@ -7,7 +7,7 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-ch
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value
   const isApi = request.nextUrl.pathname.startsWith('/api') && !request.nextUrl.pathname.startsWith('/api/auth')
-  const isProtected = request.nextUrl.pathname.startsWith('/net') || request.nextUrl.pathname.startsWith('/roster') || isApi
+  const isProtected = request.nextUrl.pathname.startsWith('/net') || request.nextUrl.pathname.startsWith('/roster') || request.nextUrl.pathname.startsWith('/sirens') || request.nextUrl.pathname.startsWith('/siren-report') || isApi
 
   if (!isProtected) return NextResponse.next()
 
@@ -26,5 +26,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/net/:path*', '/roster', '/api/:path*'],
+  matcher: ['/net/:path*', '/roster', '/sirens', '/siren-report', '/api/:path*'],
 }

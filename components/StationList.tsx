@@ -16,6 +16,7 @@ import { RefreshCw, MapPin, AlertCircle, Pencil, AlertTriangle } from 'lucide-re
 import { WeatherReportInputs } from '@/components/WeatherReportInputs'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { sirenMapUrl } from '@/lib/sirenLocations'
+import { unknownSirens, unkName, toRegisteredNames, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
 import type { Station, NetType, StationType, Quadrant } from '@/types'
 
 type EditReason = 'correction' | 'moved'
@@ -34,9 +35,10 @@ interface StationListProps {
   showCircleBack?: boolean
   onUpdate: () => void
   roster?: RosterEntry[]
+  sirens?: SirenListItem[]
 }
 
-export function StationList({ stations, netId, netType, showCircleBack = false, onUpdate, roster = [] }: StationListProps) {
+export function StationList({ stations, netId, netType, showCircleBack = false, onUpdate, roster = [], sirens = [] }: StationListProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editCallsign, setEditCallsign] = useState('')
   const [editFirstName, setEditFirstName] = useState('')
@@ -94,9 +96,11 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       editFirstName.trim() !== nameBaseline.first ||
       editLastName.trim() !== nameBaseline.last
 
-    // Permanent changes (station identity, roster names) get one confirmation
-    // step; per-net facts (type, location, sirens) save straight through.
-    if (!confirmed && (csChanged || nameChanged)) {
+    const unknowns = isSiren ? unknownSirens(editSirens, sirens) : []
+
+    // Permanent changes (station identity, roster names, new siren names) get
+    // one confirmation step; per-net facts save straight through.
+    if (!confirmed && (csChanged || nameChanged || unknowns.length > 0)) {
       const msgs: string[] = []
       if (csChanged) {
         msgs.push(`Callsign changes from ${station.callsign} to ${newCs}: every entry for this station in this net is updated.`)
@@ -104,11 +108,20 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
       if (nameChanged) {
         msgs.push('Name change is a permanent update to this station’s roster record, affecting all past and future nets.')
       }
+      if (unknowns.length > 0) {
+        msgs.push(`Siren${unknowns.length === 1 ? '' : 's'} ${unknowns.join(', ')} not in the siren database — will be logged and registered as ${unknowns.map(unkName).join(', ')}.`)
+      }
       setConfirmMsgs(msgs)
       return
     }
     setConfirmMsgs(null)
     setSaving(true)
+
+    let finalSirens = editSirens.map(s => s.trim()).filter(Boolean)
+    if (unknowns.length > 0) {
+      await registerUnknownSirens(unknowns)
+      finalSirens = toRegisteredNames(finalSirens, sirens)
+    }
 
     let targetStationId = station.station_id
     let targetCs = station.callsign
@@ -129,7 +142,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     if (editType) metadata.station_type = editType
     if (editLocation.trim()) metadata.location = editLocation.trim()
     if (editQuadrant) metadata.quadrant = editQuadrant
-    if (isSiren) metadata.siren_numbers = editSirens.map(s => s.trim()).filter(Boolean)
+    if (isSiren) metadata.siren_numbers = finalSirens
 
     await fetch(`/api/nets/${netId}/log`, {
       method: 'PATCH',

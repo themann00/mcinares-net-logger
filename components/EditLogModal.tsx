@@ -17,6 +17,7 @@ import { format } from 'date-fns'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 import { buildCheckinContent } from '@/lib/station'
 import { typesForNet, openCloseWarnings, LOG_TYPE_META } from '@/lib/logTypes'
+import { unknownSirens, unkName, toRegisteredNames, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
 import type { LogEntry, Station, LogEntryType, CheckinMetadata, NetType } from '@/types'
 
 const TYPE_CONFIG: Record<LogEntryType, { label: string; color: string }> = {
@@ -77,6 +78,8 @@ interface EditLogModalProps {
   netType?: NetType | null
   /** Full log for open/close sanity warnings; omit to skip the checks */
   allEntries?: LogEntry[]
+  /** Siren registry, for warning on unrecognized siren numbers */
+  sirenList?: SirenListItem[]
 }
 
 function parseReportContent(content: string) {
@@ -96,7 +99,7 @@ function parseCheckinContent(content: string) {
   return callMatch ? callMatch[1] : ''
 }
 
-export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [], onHighlight, netType, allEntries }: EditLogModalProps) {
+export function EditLogModal({ entry, station, netId, onSave, onClose, stations = [], roster = [], onHighlight, netType, allEntries, sirenList = [] }: EditLogModalProps) {
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -196,7 +199,7 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
         callsign: cs,
         station_type: stationType || null,
         location: location.trim() || null,
-        ...(netType === 'siren' ? { siren_numbers: sirens.map(s => s.trim()).filter(Boolean) } : {}),
+        ...(netType === 'siren' ? { siren_numbers: toRegisteredNames(sirens.map(s => s.trim()).filter(Boolean), sirenList) } : {}),
       }
       const manual = entry.content.startsWith('MANUAL:') ? 'MANUAL: ' : ''
       await fetch(`/api/nets/${netId}/log`, {
@@ -233,16 +236,24 @@ export function EditLogModal({ entry, station, netId, onSave, onClose, stations 
   }
 
   async function handleSave(force = false) {
-    // Sanity-check open/close placement before anything else; the operator can
-    // force the save through from the warning box.
-    if (!force && allEntries) {
-      const iso = new Date(`${dateStr}T${timeStr}`).toISOString()
-      const w = openCloseWarnings(allEntries, { id: entry.id, entry_type: entryType, timestamp: iso })
+    // Sanity checks (open/close placement, unrecognized sirens) run before
+    // anything else; the operator can force the save through from the box.
+    const sirenUnknowns = netType === 'siren' && isCheckin ? unknownSirens(sirens, sirenList) : []
+    if (!force) {
+      const w: string[] = []
+      if (allEntries) {
+        const iso = new Date(`${dateStr}T${timeStr}`).toISOString()
+        w.push(...openCloseWarnings(allEntries, { id: entry.id, entry_type: entryType, timestamp: iso }))
+      }
+      if (sirenUnknowns.length > 0) {
+        w.push(`Siren${sirenUnknowns.length === 1 ? '' : 's'} ${sirenUnknowns.join(', ')} not in the siren database — will be logged and registered as ${sirenUnknowns.map(unkName).join(', ')}.`)
+      }
       if (w.length > 0) {
         setWarnings(w)
         return
       }
     }
+    if (sirenUnknowns.length > 0) await registerUnknownSirens(sirenUnknowns)
 
     setSaving(true)
     const cs = newCallsign()
