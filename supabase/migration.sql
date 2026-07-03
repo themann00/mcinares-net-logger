@@ -58,6 +58,9 @@ CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_station_id ON mcinares_log_e
 CREATE TABLE IF NOT EXISTS mcinares_siren_status (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   net_id        UUID REFERENCES mcinares_nets(id) ON DELETE SET NULL,
+  -- report entry that produced this row; log timestamp edits carry the row
+  -- along, SET NULL keeps history when whole nets are deleted
+  log_entry_id  UUID REFERENCES mcinares_log_entries(id) ON DELETE SET NULL,
   callsign      TEXT,
   siren_number  TEXT NOT NULL,
   sound         BOOLEAN,
@@ -71,6 +74,8 @@ CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_siren
   ON mcinares_siren_status(siren_number);
 CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_timestamp
   ON mcinares_siren_status(timestamp);
+CREATE INDEX IF NOT EXISTS idx_mcinares_siren_status_log_entry
+  ON mcinares_siren_status(log_entry_id);
 
 -- Uncommitted check-in queue, persisted so a page refresh (or second device)
 -- doesn't lose queued stations (added 2026-07-03). Rows are deleted when

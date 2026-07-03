@@ -181,7 +181,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
     if (reportContent) parts.push(reportContent)
     const content = `${prefix}${parts.join(' - ')}`
 
-    await fetch(`/api/nets/${netId}/log`, {
+    const reportRes = await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -191,20 +191,24 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
         metadata,
       }),
     })
+    const reportEntry = reportRes.ok ? await reportRes.json() : null
 
-    // Append to the permanent per-siren check history.
+    // Append to the permanent per-siren check history, linked to the report
+    // entry so log timestamp edits carry the history row along.
     if (isSiren && sirenNum && !testing) {
       await fetch('/api/siren-status', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           net_id: netId,
+          log_entry_id: reportEntry?.id || undefined,
           callsign: cs || undefined,
           siren_number: sirenNum,
           sound,
           rotation,
           visual,
           notes: sirenContent.trim() || undefined,
+          timestamp: reportEntry?.timestamp || undefined,
         }),
       })
     }

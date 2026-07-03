@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 import { resolveStation } from '@/lib/station'
+import { normalizeSirenId } from '@/lib/sirenLocations'
 import type { LogEntryType } from '@/types'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -78,6 +79,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'entry_id is required' }, { status: 400 })
   }
 
+  const db = getSupabase()
   const update: Record<string, unknown> = {}
   if (content !== undefined) update.content = content.trim()
   if (station_id !== undefined) update.station_id = station_id
@@ -90,15 +92,23 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     update.timestamp = ts.toISOString()
   }
 
-  // Merge metadata keys into the existing object so partial updates
-  // (e.g. just location) don't clobber the rest.
-  if (metadata !== undefined) {
-    const { data: existing } = await getSupabase()
+  // Snapshot the entry before the update: metadata merges need the current
+  // object, and timestamp syncing needs the old timestamp to find unlinked
+  // siren history rows.
+  let existing: { metadata: unknown; timestamp: string; entry_type: string } | null = null
+  if (metadata !== undefined || timestamp !== undefined) {
+    const { data } = await db
       .from('mcinares_log_entries')
-      .select('metadata')
+      .select('metadata, timestamp, entry_type')
       .eq('id', entry_id)
       .eq('net_id', id)
       .single()
+    existing = data
+  }
+
+  // Merge metadata keys into the existing object so partial updates
+  // (e.g. just location) don't clobber the rest.
+  if (metadata !== undefined) {
     update.metadata = { ...((existing?.metadata as Record<string, unknown> | null) || {}), ...metadata }
   }
 
@@ -106,7 +116,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ error: 'nothing to update' }, { status: 400 })
   }
 
-  const { data, error } = await getSupabase()
+  const { data, error } = await db
     .from('mcinares_log_entries')
     .update(update)
     .eq('id', entry_id)
@@ -115,6 +125,39 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Keep the permanent siren check history in step with log timestamp edits,
+  // mid-net or after close. Linked rows move directly; legacy rows without
+  // the link are matched by net + siren number + proximity to the old time.
+  if (update.timestamp && existing) {
+    const { data: linked } = await db
+      .from('mcinares_siren_status')
+      .update({ timestamp: update.timestamp })
+      .eq('log_entry_id', entry_id)
+      .select('id')
+
+    if ((!linked || linked.length === 0) && existing.entry_type === 'report') {
+      const meta = existing.metadata as Record<string, unknown> | null
+      const sn = typeof meta?.siren_number === 'string' ? meta.siren_number : ''
+      if (sn) {
+        const norm = normalizeSirenId(sn).toUpperCase()
+        const oldMs = new Date(existing.timestamp).getTime()
+        const { data: candidates } = await db
+          .from('mcinares_siren_status')
+          .select('id, siren_number, timestamp')
+          .eq('net_id', id)
+        for (const c of candidates || []) {
+          if (normalizeSirenId(c.siren_number).toUpperCase() !== norm) continue
+          if (Math.abs(new Date(c.timestamp).getTime() - oldMs) > 120000) continue
+          await db
+            .from('mcinares_siren_status')
+            .update({ timestamp: update.timestamp, log_entry_id: entry_id })
+            .eq('id', c.id)
+        }
+      }
+    }
+  }
+
   return NextResponse.json(data)
 }
 
@@ -123,6 +166,13 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   const { entry_id } = await request.json() as { entry_id: string }
 
   if (!entry_id) return NextResponse.json({ error: 'entry_id required' }, { status: 400 })
+
+  // Deleting a report entry retracts its siren check history row too —
+  // net-level deletes bypass this route and keep history via SET NULL.
+  await getSupabase()
+    .from('mcinares_siren_status')
+    .delete()
+    .eq('log_entry_id', entry_id)
 
   const { error } = await getSupabase()
     .from('mcinares_log_entries')

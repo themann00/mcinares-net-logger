@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json() as {
     net_id?: string
+    log_entry_id?: string
     callsign?: string
     siren_number: string
     sound?: boolean | null
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
 
   const insert: Record<string, unknown> = {
     net_id: body.net_id || null,
+    log_entry_id: body.log_entry_id || null,
     callsign: body.callsign?.toUpperCase().trim() || null,
     siren_number: normalizeSirenId(body.siren_number),
     sound: body.sound ?? null,
