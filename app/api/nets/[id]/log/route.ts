@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 import { resolveStation } from '@/lib/station'
 import { normalizeSirenId } from '@/lib/sirenLocations'
+import { requestNow } from '@/lib/serverTime'
 import type { LogEntryType } from '@/types'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const insertData: Record<string, unknown> = { net_id: id, entry_type, content }
-  if (timestamp) insertData.timestamp = timestamp
+  insertData.timestamp = timestamp || requestNow(request).toISOString()
   if (metadata) insertData.metadata = metadata
 
   // Station reference: direct UUID, or resolve a callsign (creating the

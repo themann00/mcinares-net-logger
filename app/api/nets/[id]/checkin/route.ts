@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 import { resolveStation, buildCheckinContent } from '@/lib/station'
+import { requestNow } from '@/lib/serverTime'
 import type { StationType, Quadrant } from '@/types'
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const cs = callsign.toUpperCase().trim()
   const db = getSupabase()
-  const timestamp = checked_in_at || new Date().toISOString()
+  const timestamp = checked_in_at || requestNow(request).toISOString()
 
   let station
   try {

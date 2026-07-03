@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
+import { requestNow } from '@/lib/serverTime'
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -15,7 +16,7 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ error: 'Net not found' }, { status: 404 })
   }
 
-  const now = new Date()
+  const now = requestNow(_req)
   const checkinTime = new Date(now.getTime() + 1000)
 
   await db.from('mcinares_log_entries').insert({

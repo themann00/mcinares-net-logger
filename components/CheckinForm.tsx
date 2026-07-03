@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 import { UserPlus } from 'lucide-react'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
+import { useAppState } from '@/components/AppContext'
 import type { NetType, Quadrant, StationType } from '@/types'
 
 interface RosterEntry {
@@ -50,6 +51,7 @@ export function CheckinForm({
   currentStations = [],
   onQueue,
 }: CheckinFormProps) {
+  const { appNow } = useAppState()
   const callsignRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
   // Fast-submit: Enter selects the highlighted station and logs immediately.
@@ -347,7 +349,7 @@ export function CheckinForm({
                   <Label className="text-yellow-400 text-xs mb-1 block">Traffic Summary</Label>
                   <Textarea
                     value={trafficText}
-                    onChange={e => { if (!trafficStarted && e.target.value) setTrafficStarted(new Date().toISOString()); setTrafficText(e.target.value) }}
+                    onChange={e => { if (!trafficStarted && e.target.value) setTrafficStarted(appNow().toISOString()); setTrafficText(e.target.value) }}
                     placeholder="Summarize traffic..."
                     className="bg-surface-2 border-surface-3 text-fg text-sm"
                     rows={2}
@@ -359,7 +361,7 @@ export function CheckinForm({
                   <Label className="text-teal-400 text-xs mb-1 block">Announcement Summary</Label>
                   <Textarea
                     value={announcementText}
-                    onChange={e => { if (!announcementStarted && e.target.value) setAnnouncementStarted(new Date().toISOString()); setAnnouncementText(e.target.value) }}
+                    onChange={e => { if (!announcementStarted && e.target.value) setAnnouncementStarted(appNow().toISOString()); setAnnouncementText(e.target.value) }}
                     placeholder="Summarize announcement..."
                     className="bg-surface-2 border-surface-3 text-fg text-sm"
                     rows={2}

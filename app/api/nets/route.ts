@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
+import { requestNow } from '@/lib/serverTime'
 import type { NetType } from '@/types'
 
 export async function POST(request: NextRequest) {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   if (netError) return NextResponse.json({ error: netError.message }, { status: 500 })
 
   if (!defer_start) {
-    const now = new Date()
+    const now = requestNow(request)
     const checkinTime = new Date(now.getTime() + 1000)
 
     await db.from('mcinares_log_entries').insert({

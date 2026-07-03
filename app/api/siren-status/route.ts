@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
 import { normalizeSirenId } from '@/lib/sirenLocations'
+import { requestNow } from '@/lib/serverTime'
 
 /**
  * Running log of siren checks across all siren check nets. Rows are appended
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
     visual: body.visual ?? null,
     notes: body.notes?.trim() || null,
   }
-  if (body.timestamp) insert.timestamp = body.timestamp
+  insert.timestamp = body.timestamp || requestNow(request).toISOString()
 
   const { data, error } = await getSupabase()
     .from('mcinares_siren_status')

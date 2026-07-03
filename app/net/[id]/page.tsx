@@ -48,10 +48,12 @@ import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
 import type { Net, DerivedStation, LogEntry, NetContext } from '@/types'
 import { deriveStations, deriveNetContext } from '@/lib/deriveStations'
 import type { SirenListItem } from '@/lib/sirenClient'
+import { useAppState } from '@/components/AppContext'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
 export default function NetPage() {
+  const { appNow } = useAppState()
   const params = useParams()
   const router = useRouter()
   const netId = params.id as string
@@ -213,7 +215,7 @@ export default function NetPage() {
       hasAnnouncement: entry.hasAnnouncement,
       trafficText: entry.trafficText,
       announcementText: entry.announcementText,
-      timestamp: new Date().toISOString(),
+      timestamp: appNow().toISOString(),
       trafficTimestamp: entry.trafficTimestamp,
       announcementTimestamp: entry.announcementTimestamp,
       forceManual: entry.forceManual,
@@ -380,7 +382,7 @@ export default function NetPage() {
   async function closeNet() {
     if (!net) return
     setClosing(true)
-    const now = new Date().toISOString()
+    const now = appNow().toISOString()
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
