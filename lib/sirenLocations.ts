@@ -236,3 +236,8 @@ export function sirenMapUrl(id: string): string {
   const ll = hit ? `${hit.lat}%2C${hit.lng}` : DEFAULT_LL
   return `${MAP_BASE}&ll=${ll}&z=${hit ? 15 : 12}`
 }
+
+/** County siren map URL centered on explicit coordinates (all sirens marked). */
+export function sirenMapUrlAt(lat: number, lng: number): string {
+  return `${MAP_BASE}&ll=${lat}%2C${lng}&z=15`
+}

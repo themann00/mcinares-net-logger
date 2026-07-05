@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MapPin, LocateFixed, Search } from 'lucide-react'
+import { sirenMapUrlAt } from '@/lib/sirenLocations'
 import type { SirenListItem } from '@/lib/sirenClient'
 
 interface StatusRow {
@@ -262,9 +263,10 @@ export default function SirenReportPage() {
                   <td className="py-1.5 pr-3 font-mono font-semibold text-fg whitespace-nowrap">
                     {siren.lat != null && siren.lng != null ? (
                       <a
-                        href={`https://www.google.com/maps?q=${siren.lat},${siren.lng}`}
+                        href={sirenMapUrlAt(siren.lat, siren.lng)}
                         target="_blank"
                         rel="noopener noreferrer"
+                        title="Open on the county siren map"
                         className="hover:text-blue-300 inline-flex items-center gap-1"
                       >
                         <MapPin className="w-3 h-3 text-fg-4" />

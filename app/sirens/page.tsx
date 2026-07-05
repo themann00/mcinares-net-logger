@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Pencil, GitMerge, MapPin, AlertTriangle } from 'lucide-react'
+import { sirenMapUrlAt } from '@/lib/sirenLocations'
 import type { SirenListItem } from '@/lib/sirenClient'
 
 interface SirenRow extends SirenListItem {
@@ -242,9 +243,10 @@ export default function SirensPage() {
                   <span className="text-fg-2 text-sm flex-1 min-w-0 truncate">{s.location || <span className="text-fg-5">no location</span>}</span>
                   {s.lat != null && s.lng != null && (
                     <a
-                      href={`https://www.google.com/maps?q=${s.lat},${s.lng}`}
+                      href={sirenMapUrlAt(s.lat, s.lng)}
                       target="_blank"
                       rel="noopener noreferrer"
+                      title="Open on the county siren map"
                       className="flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs flex-shrink-0"
                     >
                       <MapPin className="w-3 h-3" />
