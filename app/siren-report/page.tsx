@@ -5,7 +5,7 @@ import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MapPin, LocateFixed } from 'lucide-react'
+import { MapPin, LocateFixed, Search } from 'lucide-react'
 import type { SirenListItem } from '@/lib/sirenClient'
 
 interface StatusRow {
@@ -56,6 +56,9 @@ export default function SirenReportPage() {
   const [sort, setSort] = useState<SortMode>('name')
   const [coordInput, setCoordInput] = useState(`${DEFAULT_CENTER.lat}, ${DEFAULT_CENTER.lng}`)
   const [locating, setLocating] = useState(false)
+  const [addressInput, setAddressInput] = useState('')
+  const [geocoding, setGeocoding] = useState(false)
+  const [geocodeLabel, setGeocodeLabel] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -84,6 +87,26 @@ export default function SirenReportPage() {
     if (!m) return DEFAULT_CENTER
     return { lat: Number(m[1]), lng: Number(m[2]) }
   }, [coordInput])
+
+  async function findAddress() {
+    if (!addressInput.trim()) return
+    setGeocoding(true)
+    setGeocodeLabel('')
+    const res = await fetch(`/api/geocode?q=${encodeURIComponent(addressInput.trim())}`)
+    setGeocoding(false)
+    if (!res.ok) {
+      setGeocodeLabel('Lookup failed.')
+      return
+    }
+    const results = await res.json() as { lat: number; lng: number; label: string }[]
+    if (results.length === 0) {
+      setGeocodeLabel('No match found — try adding a city or ZIP.')
+      return
+    }
+    const top = results[0]
+    setCoordInput(`${top.lat.toFixed(6)}, ${top.lng.toFixed(6)}`)
+    setGeocodeLabel(top.label)
+  }
 
   function useMyLocation() {
     if (!navigator.geolocation) return
@@ -173,25 +196,49 @@ export default function SirenReportPage() {
         </div>
 
         {sort === 'proximity' && (
-          <div className="flex items-end gap-2 flex-wrap">
-            <div>
-              <Label className="text-fg-3 text-xs mb-1 block">Center coordinate (lat, lng)</Label>
-              <Input
-                value={coordInput}
-                onChange={e => setCoordInput(e.target.value)}
-                className="bg-surface-2 border-surface-3 text-fg font-mono text-sm w-72"
-              />
+          <div className="space-y-2">
+            <div className="flex items-end gap-2 flex-wrap">
+              <div>
+                <Label className="text-fg-3 text-xs mb-1 block">Address or cross street</Label>
+                <Input
+                  value={addressInput}
+                  onChange={e => setAddressInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') findAddress() }}
+                  placeholder="e.g. 38th & Meridian, or 6900 Thompson Rd"
+                  className="bg-surface-2 border-surface-3 text-fg text-sm w-72"
+                />
+              </div>
+              <Button
+                size="sm"
+                onClick={findAddress}
+                disabled={geocoding || !addressInput.trim()}
+                className="bg-blue-700 hover:bg-blue-600 gap-1"
+              >
+                <Search className="w-3.5 h-3.5" />
+                {geocoding ? 'Finding...' : 'Find'}
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={useMyLocation}
-              disabled={locating}
-              className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
-            >
-              <LocateFixed className="w-3.5 h-3.5" />
-              {locating ? 'Locating...' : 'Use my location'}
-            </Button>
+            {geocodeLabel && <p className="text-fg-3 text-xs max-w-xl">{geocodeLabel}</p>}
+            <div className="flex items-end gap-2 flex-wrap">
+              <div>
+                <Label className="text-fg-3 text-xs mb-1 block">Center coordinate (lat, lng)</Label>
+                <Input
+                  value={coordInput}
+                  onChange={e => setCoordInput(e.target.value)}
+                  className="bg-surface-2 border-surface-3 text-fg font-mono text-sm w-72"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={useMyLocation}
+                disabled={locating}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg gap-1"
+              >
+                <LocateFixed className="w-3.5 h-3.5" />
+                {locating ? 'Locating...' : 'Use my location'}
+              </Button>
+            </div>
           </div>
         )}
 
