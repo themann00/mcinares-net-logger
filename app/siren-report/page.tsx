@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { MapPin, LocateFixed, Search } from 'lucide-react'
 import { sirenMapUrlAt } from '@/lib/sirenLocations'
-import type { SirenListItem } from '@/lib/sirenClient'
+import { haversineMiles, type SirenListItem } from '@/lib/sirenClient'
 
 interface StatusRow {
   id: string
@@ -23,17 +23,6 @@ interface StatusRow {
 type SortMode = 'name' | 'proximity' | 'last_reported' | 'pass_sound' | 'pass_rotation' | 'pass_both'
 
 const DEFAULT_CENTER = { lat: 39.7684, lng: -86.1581 } // Monument Circle
-
-function haversineMiles(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const R = 3958.8
-  const dLat = toRad(bLat - aLat)
-  const dLng = toRad(bLng - aLng)
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
 
 /** Natural sort: numeric siren names by value, then everything else A-Z. */
 function nameCompare(a: string, b: string): number {

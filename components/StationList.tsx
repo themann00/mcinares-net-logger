@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { RefreshCw, MapPin, AlertCircle, Pencil, AlertTriangle } from 'lucide-react'
 import { WeatherReportInputs } from '@/components/WeatherReportInputs'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
+import { SirenFinderButton } from '@/components/SirenFinderButton'
 import { sirenMapUrl } from '@/lib/sirenLocations'
 import { unknownSirens, unkName, toRegisteredNames, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
 import type { Station, NetType, StationType, Quadrant } from '@/types'
@@ -327,11 +328,20 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
               )}
               <div className="flex-1">
                 <Label className="text-fg-3 text-xs mb-1 block">Location (where operating from)</Label>
-                <Input
-                  value={editLocation}
-                  onChange={e => setEditLocation(e.target.value)}
-                  className="bg-surface-2 border-surface-3 text-fg"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    value={editLocation}
+                    onChange={e => setEditLocation(e.target.value)}
+                    className="bg-surface-2 border-surface-3 text-fg flex-1"
+                  />
+                  {isSiren && (
+                    <SirenFinderButton
+                      location={editLocation}
+                      sirens={sirens}
+                      onApply={names => setEditSirens([0, 1, 2, 3].map(i => names[i] || ''))}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 

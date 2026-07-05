@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
+import { SirenFinderButton } from '@/components/SirenFinderButton'
 import { X, Check, AlertTriangle } from 'lucide-react'
 import { unknownSirens, unkName, toRegisteredNames, registerUnknownSirens, type SirenListItem } from '@/lib/sirenClient'
 import type { NetType, Station, StationType, Quadrant } from '@/types'
@@ -214,7 +215,16 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
               </div>
               <div className="flex-1">
                 <Label className="text-fg-3 text-xs mb-1 block">Location (where operating from)</Label>
-                <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-surface-2 border-surface-3 text-fg" />
+                <div className="flex gap-2">
+                  <Input value={editData.location} onChange={e => setEditData({ ...editData, location: e.target.value })} className="bg-surface-2 border-surface-3 text-fg flex-1" />
+                  {netType === 'siren' && (
+                    <SirenFinderButton
+                      location={editData.location}
+                      sirens={sirens}
+                      onApply={names => setEditData({ ...editData, sirenNumbers: [0, 1, 2, 3].map(i => names[i] || '') })}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
