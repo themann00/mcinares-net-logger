@@ -2,7 +2,8 @@ import { SignJWT, jwtVerify } from 'jose'
 import { cookies } from 'next/headers'
 
 const SESSION_COOKIE = 'net_session'
-const secret = new TextEncoder().encode(process.env.JWT_SECRET || 'dev-secret-change-me')
+if (!process.env.JWT_SECRET) throw new Error('JWT_SECRET environment variable is required')
+const secret = new TextEncoder().encode(process.env.JWT_SECRET)
 
 export async function createSessionToken(): Promise<string> {
   return new SignJWT({ auth: true })
