@@ -9,6 +9,9 @@ CREATE TABLE IF NOT EXISTS mcinares_nets (
   net_controller  TEXT NOT NULL,
   testing         BOOLEAN NOT NULL DEFAULT FALSE,
   closed          BOOLEAN DEFAULT FALSE,
+  -- persisted UI/setup state (added 2026-07-07): skywarn weather_status +
+  -- nws_bulletin, ARES prev_net_id / announcement_url / checklist_url
+  config          JSONB,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 

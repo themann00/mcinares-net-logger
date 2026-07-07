@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
-import { ChevronRight, RefreshCw, Info, ArrowRight } from 'lucide-react'
+import { ChevronRight, RefreshCw, Info, ArrowRight, Check } from 'lucide-react'
 import type { ScriptSection, NetContext } from '@/types'
 
 function resolveScript(section: ScriptSection, ctx: NetContext): string {
@@ -19,7 +19,7 @@ interface RenderOpts {
   onNext?: () => void
   onTakeReports?: () => void
   hideNoCheckins?: boolean
-  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; saved?: boolean; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
 }
 
@@ -103,13 +103,20 @@ function renderScriptText(text: string, opts: RenderOpts = {}) {
               onKeyDown={e => { if (e.key === 'Enter') field.onSave() }}
             />
           )}
-          <Button
-            size="sm"
-            onClick={field.onSave}
-            className="bg-blue-700 hover:bg-blue-600 h-8 text-xs"
-          >
-            Save
-          </Button>
+          {field.saved ? (
+            <span className="flex items-center gap-1 text-green-400 text-xs font-medium">
+              <Check className="w-4 h-4" />
+              Saved
+            </span>
+          ) : (
+            <Button
+              size="sm"
+              onClick={field.onSave}
+              className="bg-blue-700 hover:bg-blue-600 h-8 text-xs"
+            >
+              Save
+            </Button>
+          )}
         </span>
       )
     } else if (match[7] && opts.onCircleBack) {
@@ -202,7 +209,7 @@ interface ScriptCardProps {
   onNext?: () => void
   onTakeReports?: () => void
   stationCount?: number
-  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
+  inlineInputs?: Record<string, { value: string; placeholder?: string; label?: string; saved?: boolean; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>
   onCircleBack?: () => void
   onContinuityLog?: () => void
   incompleteStations?: number

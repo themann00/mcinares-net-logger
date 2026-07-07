@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -45,12 +45,22 @@ import { TrafficSection } from '@/components/TrafficSection'
 import { AddToLogModal } from '@/components/AddToLogModal'
 import { SetupSkywarn } from '@/components/SetupSkywarn'
 import { CheckinQueue, type QueuedCheckin } from '@/components/CheckinQueue'
-import type { Net, DerivedStation, LogEntry, NetContext } from '@/types'
+import type { Net, NetConfig, DerivedStation, LogEntry, NetContext } from '@/types'
 import { deriveStations, deriveNetContext } from '@/lib/deriveStations'
 import type { SirenListItem } from '@/lib/sirenClient'
 import { useAppState } from '@/components/AppContext'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
+
+// Section input fields (Alt NC, liaisons) map to log entries. The prefix
+// identifies each field's entry so values prefill after refresh and re-saves
+// update in place instead of duplicating.
+const INPUT_FIELD_LOG: Record<string, { entryType: 'alt_nc' | 'liaison'; prefix: string }> = {
+  alt_nc: { entryType: 'alt_nc', prefix: 'Alternate net control: ' },
+  liaison: { entryType: 'liaison', prefix: 'Liaison station: ' },
+  nts_liaison: { entryType: 'liaison', prefix: 'NTS Liaison: ' },
+  oes_station: { entryType: 'liaison', prefix: 'OES Station: ' },
+}
 
 export default function NetPage() {
   const { appNow } = useAppState()
@@ -69,11 +79,8 @@ export default function NetPage() {
   const [saving, setSaving] = useState(false)
   const [setupComplete, setSetupComplete] = useState(false)
   const [rollCallSkipped, setRollCallSkipped] = useState(false)
-  const [setupConfig, setSetupConfig] = useState<{ prevNetId: string | null; announcementUrl: string | null; checklistUrl: string | null } | null>(null)
   const [elapsed, setElapsed] = useState('')
   const [sortBySuffix, setSortBySuffix] = useState(true)
-  const [localWeatherStatus, setLocalWeatherStatus] = useState<'approaching' | 'imminent' | null>(null)
-  const [localBulletin, setLocalBulletin] = useState('')
   const [bulletinModalOpen, setBulletinModalOpen] = useState(false)
   const [bulletinDraft, setBulletinDraft] = useState('')
   const [fullLogOpen, setFullLogOpen] = useState(false)
@@ -94,12 +101,34 @@ export default function NetPage() {
   const sections = net ? getSections(net.type) : []
   const section = sections[sectionIndex]
 
+  // Persisted per-net UI state (weather status, bulletin, ARES setup) lives on
+  // the net row so a refresh or second device keeps mid-net context.
+  const netConfig: NetConfig = net?.config || {}
+  const weatherStatus = netConfig.weather_status ?? null
+  const bulletin = netConfig.nws_bulletin || ''
+  const setupConfig = {
+    prevNetId: netConfig.prev_net_id ?? null,
+    announcementUrl: netConfig.announcement_url ?? null,
+    checklistUrl: netConfig.checklist_url ?? null,
+  }
+
+  async function saveNetConfig(partial: Partial<NetConfig>) {
+    if (!net) return
+    const merged = { ...(net.config || {}), ...partial }
+    setNet({ ...net, config: merged })
+    await fetch(`/api/nets/${netId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ config: merged }),
+    })
+  }
+
   const ctx: NetContext = {
     net_controller: net?.net_controller || '',
     alt_net_controller: derivedCtx?.alt_net_controller,
     liaison: derivedCtx?.liaison,
-    weather_status: localWeatherStatus,
-    nws_bulletin: localBulletin || null,
+    weather_status: weatherStatus,
+    nws_bulletin: bulletin || null,
   }
 
   const fetchAll = useCallback(async () => {
@@ -145,38 +174,71 @@ export default function NetPage() {
     else if (id.startsWith('checkin_') || id === 'preamble' || id === 'additional_checkins') setActiveTab('checkin')
   }, [section?.id])
 
+  const loggedInputs = useMemo(() => {
+    const map: Record<string, { entryId: string; value: string }> = {}
+    for (const e of logEntries) {
+      for (const [fieldId, def] of Object.entries(INPUT_FIELD_LOG)) {
+        if (e.entry_type !== def.entryType) continue
+        if (!e.content.toUpperCase().startsWith(def.prefix.toUpperCase())) continue
+        map[fieldId] = { entryId: e.id, value: e.content.slice(def.prefix.length).trim() }
+      }
+    }
+    return map
+  }, [logEntries])
+
+  // Prefill each field once from its logged value so a refresh mid-net does
+  // not present empty inputs.
+  const prefilledRef = useRef<Set<string>>(new Set())
+  useEffect(() => {
+    setSectionInputs(prev => {
+      let changed = false
+      const next = { ...prev }
+      for (const [fieldId, logged] of Object.entries(loggedInputs)) {
+        if (!prefilledRef.current.has(fieldId) && !next[fieldId]) {
+          next[fieldId] = logged.value
+          changed = true
+        }
+        prefilledRef.current.add(fieldId)
+      }
+      return changed ? next : prev
+    })
+  }, [loggedInputs])
+
+  const inputSaved = (fieldId: string) => {
+    const logged = loggedInputs[fieldId]
+    const val = sectionInputs[fieldId]?.trim()
+    return !!logged && !!val && logged.value.toUpperCase() === val.toUpperCase()
+  }
+
   async function saveSectionInputs() {
     if (!net || !section?.inputFields) return
     setSaving(true)
-    const logItems: { entry_type: string; content: string }[] = []
 
     const autoCheckins: string[] = []
 
-    section.inputFields.forEach(field => {
+    for (const field of section.inputFields) {
       const val = sectionInputs[field.id]?.trim()
-      if (!val) return
+      const def = INPUT_FIELD_LOG[field.id]
+      if (!val || !def) continue
 
-      if (field.id === 'alt_nc') {
-        logItems.push({ entry_type: 'alt_nc', content: `Alternate net control: ${val}` })
-        autoCheckins.push(val)
-      } else if (field.id === 'liaison') {
-        logItems.push({ entry_type: 'liaison', content: `Liaison station: ${val}` })
-        autoCheckins.push(val)
-      } else if (field.id === 'nts_liaison') {
-        logItems.push({ entry_type: 'liaison', content: `NTS Liaison: ${val}` })
-        autoCheckins.push(val)
-      } else if (field.id === 'oes_station') {
-        logItems.push({ entry_type: 'liaison', content: `OES Station: ${val}` })
-        autoCheckins.push(val)
+      const logged = loggedInputs[field.id]
+      if (logged && logged.value.toUpperCase() === val.toUpperCase()) continue
+
+      if (logged) {
+        // Value changed: update the existing entry instead of duplicating it.
+        await fetch(`/api/nets/${netId}/log`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_id: logged.entryId, content: `${def.prefix}${val}` }),
+        })
+      } else {
+        await fetch(`/api/nets/${netId}/log`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entry_type: def.entryType, content: `${def.prefix}${val}` }),
+        })
       }
-    })
-
-    for (const item of logItems) {
-      await fetch(`/api/nets/${netId}/log`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item),
-      })
+      autoCheckins.push(val)
     }
 
     for (const callsign of autoCheckins) {
@@ -196,9 +258,11 @@ export default function NetPage() {
     fetchAll()
   }
 
-  const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining']
+  const queueSections = ['short_time', 'mobile', 'checkin_a_h', 'checkin_i_q', 'checkin_r_z', 'checkin_remaining', 'late_checkins']
+  const skywarnQueueSections = ['checkin_sw', 'checkin_nw', 'checkin_ne', 'checkin_se']
   const useQueue =
     (net?.type === 'ares' && queueSections.includes(section?.id || '')) ||
+    (net?.type === 'skywarn' && skywarnQueueSections.includes(section?.id || '')) ||
     (net?.type === 'siren' && section?.id === 'preamble')
 
   async function addToQueue(entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) {
@@ -604,10 +668,14 @@ export default function NetPage() {
         <div className="max-w-2xl mx-auto w-full p-4">
           <SetupNet
             netId={netId}
-            initialConfig={setupConfig}
+            initialConfig={net.config ? setupConfig : null}
             isResuming={logEntries.length > 0}
             onComplete={async config => {
-              setSetupConfig(config)
+              await saveNetConfig({
+                prev_net_id: config.prevNetId,
+                announcement_url: config.announcementUrl,
+                checklist_url: config.checklistUrl,
+              })
               if (logEntries.length === 0) {
                 await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
                 await fetchAll()
@@ -622,12 +690,14 @@ export default function NetPage() {
       {net.type === 'skywarn' && !setupComplete && (
         <div className="max-w-2xl mx-auto w-full p-4">
           <SetupSkywarn
-            initialWeatherStatus={localWeatherStatus}
-            initialBulletin={localBulletin}
+            initialWeatherStatus={weatherStatus}
+            initialBulletin={bulletin}
             isResuming={logEntries.length > 0}
             onComplete={async config => {
-              setLocalWeatherStatus(config.weatherStatus)
-              setLocalBulletin(config.bulletin)
+              await saveNetConfig({
+                weather_status: config.weatherStatus,
+                nws_bulletin: config.bulletin || null,
+              })
               if (logEntries.length === 0) {
                 await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
                 await fetchAll()
@@ -675,14 +745,14 @@ export default function NetPage() {
         <div className="flex-1 min-w-0 flex flex-col gap-4">
           {sectionNav('top')}
 
-          {net?.type === 'skywarn' && section?.id === 'preamble' && (
-            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 space-y-3">
+          {net?.type === 'skywarn' && (
+            <div className="bg-surface-1 rounded-xl border border-surface-3 p-4 flex items-center gap-x-6 gap-y-3 flex-wrap">
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-fg-3 text-sm font-medium">Weather status:</span>
                 <button
-                  onClick={() => setLocalWeatherStatus(localWeatherStatus === 'approaching' ? null : 'approaching')}
+                  onClick={() => saveNetConfig({ weather_status: weatherStatus === 'approaching' ? null : 'approaching' })}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    localWeatherStatus === 'approaching'
+                    weatherStatus === 'approaching'
                       ? 'bg-orange-600 text-white'
                       : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
                   }`}
@@ -690,9 +760,9 @@ export default function NetPage() {
                   Approaching
                 </button>
                 <button
-                  onClick={() => setLocalWeatherStatus(localWeatherStatus === 'imminent' ? null : 'imminent')}
+                  onClick={() => saveNetConfig({ weather_status: weatherStatus === 'imminent' ? null : 'imminent' })}
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    localWeatherStatus === 'imminent'
+                    weatherStatus === 'imminent'
                       ? 'bg-red-600 text-white'
                       : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
                   }`}
@@ -704,15 +774,15 @@ export default function NetPage() {
                 <Button
                   size="sm"
                   onClick={() => {
-                    setBulletinDraft(localBulletin)
+                    setBulletinDraft(bulletin)
                     setBulletinModalOpen(true)
                   }}
                   className="bg-surface-2 hover:bg-surface-3 text-fg-1 border border-surface-3 gap-1"
                 >
                   <FileText className="w-4 h-4" />
-                  {localBulletin ? 'Edit NWS Bulletin' : 'Paste current NWS Bulletin'}
+                  {bulletin ? 'Edit NWS Bulletin' : 'Paste current NWS Bulletin'}
                 </Button>
-                {localBulletin && (
+                {bulletin && (
                   <span className="text-green-400 text-xs">Bulletin loaded</span>
                 )}
               </div>
@@ -750,11 +820,11 @@ export default function NetPage() {
                   >
                     Cancel
                   </Button>
-                  {localBulletin && (
+                  {bulletin && (
                     <Button
                       size="sm"
                       onClick={() => {
-                        setLocalBulletin('')
+                        saveNetConfig({ nws_bulletin: null })
                         setBulletinDraft('')
                         setBulletinModalOpen(false)
                       }}
@@ -766,7 +836,7 @@ export default function NetPage() {
                   <Button
                     size="sm"
                     onClick={() => {
-                      setLocalBulletin(bulletinDraft.trim())
+                      saveNetConfig({ nws_bulletin: bulletinDraft.trim() || null })
                       setBulletinModalOpen(false)
                     }}
                     className="bg-blue-700 hover:bg-blue-600"
@@ -867,12 +937,13 @@ export default function NetPage() {
                     value: sectionInputs[field.id] || '',
                     placeholder: field.placeholder,
                     label: field.label,
+                    saved: inputSaved(field.id),
                     onChange: (v: string) => setSectionInputs(prev => ({ ...prev, [field.id]: v })),
                     onSave: () => saveSectionInputs(),
                     roster: roster.map(r => ({ callsign: r.callsign, first_name: r.first_name, last_name: r.last_name, source: 'roster' as const })),
                   }
                   return acc
-                }, {} as Record<string, { value: string; placeholder?: string; label?: string; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>)
+                }, {} as Record<string, { value: string; placeholder?: string; label?: string; saved?: boolean; onChange: (v: string) => void; onSave: () => void; roster?: { callsign: string; first_name?: string | null; last_name?: string | null; source: 'roster' }[] }>)
               }
               onTakeReports={() => {
                 setSectionIndex(i => Math.min(sections.length - 1, i + 1))

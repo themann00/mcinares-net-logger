@@ -79,6 +79,37 @@ function deriveSirenReports(log: LogEntry[]): SirenResult[] {
   })
 }
 
+interface WeatherReportRow {
+  time: string
+  callsign: string
+  type: string
+  content: string
+}
+
+/**
+ * Skywarn: one row per report entry in log order. Type comes from structured
+ * metadata when present (reports logged since 0.16.0); older entries show the
+ * raw text only.
+ */
+function deriveWeatherReports(log: LogEntry[]): WeatherReportRow[] {
+  return log
+    .filter(e => e.entry_type === 'report')
+    .map(e => {
+      const meta = e.metadata as Record<string, unknown> | null
+      const callsign = e.station?.callsign || (e.content.match(/^([A-Z0-9/]+):/)?.[1] ?? '')
+      let content = e.content
+      if (callsign && content.toUpperCase().startsWith(`${callsign.toUpperCase()}:`)) {
+        content = content.slice(callsign.length + 1).trim()
+      }
+      return {
+        time: e.timestamp,
+        callsign,
+        type: typeof meta?.report_type === 'string' ? meta.report_type : '',
+        content,
+      }
+    })
+}
+
 function YesNo({ value }: { value: boolean | null }) {
   if (value === true) return <Check className="w-4 h-4 text-green-600 inline-block" />
   if (value === false) return <X className="w-4 h-4 text-red-600 inline-block" />
@@ -185,6 +216,7 @@ export default function ReportPage() {
 
   const derived = deriveFromLogs(log)
   const sirenReports = deriveSirenReports(log)
+  const weatherReports = net.type === 'skywarn' ? deriveWeatherReports(log) : []
   const isAres = net.type === 'ares'
   const isSiren = net.type === 'siren'
   const isSkywarn = net.type === 'skywarn'
@@ -225,6 +257,21 @@ export default function ReportPage() {
             'Siren,Sound,Rotation,Visual',
             ...sirenReports.map(r =>
               [r.siren, ...[r.sound, r.rotation, r.visual].map(v => (v === true ? 'Yes' : v === false ? 'No' : ''))].join(',')
+            ),
+          ]
+        : []),
+      ...(weatherReports.length > 0
+        ? [
+            '',
+            'WEATHER REPORTS',
+            'Time,Callsign,Type,Report',
+            ...weatherReports.map(r =>
+              [
+                format(new Date(r.time), 'HH:mm:ss'),
+                r.callsign,
+                r.type,
+                `"${r.content.replace(/"/g, '""')}"`,
+              ].join(',')
             ),
           ]
         : []),
@@ -359,6 +406,36 @@ export default function ReportPage() {
                       <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.sound} /></td>
                       <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.rotation} /></td>
                       <td className="py-1.5 px-3 border border-gray-200 text-center"><YesNo value={r.visual} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {weatherReports.length > 0 && (
+            <div className="mb-8">
+              <h3 className="font-semibold text-gray-800 mb-3 uppercase tracking-wide text-xs">
+                Weather Reports ({weatherReports.length})
+              </h3>
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-50 text-left">
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-20">Time</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-28">Callsign</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200 w-32">Type</th>
+                    <th className="py-2 px-3 font-semibold text-gray-600 border border-gray-200">Report</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {weatherReports.map((r, i) => (
+                    <tr key={i} className="border-b border-gray-50">
+                      <td className="py-1.5 px-3 border border-gray-200 font-mono text-gray-500">
+                        {format(new Date(r.time), 'HH:mm:ss')}
+                      </td>
+                      <td className="py-1.5 px-3 border border-gray-200 font-mono text-gray-900">{r.callsign || <NA />}</td>
+                      <td className="py-1.5 px-3 border border-gray-200 text-gray-700">{r.type || <span className="text-gray-400">&mdash;</span>}</td>
+                      <td className="py-1.5 px-3 border border-gray-200 text-gray-800">{r.content}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -50,7 +50,7 @@ const FLOOD_TREND = ['Rising', 'Steady', 'Receding']
 const DAMAGE_TARGETS = ['Trees', 'Power Lines', 'Structures', 'Other']
 
 interface WeatherReportInputsProps {
-  onChange: (data: { reportType: ReportType; formatted: string; freeText: string; valid: boolean }) => void
+  onChange: (data: { reportType: ReportType; formatted: string; freeText: string; valid: boolean; meta: Record<string, unknown> }) => void
   resetKey?: number
   compact?: boolean
 }
@@ -115,7 +115,24 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
       valid = hasFreeText
     }
 
-    onChange({ reportType, formatted, freeText, valid })
+    // Structured metadata stored on the report log entry so the summary
+    // report can tabulate weather reports without re-parsing text.
+    const meta: Record<string, unknown> = { report_type: reportType }
+    if (reportType === 'Hail' && hailSize) meta.hail_size = hailSize
+    if (reportType === 'Wind' && windForce) {
+      const entry = BEAUFORT_SCALE.find(b => b.value === windForce)
+      meta.wind_force = windForce
+      if (entry) meta.wind_label = entry.label
+    }
+    if (reportType === 'Flooding') {
+      if (floodSource) meta.flood_source = floodSource
+      if (floodDepth) meta.flood_depth = floodDepth
+      if (floodFlow) meta.flood_flow = floodFlow
+      if (floodTrend) meta.flood_trend = floodTrend
+    }
+    if (reportType === 'Damage' && damageTarget) meta.damage_target = damageTarget
+
+    onChange({ reportType, formatted, freeText, valid, meta })
   }, [reportType, freeText, hailSize, windForce, floodSource, floodDepth, floodFlow, floodTrend, damageTarget])
 
   const rows = compact ? 2 : 3

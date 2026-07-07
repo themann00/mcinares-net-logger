@@ -54,6 +54,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
   const [editReason, setEditReason] = useState<EditReason>('correction')
   const [editReportFormatted, setEditReportFormatted] = useState('')
   const [editReportValid, setEditReportValid] = useState(false)
+  const [editReportMeta, setEditReportMeta] = useState<Record<string, unknown>>({})
   const [editReportResetKey, setEditReportResetKey] = useState(0)
   const [confirmMsgs, setConfirmMsgs] = useState<string[] | null>(null)
   const [saving, setSaving] = useState(false)
@@ -87,6 +88,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
     setEditReportResetKey(k => k + 1)
     setEditReportFormatted('')
     setEditReportValid(false)
+    setEditReportMeta({})
     setConfirmMsgs(null)
   }
 
@@ -187,6 +189,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
           entry_type: 'report',
           content: `${targetCs}: ${locPrefix}${editReportFormatted}`,
           callsign: targetCs,
+          metadata: Object.keys(editReportMeta).length > 0 ? editReportMeta : undefined,
         }),
       })
     }
@@ -396,6 +399,7 @@ export function StationList({ stations, netId, netType, showCircleBack = false, 
                   onChange={data => {
                     setEditReportFormatted(data.formatted)
                     setEditReportValid(data.valid)
+                    setEditReportMeta(data.meta)
                   }}
                 />
               </div>

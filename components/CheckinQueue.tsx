@@ -126,6 +126,9 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
             >
               {item.callsign}
               {item.firstName && <span className="text-fg-4 text-xs font-sans ml-1">{item.firstName}</span>}
+              {netType === 'skywarn' && item.quadrant && (
+                <span className="text-orange-400 text-xs font-sans ml-1.5">{item.quadrant}</span>
+              )}
             </button>
             {showFlags && (
               <>
@@ -213,6 +216,22 @@ export function CheckinQueue({ queue, onUpdate, onCommit, committing, showTraffi
                   </SelectContent>
                 </Select>
               </div>
+              {netType === 'skywarn' && (
+                <div className="w-20">
+                  <Label className="text-fg-3 text-xs mb-1 block">Quad</Label>
+                  <Select value={editData.quadrant} onValueChange={v => setEditData({ ...editData, quadrant: (v || '') as Quadrant | '' })}>
+                    <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                      <SelectValue placeholder="—" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-surface-2 border-surface-3">
+                      <SelectItem value="SW" className="text-fg">SW</SelectItem>
+                      <SelectItem value="NW" className="text-fg">NW</SelectItem>
+                      <SelectItem value="NE" className="text-fg">NE</SelectItem>
+                      <SelectItem value="SE" className="text-fg">SE</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex-1">
                 <Label className="text-fg-3 text-xs mb-1 block">Location (where operating from)</Label>
                 <div className="flex gap-2">

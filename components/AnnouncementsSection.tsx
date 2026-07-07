@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Textarea } from '@/components/ui/textarea'
 import { FileText, X, Check, Maximize2, BookOpen } from 'lucide-react'
+import { StationPassList } from '@/components/StationPassList'
 import type { Station, LogEntry } from '@/types'
 
 interface AnnouncementsSectionProps {
@@ -14,82 +14,14 @@ interface AnnouncementsSectionProps {
   onUpdate: () => void
 }
 
-interface AnnState {
-  text: string
-  startedAt: number | null
-  cancelled: boolean
-  saved: boolean
-}
-
 export function AnnouncementsSection({ stations, logEntries, netId, announcementUrl, onUpdate }: AnnouncementsSectionProps) {
-  const announcementStations = stations
-    .filter(s => s.has_announcements)
-    .sort((a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime())
-
-  const alreadyLoggedCallsigns = new Set(
-    logEntries
-      .filter(e => e.entry_type === 'announcement' && e.content.includes(':'))
-      .map(e => e.content.split(':')[0].trim().toUpperCase())
-  )
-
   const [pdfZoom, setPdfZoom] = useState(false)
-  const [readingLogged, setReadingLogged] = useState(
-    logEntries.some(e => e.entry_type === 'announcement' && e.content.includes('Net controller read the prepared weekly announcements'))
+  // Derived from logs each render so a refresh or late log still shows it.
+  const readingLogged = logEntries.some(
+    e => e.entry_type === 'announcement' && e.content.includes('Net controller read the prepared weekly announcements')
   )
 
-  const [annState, setAnnState] = useState<Record<string, AnnState>>(() => {
-    const initial: Record<string, AnnState> = {}
-    announcementStations.forEach(s => {
-      initial[s.callsign] = {
-        text: 'N/A',
-        startedAt: null,
-        cancelled: false,
-        saved: alreadyLoggedCallsigns.has(s.callsign.toUpperCase()),
-      }
-    })
-    return initial
-  })
-
-  const hasAnnouncements = announcementStations.length > 0
-
-  async function saveAnnouncement(station: Station) {
-    const state = annState[station.callsign]
-    if (!state || !state.text.trim()) return
-
-    await fetch(`/api/nets/${netId}/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        entry_type: 'announcement',
-        content: `${station.callsign}: ${state.text.trim()}`,
-        callsign: station.callsign,
-      }),
-    })
-
-    setAnnState(prev => ({
-      ...prev,
-      [station.callsign]: { ...prev[station.callsign], saved: true },
-    }))
-    onUpdate()
-  }
-
-  function handleTextChange(stationId: string, text: string) {
-    setAnnState(prev => ({
-      ...prev,
-      [stationId]: {
-        ...prev[stationId],
-        text,
-        startedAt: prev[stationId].startedAt || Date.now(),
-      },
-    }))
-  }
-
-  function cancelStation(stationId: string) {
-    setAnnState(prev => ({
-      ...prev,
-      [stationId]: { ...prev[stationId], cancelled: true },
-    }))
-  }
+  const hasAnnouncements = stations.some(s => s.has_announcements)
 
   return (
     <>
@@ -100,57 +32,13 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
             I will now take announcements from stations that indicated that they had announcements. Stations with traffic will pass after announcements.
           </div>
 
-          <div className="flex items-center gap-2 text-amber-400/80 text-sm bg-amber-950/30 border border-amber-800/40 rounded-lg px-3 py-2">
-            <span>Enter a summary for each station (or leave as N/A) and click Log Announcement, or it will not appear in the net logs.</span>
-          </div>
-
-          <div className="space-y-3">
-            {announcementStations.map(station => {
-              const state = annState[station.callsign]
-              if (!state || state.cancelled) return null
-
-              if (state.saved) {
-                return (
-                  <div key={station.callsign} className="flex items-center gap-2 px-3 py-2 bg-green-950/30 rounded-lg">
-                    <Check className="w-4 h-4 text-green-400 flex-shrink-0" />
-                    <span className="font-mono text-sm text-green-400 line-through">{station.callsign}</span>
-                    <span className="text-fg-4 text-xs">logged</span>
-                  </div>
-                )
-              }
-
-              return (
-                <div key={station.callsign} className="bg-surface-2 rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-mono font-semibold text-fg">{station.callsign}</span>
-                    <button
-                      onClick={() => cancelStation(station.callsign)}
-                      className="text-fg-4 hover:text-red-400 text-xs flex items-center gap-1"
-                    >
-                      <X className="w-3 h-3" />
-                      No announcement
-                    </button>
-                  </div>
-                  <Textarea
-                    value={state.text}
-                    onChange={e => handleTextChange(station.callsign, e.target.value)}
-                    placeholder="Summarize announcement..."
-                    onFocus={e => { if (e.target.value === 'N/A') e.target.select() }}
-                    className="bg-surface-1 border-surface-3 text-fg text-sm"
-                    rows={2}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => saveAnnouncement(station)}
-                    disabled={!state.text.trim()}
-                    className="bg-teal-700 hover:bg-teal-600 text-xs"
-                  >
-                    Log Announcement
-                  </Button>
-                </div>
-              )
-            })}
-          </div>
+          <StationPassList
+            netId={netId}
+            flag="announcement"
+            stations={stations}
+            logEntries={logEntries}
+            onUpdate={onUpdate}
+          />
         </div>
       )}
 
@@ -175,7 +63,6 @@ export function AnnouncementsSection({ stations, logEntries, netId, announcement
                   content: 'Net controller read the prepared weekly announcements, available at MCINARES.org',
                 }),
               })
-              setReadingLogged(true)
               onUpdate()
             }}
             className="w-full bg-teal-700 hover:bg-teal-600 gap-2"

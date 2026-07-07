@@ -17,12 +17,22 @@ export type LogEntryType =
   | 'net_close'
   | 'note'
 
+/** Persisted per-net UI/setup state; survives refresh and other devices */
+export interface NetConfig {
+  weather_status?: 'approaching' | 'imminent' | null
+  nws_bulletin?: string | null
+  prev_net_id?: string | null
+  announcement_url?: string | null
+  checklist_url?: string | null
+}
+
 export interface Net {
   id: string
   type: NetType
   net_controller: string
   testing: boolean
   closed: boolean
+  config?: NetConfig | null
   created_at: string
 }
 

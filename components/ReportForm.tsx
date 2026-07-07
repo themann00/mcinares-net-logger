@@ -79,6 +79,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
   const [rotation, setRotation] = useState<boolean | null>(null)
   const [reportFormatted, setReportFormatted] = useState('')
   const [reportValid, setReportValid] = useState(false)
+  const [reportMeta, setReportMeta] = useState<Record<string, unknown>>({})
   const [sirenContent, setSirenContent] = useState('')
   const [loading, setLoading] = useState(false)
   const [resetKey, setResetKey] = useState(0)
@@ -178,6 +179,9 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
         visual,
       }
     }
+    if (isSkywarn && Object.keys(reportMeta).length > 0) {
+      metadata = { ...reportMeta }
+    }
     if (reportContent) parts.push(reportContent)
     const content = `${prefix}${parts.join(' - ')}`
 
@@ -233,6 +237,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
     setSound(null)
     setRotation(null)
     setSirenContent('')
+    setReportMeta({})
     setResetKey(k => k + 1)
     setLoading(false)
     onReport()
@@ -254,19 +259,25 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
   // report names that specific siren — one station can report #12 with sound
   // and still owe a report for #14. Reported tiles stay clickable so more
   // information can be added — each log is an additional entry.
-  type Tile = { callsign: string; sirenNumber: string | null; location: string | null }
+  type Tile = { callsign: string; sirenNumber: string | null; location: string | null; quadrant: string | null }
   const pendingTiles: Tile[] = []
   const reportedTiles: Tile[] = []
+  const stationReportsFor = (s: Station) =>
+    logEntries.filter(r =>
+      r.entry_type === 'report' && (
+        (r.station_id && r.station_id === s.station_id) ||
+        (!r.station_id && r.content.toUpperCase().startsWith(`${s.callsign.toUpperCase()}:`))
+      )
+    )
   if (isSiren) {
-    const reports = logEntries.filter(e => e.entry_type === 'report')
     const inCheckinOrder = [...stations].sort(
       (a, b) => new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime()
     )
     function stationTiles(s: Station): Tile[] {
       if (s.siren_numbers.length === 0) {
-        return [{ callsign: s.callsign, sirenNumber: null, location: s.location }]
+        return [{ callsign: s.callsign, sirenNumber: null, location: s.location, quadrant: null }]
       }
-      return s.siren_numbers.map(n => ({ callsign: s.callsign, sirenNumber: n, location: s.location }))
+      return s.siren_numbers.map(n => ({ callsign: s.callsign, sirenNumber: n, location: s.location, quadrant: null }))
     }
     const sirenMatches = (r: LogEntry, tileSiren: string) => {
       const meta = r.metadata as Record<string, unknown> | null
@@ -276,10 +287,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       return new RegExp(`SIREN #${normalizeSirenId(tileSiren).replace(/^0+/, '')}(?!\\d)|SIREN #${normalizeSirenId(tileSiren)}(?!\\d)`, 'i').test(r.content)
     }
     for (const s of inCheckinOrder) {
-      const stationReports = reports.filter(r =>
-        (r.station_id && r.station_id === s.station_id) ||
-        (!r.station_id && r.content.toUpperCase().startsWith(`${s.callsign.toUpperCase()}:`))
-      )
+      const stationReports = stationReportsFor(s)
       for (const tile of stationTiles(s)) {
         const reported = tile.sirenNumber
           ? stationReports.some(r => sirenMatches(r, tile.sirenNumber!))
@@ -287,6 +295,23 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
         if (reported) reportedTiles.unshift(tile)
         else pendingTiles.push(tile)
       }
+    }
+  }
+
+  // Skywarn: one tile per station, grouped by quadrant in check-in order, so
+  // the circle-back pass can walk the pending list and click to prefill.
+  if (isSkywarn) {
+    const quadOrder: Record<string, number> = { SW: 0, NW: 1, NE: 2, SE: 3 }
+    const ordered = [...stations].sort((a, b) => {
+      const qa = a.quadrant ? quadOrder[a.quadrant] : 4
+      const qb = b.quadrant ? quadOrder[b.quadrant] : 4
+      if (qa !== qb) return qa - qb
+      return new Date(a.checked_in_at).getTime() - new Date(b.checked_in_at).getTime()
+    })
+    for (const s of ordered) {
+      const tile: Tile = { callsign: s.callsign, sirenNumber: null, location: s.location, quadrant: s.quadrant }
+      if (stationReportsFor(s).length > 0) reportedTiles.unshift(tile)
+      else pendingTiles.push(tile)
     }
   }
 
@@ -363,6 +388,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
           onChange={data => {
             setReportFormatted(data.formatted)
             setReportValid(data.valid)
+            setReportMeta(data.meta)
           }}
         />
       ) : (
@@ -447,7 +473,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       )}
     </form>
 
-    {isSiren && pendingTiles.length > 0 && (
+    {(isSiren || isSkywarn) && pendingTiles.length > 0 && (
       <div className="space-y-1.5">
         <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider">
           Awaiting Report ({pendingTiles.length})
@@ -464,6 +490,9 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
                 {tile.sirenNumber && (
                   <span className="text-red-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
                 )}
+                {tile.quadrant && (
+                  <span className="text-orange-400 text-xs font-semibold">{tile.quadrant}</span>
+                )}
                 <span className="text-fg font-mono text-sm">{tile.callsign}</span>
               </div>
               {!tile.sirenNumber && tile.location && (
@@ -475,7 +504,7 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
       </div>
     )}
 
-    {isSiren && reportedTiles.length > 0 && (
+    {(isSiren || isSkywarn) && reportedTiles.length > 0 && (
       <div className="space-y-1.5">
         <h4 className="text-fg-3 text-xs font-semibold uppercase tracking-wider">
           Reports Made ({reportedTiles.length})
@@ -491,6 +520,9 @@ export function ReportForm({ netId, netType, stations, onReport, roster = [], lo
               <div className="flex items-center gap-1.5">
                 {tile.sirenNumber && (
                   <span className="text-green-400 font-mono text-xs font-semibold">#{tile.sirenNumber}</span>
+                )}
+                {tile.quadrant && (
+                  <span className="text-green-500 text-xs font-semibold">{tile.quadrant}</span>
                 )}
                 <span className="text-fg-1 font-mono text-sm">{tile.callsign}</span>
               </div>
