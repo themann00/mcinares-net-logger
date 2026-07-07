@@ -6,6 +6,8 @@ import { deriveStations } from '@/lib/deriveStations'
 
 interface RollCallListProps {
   netId: string
+  /** The previous net chosen on the setup screen; its stations are the roll */
+  prevNetId: string
   currentStations: Station[]
   onUpdate: () => void
   onSkip?: () => void
@@ -24,7 +26,7 @@ function getSuffix(callsign: string) {
   return match ? match[1] : callsign
 }
 
-export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortBySuffix = true }: RollCallListProps) {
+export function RollCallList({ netId, prevNetId, currentStations, onUpdate, onSkip, sortBySuffix = true }: RollCallListProps) {
   const [prevNet, setPrevNet] = useState<Net | null>(null)
   const [prevStations, setPrevStations] = useState<Station[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,20 +37,14 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
 
   useEffect(() => {
     async function fetchPrevious() {
-      const res = await fetch('/api/nets')
-      if (!res.ok) { setLoading(false); return }
-      const nets: Net[] = await res.json()
-
-      const eightDaysAgo = Date.now() - 8 * 24 * 60 * 60 * 1000
-      const prev = nets.find(
-        n => n.type === 'ares' && n.closed && n.id !== netId &&
-          new Date(n.created_at).getTime() > eightDaysAgo
-      )
-
-      if (!prev) { setLoading(false); return }
-
+      // Use exactly the net picked on the setup screen, whatever its age.
+      const [netRes, stRes] = await Promise.all([
+        fetch(`/api/nets/${prevNetId}`),
+        fetch(`/api/nets/${prevNetId}/log`),
+      ])
+      if (!netRes.ok) { setLoading(false); return }
+      const prev: Net = await netRes.json()
       setPrevNet(prev)
-      const stRes = await fetch(`/api/nets/${prev.id}/log`)
       if (stRes.ok) {
         const logEntries: LogEntry[] = await stRes.json()
         const stations: Station[] = deriveStations(logEntries)
@@ -78,7 +74,7 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
     }
     fetchPrevious()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [netId])
+  }, [netId, prevNetId])
 
   async function toggleCheckin(callsign: string) {
     const current = rollState[callsign]
@@ -180,7 +176,7 @@ export function RollCallList({ netId, currentStations, onUpdate, onSkip, sortByS
   if (!prevNet || prevStations.length === 0) {
     return (
       <div className="space-y-2 py-2">
-        <p className="text-fg-4 text-sm">No previous ARES net found within 8 days.</p>
+        <p className="text-fg-4 text-sm">The selected previous net has no stations to call.</p>
         {onSkip && (
           <button
             onClick={onSkip}
