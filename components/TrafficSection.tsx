@@ -3,10 +3,18 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Plus } from 'lucide-react'
 import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
-import { StationPassList } from '@/components/StationPassList'
+import { StationPassList, TRAFFIC_PRECEDENCE } from '@/components/StationPassList'
 import type { Station, LogEntry } from '@/types'
 
 interface RosterEntry {
@@ -29,6 +37,18 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
   const [noteContent, setNoteContent] = useState('')
   const [noteType, setNoteType] = useState<'traffic' | 'question' | 'comment' | 'note'>('traffic')
   const [noteSaving, setNoteSaving] = useState(false)
+  const [notePrecedence, setNotePrecedence] = useState('Routine')
+  const [noteDestination, setNoteDestination] = useState('')
+  // Formal NTS mode: precedence + destination on traffic entries. Most nets
+  // run informal; the toggle sticks for the rest of this net.
+  const [formal, setFormalRaw] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return window.sessionStorage.getItem(`net-${netId}-formal-traffic`) === '1'
+  })
+  function setFormal(v: boolean) {
+    setFormalRaw(v)
+    try { window.sessionStorage.setItem(`net-${netId}-formal-traffic`, v ? '1' : '0') } catch {}
+  }
 
   async function logNote() {
     if (!noteContent.trim()) return
@@ -37,19 +57,26 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
     const prefix = noteCallsign.trim() ? `${noteCallsign.trim().toUpperCase()}: ` : ''
     const entryType = noteType === 'traffic' ? 'traffic' : 'note'
     const typePrefix = noteType === 'question' ? '[Question] ' : noteType === 'comment' ? '[Comment] ' : ''
+    const isFormalTraffic = formal && noteType === 'traffic'
+    const formalPrefix = isFormalTraffic
+      ? `[${notePrecedence.toUpperCase()}] ${noteDestination.trim() ? `for ${noteDestination.trim()} — ` : ''}`
+      : ''
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entry_type: entryType,
-        content: `${prefix}${typePrefix}${noteContent.trim()}`,
+        content: `${prefix}${typePrefix}${formalPrefix}${noteContent.trim()}`,
         callsign: noteCallsign.trim() ? noteCallsign.trim().toUpperCase() : undefined,
+        metadata: isFormalTraffic ? { precedence: notePrecedence, destination: noteDestination.trim() || null } : undefined,
       }),
     })
 
     setNoteCallsign('')
     setNoteContent('')
     setNoteType('traffic')
+    setNotePrecedence('Routine')
+    setNoteDestination('')
     setNoteSaving(false)
     onUpdate()
   }
@@ -61,12 +88,23 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
           Are there any questions, comments, or traffic for the net?
         </div>
 
+        <label className="flex items-center gap-2 text-fg-2 text-sm cursor-pointer">
+          <input
+            type="checkbox"
+            checked={formal}
+            onChange={e => setFormal(e.target.checked)}
+            className="rounded"
+          />
+          Formal NTS mode — precedence and destination on traffic entries
+        </label>
+
         <StationPassList
           netId={netId}
           flag="traffic"
           stations={stations}
           logEntries={logEntries}
           onUpdate={onUpdate}
+          formal={formal}
         />
 
         <div className="border-t border-surface-3 pt-4 space-y-3">
@@ -105,6 +143,28 @@ export function TrafficSection({ stations, logEntries, netId, roster, onUpdate }
                 )
               })}
             </div>
+            {formal && noteType === 'traffic' && (
+              <div className="flex gap-2 mb-2">
+                <div className="w-36">
+                  <Select value={notePrecedence} onValueChange={v => setNotePrecedence(v || 'Routine')}>
+                    <SelectTrigger className="bg-surface-2 border-surface-3 text-fg">
+                      <SelectValue placeholder="Precedence" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-surface-2 border-surface-3">
+                      {TRAFFIC_PRECEDENCE.map(p => (
+                        <SelectItem key={p} value={p} className="text-fg">{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input
+                  value={noteDestination}
+                  onChange={e => setNoteDestination(e.target.value)}
+                  placeholder="For / destination (optional)"
+                  className="bg-surface-2 border-surface-3 text-fg flex-1"
+                />
+              </div>
+            )}
             <Textarea
               value={noteContent}
               onChange={e => setNoteContent(e.target.value)}

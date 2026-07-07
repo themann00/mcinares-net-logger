@@ -58,6 +58,7 @@ interface WeatherReportInputsProps {
 export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }: WeatherReportInputsProps) {
   const [reportType, setReportType] = useState<ReportType>('Other')
   const [freeText, setFreeText] = useState('')
+  const [timeObserved, setTimeObserved] = useState('')
 
   const [hailSize, setHailSize] = useState('')
   const [windForce, setWindForce] = useState('')
@@ -70,6 +71,7 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
   useEffect(() => {
     setReportType('Other')
     setFreeText('')
+    setTimeObserved('')
     setHailSize('')
     setWindForce('')
     setFloodSource('')
@@ -97,7 +99,8 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
 
     const prefix = parts.length > 0 ? parts.join(', ') + '. ' : ''
     const typePrefix = reportType !== 'Other' ? `${reportType.toUpperCase()}: ` : ''
-    const formatted = `${typePrefix}${prefix}${freeText.trim()}`
+    const timeSuffix = timeObserved.trim() ? ` (observed ${timeObserved.trim()})` : ''
+    const formatted = `${typePrefix}${prefix}${freeText.trim()}${timeSuffix}`
 
     const hasFreeText = !!freeText.trim()
     const floodDropdownCount = [floodSource, floodDepth, floodFlow, floodTrend].filter(Boolean).length
@@ -131,9 +134,10 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
       if (floodTrend) meta.flood_trend = floodTrend
     }
     if (reportType === 'Damage' && damageTarget) meta.damage_target = damageTarget
+    if (timeObserved.trim()) meta.observed_at = timeObserved.trim()
 
     onChange({ reportType, formatted, freeText, valid, meta })
-  }, [reportType, freeText, hailSize, windForce, floodSource, floodDepth, floodFlow, floodTrend, damageTarget])
+  }, [reportType, freeText, timeObserved, hailSize, windForce, floodSource, floodDepth, floodFlow, floodTrend, damageTarget])
 
   const rows = compact ? 2 : 3
 
@@ -277,9 +281,19 @@ export function WeatherReportInputs({ onChange, resetKey = 0, compact = false }:
         <Textarea
           value={freeText}
           onChange={e => setFreeText(e.target.value)}
-          placeholder="Location, time, additional details..."
+          placeholder="Location, additional details..."
           className="bg-surface-2 border-surface-3 text-fg text-sm"
           rows={rows}
+        />
+      </div>
+
+      <div>
+        <Label className="text-fg-3 text-xs mb-1 block">Time observed (optional — for delayed reports)</Label>
+        <Input
+          value={timeObserved}
+          onChange={e => setTimeObserved(e.target.value)}
+          placeholder="e.g. 14:32 — blank = now"
+          className="bg-surface-2 border-surface-3 text-fg"
         />
       </div>
     </div>

@@ -52,6 +52,12 @@ CREATE TABLE IF NOT EXISTS mcinares_log_entries (
   timestamp   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- Live multi-device sync (added 2026-07-07): browsers subscribe with the anon
+-- key to these three tables. RLS enabled everywhere; anon has SELECT-only
+-- policies here ("realtime read ..."), roster/siren tables stay service-role
+-- only. Publication: supabase_realtime includes log_entries, nets,
+-- checkin_queue.
+
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_net_id ON mcinares_log_entries(net_id);
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_timestamp ON mcinares_log_entries(timestamp);
 CREATE INDEX IF NOT EXISTS idx_mcinares_log_entries_station_id ON mcinares_log_entries(station_id);

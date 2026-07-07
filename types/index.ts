@@ -110,6 +110,13 @@ export interface NetContext {
   weather_status?: 'approaching' | 'imminent' | null
   nws_bulletin?: string | null
   last_week_count?: number
+  /** Live totals for closing scripts */
+  station_count?: number
+  report_count?: number
+  traffic_count?: number
+  announcement_count?: number
+  /** HH:mm local at render time, for "closed at ___" lines */
+  now_local?: string
 }
 
 export interface ScriptSection {

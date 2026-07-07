@@ -20,6 +20,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     report,
     checked_in_at,
     manual_prefix,
+    entry_type,
   } = body as {
     callsign: string
     first_name?: string
@@ -33,11 +34,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     report?: string
     checked_in_at?: string
     manual_prefix?: string
+    entry_type?: string
   }
 
   if (!callsign) {
     return NextResponse.json({ error: 'callsign is required' }, { status: 400 })
   }
+
+  // Check-ins after announcements log as late_checkin so reports and log
+  // views can tell them apart; anything else stays a normal checkin.
+  const checkinType = entry_type === 'late_checkin' ? 'late_checkin' : 'checkin'
 
   const cs = callsign.toUpperCase().trim()
   const db = getSupabase()
@@ -67,7 +73,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { data: logEntry, error } = await db.from('mcinares_log_entries').insert({
     net_id: id,
     station_id: station.id,
-    entry_type: 'checkin',
+    entry_type: checkinType,
     content: `${manual_prefix || ''}${buildCheckinContent(station.callsign, metadata)}`,
     timestamp,
     metadata,

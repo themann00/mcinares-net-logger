@@ -226,7 +226,12 @@ export default function ReportPage() {
   const duration = openedAt && closedAt
     ? `${differenceInMinutes(closedAt, openedAt)} minutes`
     : 'Net still open'
-  const nc = derived.netController || net.net_controller
+  // Handoffs mid-net: opened-by from the net_open entry, final NC from the
+  // net record. Shown as "opener → final" when they differ.
+  const openerNc = derived.netController || net.net_controller
+  const nc = openerNc.toUpperCase() !== net.net_controller.toUpperCase()
+    ? `${openerNc} → ${net.net_controller}`
+    : openerNc
   const altNc = derived.altNc
   const liaison = derived.liaison
 

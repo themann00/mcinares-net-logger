@@ -164,12 +164,23 @@ At this time are there any reports that meet these criteria?`
     id: 'closing',
     title: 'Closing',
     type: 'closenet',
-    script: (ctx: NetContext) =>
-      `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn Severe Weather net. At this time we are closing the net and would like to thank all amateurs who have participated today.
+    script: (ctx: NetContext) => {
+      const bulletinLine = ctx.nws_bulletin
+        ? `Here is the current information from the National Weather Service:\n  [${ctx.nws_bulletin}]`
+        : '[Read any NWS bulletin or watch still in effect, if applicable]'
+      const statsLine =
+        ctx.station_count !== undefined
+          ? `During this net we had ${ctx.station_count} station${ctx.station_count === 1 ? '' : 's'} check in and took ${ctx.report_count ?? 0} weather report${ctx.report_count === 1 ? '' : 's'}.`
+          : ''
 
-[Read any NWS bulletin or watch still in effect, if applicable]
+      return `Attention all stations, Attention all stations, this is ${ctx.net_controller} net control for the Marion County Skywarn Severe Weather net. At this time we are closing the net and would like to thank all amateurs who have participated today.
 
-We would like to also thank the Central Indiana Repeater Club, and KM9E repeater for the use of the repeaters for this net. This net is now closed at ______ local time. This is ${ctx.net_controller} clear.`,
+${bulletinLine}
+
+${statsLine}
+
+We would like to also thank the Central Indiana Repeater Club, and KM9E repeater for the use of the repeaters for this net. This net is now closed at ${ctx.now_local || '______'} local time. This is ${ctx.net_controller} clear.`
+    },
     notes: 'unlink-hint',
   },
 ]

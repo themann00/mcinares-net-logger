@@ -49,6 +49,8 @@ import type { Net, NetConfig, DerivedStation, LogEntry, NetContext } from '@/typ
 import { deriveStations, deriveNetContext } from '@/lib/deriveStations'
 import type { SirenListItem } from '@/lib/sirenClient'
 import { useAppState } from '@/components/AppContext'
+import { getBrowserSupabase } from '@/lib/supabaseBrowser'
+import { CallsignAutocomplete } from '@/components/CallsignAutocomplete'
 
 type TabId = 'checkin' | 'report' | 'stations' | 'traffic' | 'log'
 
@@ -63,7 +65,7 @@ const INPUT_FIELD_LOG: Record<string, { entryType: 'alt_nc' | 'liaison'; prefix:
 }
 
 export default function NetPage() {
-  const { appNow } = useAppState()
+  const { appNow, deviceCallsign, setDeviceCallsign } = useAppState()
   const params = useParams()
   const router = useRouter()
   const netId = params.id as string
@@ -90,6 +92,17 @@ export default function NetPage() {
   const [sirenResetConfirm, setSirenResetConfirm] = useState(false)
   const [sirenBusy, setSirenBusy] = useState(false)
   const [sirens, setSirens] = useState<SirenListItem[]>([])
+  const [operatingPromptOpen, setOperatingPromptOpen] = useState(false)
+  const [operatingDraft, setOperatingDraft] = useState('')
+  const [transferOpen, setTransferOpen] = useState(false)
+  const [transferTarget, setTransferTarget] = useState('')
+  const [takeConfirmOpen, setTakeConfirmOpen] = useState(false)
+  const [transferBusy, setTransferBusy] = useState(false)
+  const [qsyOpen, setQsyOpen] = useState(false)
+  const [qsyText, setQsyText] = useState('')
+  // A manual tab pick suppresses exactly the next section-change auto-switch,
+  // so the operator's choice isn't yanked away mid-task.
+  const userPickedTabRef = useRef(false)
 
   const stations: DerivedStation[] = useMemo(() => deriveStations(logEntries), [logEntries])
 
@@ -129,6 +142,15 @@ export default function NetPage() {
     liaison: derivedCtx?.liaison,
     weather_status: weatherStatus,
     nws_bulletin: bulletin || null,
+    station_count: stations.length,
+    report_count: logEntries.filter(e => e.entry_type === 'report').length,
+    traffic_count: logEntries.filter(e => e.entry_type === 'traffic').length,
+    // Station announcements only — the NC's "read the weekly announcements"
+    // entry is part of every net, not a count-worthy announcement.
+    announcement_count: logEntries.filter(
+      e => e.entry_type === 'announcement' && !e.content.includes('prepared weekly announcements')
+    ).length,
+    now_local: format(appNow(), 'HH:mm'),
   }
 
   const fetchAll = useCallback(async () => {
@@ -156,6 +178,30 @@ export default function NetPage() {
     fetchAll()
   }, [fetchAll])
 
+  // Live multi-device sync: subscribe to this net's rows and refetch on any
+  // change another device makes. Debounced so a burst of inserts (queue
+  // commit) triggers one refetch. Falls back silently to manual-refresh
+  // behavior when the browser client is unavailable.
+  useEffect(() => {
+    const sb = getBrowserSupabase()
+    if (!sb) return
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const refresh = () => {
+      if (timer) clearTimeout(timer)
+      timer = setTimeout(() => fetchAll(), 400)
+    }
+    const channel = sb
+      .channel(`net-${netId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mcinares_log_entries', filter: `net_id=eq.${netId}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mcinares_checkin_queue', filter: `net_id=eq.${netId}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'mcinares_nets', filter: `id=eq.${netId}` }, refresh)
+      .subscribe()
+    return () => {
+      if (timer) clearTimeout(timer)
+      sb.removeChannel(channel)
+    }
+  }, [netId, fetchAll])
+
   // Live elapsed timer - derive started_at from first net_open log entry
   const startedAt = derivedCtx?.started_at ?? null
   useEffect(() => {
@@ -169,10 +215,21 @@ export default function NetPage() {
   useEffect(() => {
     const id = section?.id
     if (!id) return
+    if (userPickedTabRef.current) {
+      userPickedTabRef.current = false
+      return
+    }
     if (id === 'initial_reports' || id === 'continuity' || id === 'post_siren') setActiveTab('report')
     else if (id === 'reports_and_circleback') setActiveTab('stations')
     else if (id.startsWith('checkin_') || id === 'preamble' || id === 'additional_checkins') setActiveTab('checkin')
   }, [section?.id])
+
+  // Ask once per device who is operating it; skippable for pure watchers.
+  useEffect(() => {
+    if (!net || deviceCallsign) return
+    if (sessionStorage.getItem('operatingSkip') === '1') return
+    setOperatingPromptOpen(true)
+  }, [net, deviceCallsign])
 
   const loggedInputs = useMemo(() => {
     const map: Record<string, { entryId: string; value: string }> = {}
@@ -283,6 +340,7 @@ export default function NetPage() {
       trafficTimestamp: entry.trafficTimestamp,
       announcementTimestamp: entry.announcementTimestamp,
       forceManual: entry.forceManual,
+      late: section?.id === 'late_checkins' || undefined,
     }
     // Optimistic append with a temporary id; swap in the DB row id when the
     // insert lands so later edits/deletes address the right row.
@@ -366,6 +424,7 @@ export default function NetPage() {
             has_announcements: evt.item.hasAnnouncement,
             checked_in_at: evt.timestamp,
             manual_prefix: evt.item.forceManual ? 'MANUAL: ' : '',
+            entry_type: evt.item.late ? 'late_checkin' : undefined,
           }),
         })
         if (res.ok) {
@@ -443,6 +502,72 @@ export default function NetPage() {
     fetchAll()
   }
 
+  // Skywarn NC handoff: PATCH the net record, log the handoff, and make sure
+  // the incoming NC is checked in. Scripts pick up the new callsign from the
+  // net record; other devices see it via realtime.
+  async function transferNetControl(to: string) {
+    if (!net) return
+    const target = to.toUpperCase().trim()
+    if (!target || target === net.net_controller.toUpperCase()) return
+    setTransferBusy(true)
+    const from = net.net_controller
+    await fetch(`/api/nets/${netId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ net_controller: target }),
+    })
+    await fetch(`/api/nets/${netId}/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entry_type: 'note',
+        content: `Net control transferred from ${from} to ${target}`,
+        callsign: target,
+        metadata: { nc_handoff: { from, to: target } },
+      }),
+    })
+    if (!stations.some(s => s.callsign.toUpperCase() === target)) {
+      await fetch(`/api/nets/${netId}/checkin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ callsign: target }),
+      })
+    }
+    setTransferBusy(false)
+    setTransferOpen(false)
+    setTakeConfirmOpen(false)
+    setTransferTarget('')
+    fetchAll()
+  }
+
+  async function logQsy() {
+    if (!qsyText.trim()) return
+    await fetch(`/api/nets/${netId}/log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        entry_type: 'note',
+        content: `QSY: net moving to ${qsyText.trim()}`,
+        metadata: { qsy: true },
+      }),
+    })
+    setQsyOpen(false)
+    setQsyText('')
+    fetchAll()
+  }
+
+  function openQsy() {
+    if (!net) return
+    setQsyText(
+      net.type === 'ares'
+        ? '147.120 MHz repeater (88.5 PL)'
+        : net.type === 'skywarn'
+        ? '443.250 repeater (100 PL)'
+        : ''
+    )
+    setQsyOpen(true)
+  }
+
   async function closeNet() {
     if (!net) return
     setClosing(true)
@@ -471,6 +596,7 @@ export default function NetPage() {
     )
   }
 
+  const isNC = !!deviceCallsign && deviceCallsign === net.net_controller.toUpperCase()
   const baseStations = stations.filter(s => s.station_type === 'base').length
   const mobileStations = stations.filter(s => s.station_type === 'mobile').length
   const reportEntries = logEntries.filter(e => e.entry_type === 'report').length
@@ -619,9 +745,49 @@ export default function NetPage() {
             )}
             <span className="text-fg font-semibold truncate">{net.net_controller}</span>
             <span className="text-fg-4 text-sm hidden sm:block">NC</span>
+            <button
+              onClick={() => { setOperatingDraft(deviceCallsign); setOperatingPromptOpen(true) }}
+              className="text-xs px-2 py-1 rounded border border-surface-3 bg-surface-2 text-fg-3 hover:text-fg-1 hidden sm:block"
+              title="Who is operating this device"
+            >
+              {deviceCallsign ? `You: ${deviceCallsign}${isNC ? ' (NC)' : ''}` : 'Set operator'}
+            </button>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
+            {net.type === 'skywarn' && !net.closed && (
+              isNC ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setTransferTarget(''); setTransferOpen(true) }}
+                  className="border-orange-700 bg-orange-950/40 text-orange-300 hover:bg-orange-900/50 hover:text-orange-200"
+                >
+                  Transfer NC
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (!deviceCallsign) { setOperatingDraft(''); setOperatingPromptOpen(true); return }
+                    setTakeConfirmOpen(true)
+                  }}
+                  className="border-orange-700 bg-orange-950/40 text-orange-300 hover:bg-orange-900/50 hover:text-orange-200"
+                >
+                  Take Net Control
+                </Button>
+              )
+            )}
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={openQsy}
+              className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg hidden sm:inline-flex"
+              title="Log a frequency/repeater change"
+            >
+              QSY
+            </Button>
             {elapsed && (
               <span className="text-fg-3 text-sm hidden md:block">
                 Open: {elapsed}
@@ -699,7 +865,11 @@ export default function NetPage() {
                 nws_bulletin: config.bulletin || null,
               })
               if (logEntries.length === 0) {
-                await fetch(`/api/nets/${netId}/start`, { method: 'POST' })
+                await fetch(`/api/nets/${netId}/start`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ nc_quadrant: config.ncQuadrant || null }),
+                })
                 await fetchAll()
               }
               setSetupComplete(true)
@@ -1035,7 +1205,7 @@ export default function NetPage() {
               .map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => { userPickedTabRef.current = true; setActiveTab(tab.id) }}
                   className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-medium whitespace-nowrap border-b-2 transition-colors ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-fg'
@@ -1086,6 +1256,7 @@ export default function NetPage() {
                     showTrafficInputs={
                       net.type === 'ares' && section.id === 'short_time'
                     }
+                    late={net.type === 'ares' && section.id === 'late_checkins'}
                     roster={roster}
                     currentStations={stations}
                     onQueue={useQueue ? addToQueue : undefined}
@@ -1226,6 +1397,150 @@ export default function NetPage() {
                 className="bg-red-700 hover:bg-red-600"
               >
                 {sirenBusy ? 'Removing...' : 'Yes, Remove Entries'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {operatingPromptOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-fg font-semibold">Who is operating this device?</h3>
+            <p className="text-fg-3 text-sm">
+              Remembered on this device. Lets the app tell net control apart from stations watching along.
+            </p>
+            <CallsignAutocomplete
+              value={operatingDraft}
+              onChange={setOperatingDraft}
+              onSelect={s => setOperatingDraft(s.callsign)}
+              roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
+              placeholder="Your callsign"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  sessionStorage.setItem('operatingSkip', '1')
+                  setOperatingPromptOpen(false)
+                }}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+              >
+                Skip — just watching
+              </Button>
+              <Button
+                size="sm"
+                disabled={!operatingDraft.trim()}
+                onClick={() => {
+                  setDeviceCallsign(operatingDraft)
+                  setOperatingPromptOpen(false)
+                }}
+                className="bg-blue-700 hover:bg-blue-600"
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {transferOpen && net && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-fg font-semibold">Transfer Net Control</h3>
+            <p className="text-fg-3 text-sm">
+              Hands the net from {net.net_controller} to the callsign below. All scripts switch to the new NC and the handoff is logged.
+            </p>
+            <CallsignAutocomplete
+              value={transferTarget}
+              onChange={setTransferTarget}
+              onSelect={s => setTransferTarget(s.callsign)}
+              stations={stations.map(s => ({ callsign: s.callsign, first_name: s.first_name, last_name: s.last_name, source: 'station' as const }))}
+              roster={roster.map(r => ({ ...r, source: 'roster' as const }))}
+              placeholder="New NC callsign"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setTransferOpen(false)}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={transferBusy || !transferTarget.trim()}
+                onClick={() => transferNetControl(transferTarget)}
+                className="bg-orange-700 hover:bg-orange-600"
+              >
+                {transferBusy ? 'Transferring...' : 'Transfer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {takeConfirmOpen && net && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-fg font-semibold">Take Net Control</h3>
+            <p className="text-fg-2 text-sm">
+              Take over as net control from {net.net_controller}, operating as {deviceCallsign}? The handoff is logged and scripts switch to your callsign.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setTakeConfirmOpen(false)}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={transferBusy}
+                onClick={() => transferNetControl(deviceCallsign)}
+                className="bg-orange-700 hover:bg-orange-600"
+              >
+                {transferBusy ? 'Taking over...' : 'Yes, Take Net Control'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qsyOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-surface-1 border border-surface-3 rounded-xl w-full max-w-sm p-5 space-y-4">
+            <h3 className="text-fg font-semibold">Log QSY</h3>
+            <p className="text-fg-3 text-sm">Repeater failure or frequency change. Logs where the net is moving.</p>
+            <Input
+              value={qsyText}
+              onChange={e => setQsyText(e.target.value)}
+              placeholder="e.g. 147.120 MHz repeater (88.5 PL)"
+              className="bg-surface-2 border-surface-3 text-fg"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setQsyOpen(false)}
+                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!qsyText.trim()}
+                onClick={logQsy}
+                className="bg-blue-700 hover:bg-blue-600"
+              >
+                Log QSY
               </Button>
             </div>
           </div>

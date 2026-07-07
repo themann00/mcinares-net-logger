@@ -33,6 +33,8 @@ interface CheckinFormProps {
   defaultQuadrant?: Quadrant | ''
   callsignOnly?: boolean
   showTrafficInputs?: boolean
+  /** Log as late_checkin instead of checkin (ARES late check-ins section) */
+  late?: boolean
   roster?: RosterEntry[]
   currentStations?: { callsign: string }[]
   onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) => void
@@ -47,6 +49,7 @@ export function CheckinForm({
   defaultQuadrant = '',
   callsignOnly = false,
   showTrafficInputs = false,
+  late = false,
   roster = [],
   currentStations = [],
   onQueue,
@@ -81,6 +84,17 @@ export function CheckinForm({
 
   const isAres = netType === 'ares'
   const isSkywarn = netType === 'skywarn'
+
+  // First check-in on record: callsign looks complete and the roster (which
+  // accumulates every station ever checked in) has never seen it. Informational
+  // only — the roster is still being built, so no action required.
+  const cs_ = callsign.trim().toUpperCase()
+  const looksLikeCallsign = /^[A-Z]{1,2}\d[A-Z]{1,4}$/.test(cs_)
+  const isFirstTimer =
+    looksLikeCallsign &&
+    roster.length > 0 &&
+    !roster.some(r => r.callsign.toUpperCase() === cs_) &&
+    !currentStations.some(s => s.callsign.toUpperCase() === cs_)
 
   function resetForm() {
     setCallsignRaw('')
@@ -153,6 +167,7 @@ export function CheckinForm({
           has_traffic: hasTraffic,
           has_announcements: hasAnnouncement,
           report: report.trim() || undefined,
+          entry_type: late ? 'late_checkin' : undefined,
         }),
       })
       if (!res.ok) {
@@ -222,6 +237,11 @@ export function CheckinForm({
             autoFocus
             onEnter={fastSubmit ? () => formRef.current?.requestSubmit() : undefined}
           />
+          {isFirstTimer && (
+            <p className="text-amber-400/90 text-xs mt-1">
+              NEW — first check-in on record. Grab their name if you can.
+            </p>
+          )}
         </div>
         {!callsignOnly && (netType === 'skywarn' || netType === 'siren') && (
           <div className="w-32">

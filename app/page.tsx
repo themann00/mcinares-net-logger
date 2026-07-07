@@ -280,6 +280,29 @@ export default function HomePage() {
             </div>
           </div>
 
+          {selectedNet && (() => {
+            const dupe = openNets.find(n => n.type === selectedNet && !n.testing && !testingMode)
+            if (!dupe) return null
+            return (
+              <div className="flex items-start gap-3 bg-amber-950/40 border border-amber-700 rounded-xl p-4">
+                <AlertTriangle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="text-sm space-y-2">
+                  <p className="text-amber-300">
+                    A {NET_TYPES.find(n => n.type === selectedNet)?.label} is already open
+                    (NC {dupe.net_controller}, started {new Date(dupe.created_at).toLocaleTimeString()}).
+                    Opening another creates a second live net.
+                  </p>
+                  <button
+                    onClick={() => router.push(`/net/${dupe.id}`)}
+                    className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                  >
+                    Resume the open net instead
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
+
           {selectedNet && (
             <form onSubmit={handleStartNet} className="space-y-4">
               <div>

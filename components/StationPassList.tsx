@@ -3,8 +3,18 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { X, Check } from 'lucide-react'
 import type { Station, LogEntry } from '@/types'
+
+export const TRAFFIC_PRECEDENCE = ['Routine', 'Welfare', 'Priority', 'Emergency'] as const
 
 interface StationPassListProps {
   netId: string
@@ -12,11 +22,15 @@ interface StationPassListProps {
   stations: Station[]
   logEntries: LogEntry[]
   onUpdate: () => void
+  /** Formal NTS mode: precedence + destination fields on traffic entries */
+  formal?: boolean
 }
 
 interface DraftState {
   text: string
   cancelled: boolean
+  precedence?: string
+  destination?: string
 }
 
 type Drafts = Record<string, DraftState>
@@ -26,7 +40,7 @@ type Drafts = Record<string, DraftState>
 // and logged status comes from the log entries themselves. Only unsaved
 // drafts live in state, mirrored to sessionStorage so stepping to another
 // section and back does not lose typed summaries.
-export function StationPassList({ netId, flag, stations, logEntries, onUpdate }: StationPassListProps) {
+export function StationPassList({ netId, flag, stations, logEntries, onUpdate, formal = false }: StationPassListProps) {
   const storageKey = `net-${netId}-${flag}-drafts`
 
   const [drafts, setDrafts] = useState<Drafts>(() => {
@@ -64,13 +78,21 @@ export function StationPassList({ netId, flag, stations, logEntries, onUpdate }:
     const state = draftFor(station.callsign)
     if (!state.text.trim()) return
 
+    const isFormalTraffic = formal && flag === 'traffic'
+    const precedence = isFormalTraffic ? state.precedence || 'Routine' : undefined
+    const destination = isFormalTraffic ? state.destination?.trim() : undefined
+    const formalPrefix = isFormalTraffic
+      ? `[${precedence!.toUpperCase()}] ${destination ? `for ${destination} — ` : ''}`
+      : ''
+
     await fetch(`/api/nets/${netId}/log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entry_type: flag,
-        content: `${station.callsign}: ${state.text.trim()}`,
+        content: `${station.callsign}: ${formalPrefix}${state.text.trim()}`,
         callsign: station.callsign,
+        metadata: isFormalTraffic ? { precedence, destination: destination || null } : undefined,
       }),
     })
 
@@ -136,6 +158,31 @@ export function StationPassList({ netId, flag, stations, logEntries, onUpdate }:
                 No {flag}
               </button>
             </div>
+            {formal && flag === 'traffic' && (
+              <div className="flex gap-2">
+                <div className="w-36">
+                  <Select
+                    value={state.precedence || 'Routine'}
+                    onValueChange={v => updateDrafts({ ...drafts, [station.callsign]: { ...state, precedence: v || 'Routine' } })}
+                  >
+                    <SelectTrigger className="bg-surface-1 border-surface-3 text-fg">
+                      <SelectValue placeholder="Precedence" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-surface-2 border-surface-3">
+                      {TRAFFIC_PRECEDENCE.map(p => (
+                        <SelectItem key={p} value={p} className="text-fg">{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Input
+                  value={state.destination || ''}
+                  onChange={e => updateDrafts({ ...drafts, [station.callsign]: { ...state, destination: e.target.value } })}
+                  placeholder="For / destination (optional)"
+                  className="bg-surface-1 border-surface-3 text-fg flex-1"
+                />
+              </div>
+            )}
             <Textarea
               value={state.text}
               onChange={e => updateDrafts({ ...drafts, [station.callsign]: { ...state, text: e.target.value } })}

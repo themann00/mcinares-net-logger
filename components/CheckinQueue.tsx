@@ -43,6 +43,8 @@ export interface QueuedCheckin {
   trafficTimestamp?: string
   announcementTimestamp?: string
   forceManual?: boolean
+  /** Queued during the late check-ins section; commits as late_checkin */
+  late?: boolean
 }
 
 interface CheckinQueueProps {

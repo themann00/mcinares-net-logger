@@ -5,8 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ChevronRight, FileText, Info } from 'lucide-react'
 
+const QUADRANTS = [
+  { value: 'SW', label: 'SW — S of Washington, W of Meridian' },
+  { value: 'NW', label: 'NW — N of Washington, W of Meridian' },
+  { value: 'NE', label: 'NE — N of Washington, E of Meridian' },
+  { value: 'SE', label: 'SE — S of Washington, E of Meridian' },
+] as const
+
 interface SetupSkywarnProps {
-  onComplete: (config: { weatherStatus: 'approaching' | 'imminent' | null; bulletin: string }) => void
+  onComplete: (config: { weatherStatus: 'approaching' | 'imminent' | null; bulletin: string; ncQuadrant: string }) => void
   initialWeatherStatus?: 'approaching' | 'imminent' | null
   initialBulletin?: string
   isResuming?: boolean
@@ -15,6 +22,7 @@ interface SetupSkywarnProps {
 export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialBulletin = '', isResuming = false }: SetupSkywarnProps) {
   const [weatherStatus, setWeatherStatus] = useState<'approaching' | 'imminent' | null>(initialWeatherStatus)
   const [bulletin, setBulletin] = useState(initialBulletin)
+  const [ncQuadrant, setNcQuadrant] = useState('')
 
   return (
     <div className="space-y-4">
@@ -53,6 +61,28 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
         </div>
       </div>
 
+      {!isResuming && (
+        <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-3">
+          <h3 className="text-fg font-semibold">Your Quadrant</h3>
+          <p className="text-fg-3 text-sm">Where is net control operating from? Keeps you out of the Unknown group on the station list.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {QUADRANTS.map(q => (
+              <button
+                key={q.value}
+                onClick={() => setNcQuadrant(ncQuadrant === q.value ? '' : q.value)}
+                className={`px-3 py-2 rounded-lg text-sm text-left transition-colors ${
+                  ncQuadrant === q.value
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-surface-2 text-fg-3 hover:text-fg-1 border border-surface-3'
+                }`}
+              >
+                {q.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="bg-surface-1 rounded-xl border border-surface-3 p-5 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-fg font-semibold">NWS Bulletin</h3>
@@ -87,7 +117,7 @@ export function SetupSkywarn({ onComplete, initialWeatherStatus = null, initialB
       </div>
 
       <Button
-        onClick={() => onComplete({ weatherStatus, bulletin: bulletin.trim() })}
+        onClick={() => onComplete({ weatherStatus, bulletin: bulletin.trim(), ncQuadrant })}
         className="w-full bg-blue-700 hover:bg-blue-600 text-lg py-6 gap-2"
       >
         {isResuming ? 'Resume Net' : 'Start Net'}

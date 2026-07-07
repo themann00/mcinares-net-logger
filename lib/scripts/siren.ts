@@ -46,9 +46,17 @@ Log reports using the Report tab.
     id: 'closing',
     title: 'Closing',
     type: 'closenet',
-    script: (ctx: NetContext) =>
-      `This is ${ctx.net_controller} net control for the Marion County Siren Test Net. At this time we are closing the net and would like to thank all amateurs who have participated today.
+    script: (ctx: NetContext) => {
+      const statsLine =
+        ctx.station_count !== undefined
+          ? `During this net we had ${ctx.station_count} station${ctx.station_count === 1 ? '' : 's'} check in and took ${ctx.report_count ?? 0} siren report${ctx.report_count === 1 ? '' : 's'}.`
+          : ''
 
-We would like to also thank the Indianapolis Repeater Association for the use of the repeater. This net is now closed at ______ local time. This is ${ctx.net_controller} clear.`,
+      return `This is ${ctx.net_controller} net control for the Marion County Siren Test Net. At this time we are closing the net and would like to thank all amateurs who have participated today.
+
+${statsLine}
+
+We would like to also thank the Indianapolis Repeater Association for the use of the repeater. This net is now closed at ${ctx.now_local || '______'} local time. This is ${ctx.net_controller} clear.`
+    },
   },
 ]

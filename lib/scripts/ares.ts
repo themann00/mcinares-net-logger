@@ -175,10 +175,18 @@ At this time if your callsign suffix matches Alpha through Hotel, A thru H, plea
     id: 'closing',
     title: 'Closing',
     type: 'closenet',
-    script: (ctx: NetContext) =>
-      `I will now close the net by thanking the Indianapolis Repeater Association for the use of the repeater. I also would like to thank${ctx.alt_net_controller ? ` my alternate net control, ${ctx.alt_net_controller}${ctx.liaison ? ` and our OES station/NTS Liaison ${ctx.liaison},` : ','} as well as` : ''} all of you who participated tonight. We look forward to hearing from you again next week.
+    script: (ctx: NetContext) => {
+      const statsLine =
+        ctx.station_count !== undefined
+          ? `Tonight we had ${ctx.station_count} station${ctx.station_count === 1 ? '' : 's'} check in, with ${ctx.traffic_count ?? 0} piece${ctx.traffic_count === 1 ? '' : 's'} of traffic and ${ctx.announcement_count ?? 0} announcement${ctx.announcement_count === 1 ? '' : 's'}.`
+          : ''
 
-This is ${ctx.net_controller} saying "73" and the frequency is now being returned to normal amateur radio use.`,
+      return `I will now close the net by thanking the Indianapolis Repeater Association for the use of the repeater. I also would like to thank${ctx.alt_net_controller ? ` my alternate net control, ${ctx.alt_net_controller}${ctx.liaison ? ` and our OES station/NTS Liaison ${ctx.liaison},` : ','} as well as` : ''} all of you who participated tonight. We look forward to hearing from you again next week.
+
+${statsLine}
+
+The net is closing at ${ctx.now_local || '______'} local time. This is ${ctx.net_controller} saying "73" and the frequency is now being returned to normal amateur radio use.`
+    },
     notes: 'repeater-hint',
   },
 ]
