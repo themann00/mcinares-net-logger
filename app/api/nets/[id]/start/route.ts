@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabase } from '@/lib/supabase'
+import { resolveStation } from '@/lib/station'
 import { requestNow } from '@/lib/serverTime'
 
 export async function POST(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -37,8 +38,20 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     metadata: { net_controller: net.net_controller },
   })
 
+  // Link the NC's check-in to the roster like every other check-in, so their
+  // name flows into station lists and exports. resolveStation stamps rows it
+  // creates with this net's id, and testing-net deletion cleans those up.
+  let ncStationId: string | null = null
+  try {
+    const station = await resolveStation(db, net.net_controller, { netId: id })
+    ncStationId = station.id
+  } catch {
+    // roster resolution failing shouldn't block the net from opening
+  }
+
   await db.from('mcinares_log_entries').insert({
     net_id: id,
+    ...(ncStationId ? { station_id: ncStationId } : {}),
     entry_type: 'checkin',
     content: `${net.net_controller} checked in (net control)`,
     timestamp: checkinTime.toISOString(),
@@ -49,14 +62,6 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
       ...(ncQuadrant ? { quadrant: ncQuadrant } : {}),
     },
   })
-
-  // Testing nets stay ephemeral: don't register the controller's callsign.
-  if (!net.testing) {
-    await db.from('mcinares_roster').upsert(
-      { callsign: net.net_controller },
-      { onConflict: 'callsign', ignoreDuplicates: true }
-    )
-  }
 
   return NextResponse.json({ ok: true })
 }
