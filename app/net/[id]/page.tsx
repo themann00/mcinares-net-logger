@@ -224,12 +224,24 @@ export default function NetPage() {
     else if (id.startsWith('checkin_') || id === 'preamble' || id === 'additional_checkins') setActiveTab('checkin')
   }, [section?.id])
 
-  // Ask once per device who is operating it; skippable for pure watchers.
+  // Ask once per device who is operating it. When this device just opened
+  // the net from the home page, prefill the NC callsign; on a resume or any
+  // other path the field starts blank.
   useEffect(() => {
     if (!net || deviceCallsign) return
-    if (sessionStorage.getItem('operatingSkip') === '1') return
+    try {
+      const raw = sessionStorage.getItem('justOpenedNet')
+      if (raw) {
+        const just = JSON.parse(raw) as { id: string; nc: string }
+        if (just.id === netId && just.nc) {
+          setOperatingDraft(just.nc)
+        }
+        sessionStorage.removeItem('justOpenedNet')
+      }
+    } catch {}
     setOperatingPromptOpen(true)
-  }, [net, deviceCallsign])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [net, deviceCallsign, netId])
 
   const loggedInputs = useMemo(() => {
     const map: Record<string, { entryId: string; value: string }> = {}
@@ -1420,17 +1432,16 @@ export default function NetPage() {
               autoFocus
             />
             <div className="flex gap-2 justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  sessionStorage.setItem('operatingSkip', '1')
-                  setOperatingPromptOpen(false)
-                }}
-                className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
-              >
-                Skip — just watching
-              </Button>
+              {deviceCallsign && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setOperatingPromptOpen(false)}
+                  className="border-surface-4 bg-surface-2 text-fg-1 hover:bg-surface-3 hover:text-fg"
+                >
+                  Cancel
+                </Button>
+              )}
               <Button
                 size="sm"
                 disabled={!operatingDraft.trim()}

@@ -137,6 +137,11 @@ export default function HomePage() {
       }
       const net = await res.json()
       if (!res.ok) throw new Error(net.error || 'Failed to create net')
+      // The net page prefills its "who is operating" prompt with the NC
+      // callsign only when this device just opened the net.
+      try {
+        sessionStorage.setItem('justOpenedNet', JSON.stringify({ id: net.id, nc: net.net_controller }))
+      } catch {}
       router.push(`/net/${net.id}`)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error starting net')
