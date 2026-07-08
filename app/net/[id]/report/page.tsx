@@ -121,6 +121,30 @@ function getSuffix(cs: string) {
   return m ? m[1] : cs
 }
 
+/** "KD9ABC" -> ["KD9", "ABC"]; falls back to everything in the suffix cell */
+function splitCallsign(cs: string): [string, string] {
+  const m = cs.match(/^(.*\d)([A-Z]+)$/)
+  return m ? [m[1], m[2]] : ['', cs]
+}
+
+/** mm_dd_yyyy prefix + per-net-type name, per the club's file conventions */
+function exportBaseName(netType: string, openedAt: Date | null): string {
+  const d = openedAt || new Date()
+  const date = `${String(d.getMonth() + 1).padStart(2, '0')}_${String(d.getDate()).padStart(2, '0')}_${d.getFullYear()}`
+  if (netType === 'ares') return `${date} CheckinList`
+  if (netType === 'skywarn') return `${date} SKYWARN Net`
+  return `${date} SIREN TEST NET`
+}
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 function parseCallsignFromLog(content: string): string {
   const m = content.match(/^(?:MANUAL:\s*)?([A-Z0-9/]+)\s/)
   return m ? m[1] : ''
@@ -232,6 +256,36 @@ export default function ReportPage() {
   const nc = openerNc.toUpperCase() !== net.net_controller.toUpperCase()
     ? `${openerNc} → ${net.net_controller}`
     : openerNc
+
+  // Extra derivations for the exports: stations with names in suffix order,
+  // the specific liaison roles, and per-type entry counts.
+  const checkinStations = (() => {
+    const seen = new Set<string>()
+    const list: { callsign: string; first_name: string }[] = []
+    for (const e of log) {
+      if (e.entry_type !== 'checkin' && e.entry_type !== 'late_checkin') continue
+      const meta = e.metadata as Record<string, unknown> | null
+      const cs = e.station?.callsign || (typeof meta?.callsign === 'string' ? meta.callsign : parseCallsignFromLog(e.content))
+      if (!cs || seen.has(cs)) continue
+      seen.add(cs)
+      const metaFirst = typeof meta?.first_name === 'string' ? meta.first_name : ''
+      list.push({ callsign: cs, first_name: e.station?.first_name || metaFirst })
+    }
+    return list.sort((a, b) => getSuffix(a.callsign).localeCompare(getSuffix(b.callsign)))
+  })()
+
+  const liaisonValue = (prefix: string) => {
+    const e = log.find(x => x.entry_type === 'liaison' && x.content.toUpperCase().startsWith(prefix.toUpperCase()))
+    return e ? e.content.slice(prefix.length).trim() : ''
+  }
+  const ntsLiaison = liaisonValue('NTS Liaison:')
+  const oesStation = liaisonValue('OES Station:')
+  const questionCount = log.filter(e => e.content.includes('[Question]')).length
+  const commentCount = log.filter(e => e.content.includes('[Comment]')).length
+  const trafficHandled = log.filter(e => e.entry_type === 'traffic').length
+  const announcementCount = log.filter(
+    e => e.entry_type === 'announcement' && !e.content.includes('prepared weekly announcements')
+  ).length
   const altNc = derived.altNc
   const liaison = derived.liaison
 
@@ -291,18 +345,201 @@ export default function ReportPage() {
     ]
 
     const csv = summary.join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `net-log-${netId.slice(0, 8)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    saveBlob(new Blob([csv], { type: 'text/csv' }), `net-log-${netId.slice(0, 8)}.csv`)
+  }
+
+  // True PDF export (no print dialog), named by the club's file conventions.
+  async function downloadPdf() {
+    if (!net) return
+    const { jsPDF } = await import('jspdf')
+    const { default: autoTable } = await import('jspdf-autotable')
+    const doc = new jsPDF({ unit: 'pt', format: 'letter' })
+    const left = 54
+    const lastY = () => (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY
+
+    let y = 60
+    doc.setFontSize(18)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Net Summary Report', left, y)
+    y += 20
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(NET_LABELS[net.type] || net.type, left, y)
+    y += 15
+    doc.setFontSize(9)
+    doc.setTextColor(120)
+    doc.text(`Generated ${format(new Date(), 'MMMM d, yyyy HH:mm')}`, left, y)
+    doc.setTextColor(0)
+    y += 8
+
+    const summaryRows: string[][] = [
+      ['Net Controller', nc],
+      ...(altNc ? [['Alternate Net Control', altNc]] : []),
+      ...(liaison ? [['Liaison', liaison]] : []),
+      ['Net Opened', openedAt ? format(openedAt, 'MMMM d, yyyy HH:mm') : 'N/A'],
+      ['Net Closed', closedAt ? format(closedAt, 'MMMM d, yyyy HH:mm') : 'Still open'],
+      ['Duration', duration],
+      ['Total Unique Stations', String(derived.totalStations)],
+      ...(net.type !== 'ares' ? [['Base / Mobile', `${derived.baseCount} / ${derived.mobileCount}`]] : []),
+      ...(net.type === 'ares' ? [['Traffic / Announcements', `${trafficHandled} / ${announcementCount}`]] : []),
+      ...(net.type !== 'ares'
+        ? [[net.type === 'siren' ? 'Siren Reports' : 'Weather Reports', String(derived.reportCount)]]
+        : []),
+    ]
+    autoTable(doc, {
+      startY: y,
+      theme: 'plain',
+      styles: { fontSize: 10, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 170 } },
+      body: summaryRows,
+      margin: { left },
+    })
+    y = lastY() + 18
+
+    doc.setFontSize(11)
+    doc.setFont('helvetica', 'bold')
+    doc.text(`Stations Checked In (${derived.totalStations})`, left, y)
+    y += 6
+    const perCol = Math.ceil(derived.sortedCallsigns.length / 4) || 1
+    const stationRows: string[][] = []
+    for (let r = 0; r < perCol; r++) {
+      stationRows.push([0, 1, 2, 3].map(c => derived.sortedCallsigns[c * perCol + r] || ''))
+    }
+    autoTable(doc, {
+      startY: y,
+      theme: 'plain',
+      styles: { fontSize: 10, font: 'courier', cellPadding: 3 },
+      body: stationRows,
+      margin: { left },
+    })
+    y = lastY() + 18
+
+    if (sirenReports.length > 0) {
+      doc.setFontSize(11)
+      doc.text(`Siren Reports (${sirenReports.length})`, left, y)
+      y += 6
+      autoTable(doc, {
+        startY: y,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [240, 240, 240], textColor: 40 },
+        head: [['Siren', 'Sound', 'Rotation', 'Visual Insp.']],
+        body: sirenReports.map(r => [
+          r.siren,
+          ...[r.sound, r.rotation, r.visual].map(v => (v === true ? 'Yes' : v === false ? 'No' : '')),
+        ]),
+        margin: { left },
+      })
+      y = lastY() + 18
+    }
+
+    if (weatherReports.length > 0) {
+      doc.setFontSize(11)
+      doc.text(`Weather Reports (${weatherReports.length})`, left, y)
+      y += 6
+      autoTable(doc, {
+        startY: y,
+        theme: 'grid',
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [240, 240, 240], textColor: 40 },
+        head: [['Time', 'Callsign', 'Type', 'Report']],
+        body: weatherReports.map(r => [format(new Date(r.time), 'HH:mm:ss'), r.callsign, r.type, r.content]),
+        margin: { left },
+      })
+      y = lastY() + 18
+    }
+
+    doc.setFontSize(11)
+    doc.text(`Detailed Log (${log.length} entries)`, left, y)
+    y += 6
+    autoTable(doc, {
+      startY: y,
+      theme: 'grid',
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [240, 240, 240], textColor: 40 },
+      columnStyles: { 0: { cellWidth: 55 }, 1: { cellWidth: 90 } },
+      head: [['Time', 'Type', 'Entry']],
+      body: log.map(e => [
+        format(new Date(e.timestamp), 'HH:mm:ss'),
+        LOG_TYPE_LABELS[e.entry_type] || e.entry_type.toUpperCase(),
+        e.content,
+      ]),
+      margin: { left },
+    })
+
+    doc.save(`${exportBaseName(net.type, openedAt)}.pdf`)
+  }
+
+  // ARES check-in list workbook, matching the club's weekly spreadsheet:
+  // date, summary block, then the roster in two side-by-side blocks sorted
+  // by suffix with the callsign split prefix/suffix.
+  async function downloadXlsx() {
+    if (!net) return
+    const ExcelJS = await import('exceljs')
+    const wb = new ExcelJS.Workbook()
+    const ws = wb.addWorksheet('Sheet1')
+    ws.columns = [
+      { width: 5 }, { width: 8 }, { width: 8 }, { width: 18 },
+      { width: 5 }, { width: 8 }, { width: 8 }, { width: 18 }, { width: 5 },
+    ]
+
+    const d = openedAt || new Date(net.created_at)
+    const dateCell = ws.getCell('B1')
+    dateCell.value = `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`
+    dateCell.font = { bold: true }
+
+    const put = (labelCell: string, text: string, valueCell: string, value: string | number) => {
+      const l = ws.getCell(labelCell)
+      l.value = text
+      l.alignment = { horizontal: 'right' }
+      ws.getCell(valueCell).value = value
+    }
+    put('C3', 'Net Control', 'D3', openerNc)
+    put('C4', 'Alternate NC', 'D4', altNc || '')
+    put('C5', 'Check-ins', 'D5', checkinStations.length)
+    put('C6', 'Questions', 'D6', questionCount)
+    put('C7', 'Scout Check-ins', 'D7', 0)
+    put('G3', 'Announcements', 'H3', announcementCount)
+    put('G4', 'Time', 'H4', duration)
+    put('G5', 'Comments', 'H5', commentCount)
+    put('G6', 'Traffic Handled', 'H6', trafficHandled)
+    put('G7', 'NTS Liaison', 'H7', ntsLiaison || '')
+    put('G8', 'OES Check-in', 'H8', oesStation || 'none')
+
+    const startRow = 10
+    const half = Math.ceil(checkinStations.length / 2)
+    checkinStations.forEach((s, i) => {
+      const [prefix, suffix] = splitCallsign(s.callsign)
+      const row = startRow + (i % half)
+      const colOffset = i < half ? 0 : 4 // A..D left block, E..H right block
+      ws.getCell(row, 1 + colOffset).value = i + 1
+      const pre = ws.getCell(row, 2 + colOffset)
+      pre.value = prefix
+      pre.alignment = { horizontal: 'right' }
+      ws.getCell(row, 3 + colOffset).value = suffix
+      ws.getCell(row, 4 + colOffset).value = s.first_name
+    })
+
+    const buf = await wb.xlsx.writeBuffer()
+    saveBlob(
+      new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+      `${exportBaseName(net.type, openedAt)}.xlsx`
+    )
   }
 
   return (
     <div className="min-h-screen bg-gray-100 print:bg-white">
       <div className="bg-gray-900 px-4 py-3 flex items-center justify-end gap-3 print:hidden">
+        {net.type === 'ares' && (
+          <Button
+            size="sm"
+            onClick={downloadXlsx}
+            className="bg-green-700 hover:bg-green-600 gap-1"
+          >
+            <Download className="w-4 h-4" />
+            Check-in List (.xlsx)
+          </Button>
+        )}
         <Button
           size="sm"
           onClick={downloadCsv}
@@ -313,11 +550,19 @@ export default function ReportPage() {
         </Button>
         <Button
           size="sm"
-          onClick={() => window.print()}
+          onClick={downloadPdf}
           className="bg-blue-700 hover:bg-blue-600 gap-1"
         >
+          <Download className="w-4 h-4" />
+          Export PDF
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => window.print()}
+          className="bg-gray-700 hover:bg-gray-600 gap-1"
+        >
           <Printer className="w-4 h-4" />
-          Print / Save PDF
+          Print
         </Button>
       </div>
 
