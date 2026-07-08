@@ -49,7 +49,8 @@ export function AppNav() {
   }
 
   return (
-    <>
+    // print:hidden — the nav and its banners never belong on a printed report
+    <div className="print:hidden">
       {superAdmin && (
         <div className="bg-red-700 text-white text-center text-sm font-semibold py-1.5 px-4">
           SUPER ADMIN MODE. DELETIONS ARE PERMANENT AND CANNOT BE UNDONE.
@@ -216,6 +217,6 @@ export function AppNav() {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }
