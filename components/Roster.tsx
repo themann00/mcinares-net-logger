@@ -427,7 +427,7 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
                     <td className="px-1 py-1.5">
                       {(!entry.first_name || !entry.last_name) && (
                         <a
-                          href={`https://www.qrz.com/db/${entry.callsign}`}
+                          href={`https://callook.info/${entry.callsign}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
@@ -452,12 +452,12 @@ export function Roster({ superAdmin = false, fullPage = false }: { superAdmin?: 
               <div className="flex items-center gap-3">
                 <span className="text-fg font-semibold">Edit Operator</span>
                 <a
-                  href={`https://www.qrz.com/db/${editing.callsign}`}
+                  href={`https://callook.info/${editing.callsign}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-400 hover:text-blue-300 text-xs underline"
                 >
-                  QRZ
+                  Lookup
                 </a>
               </div>
               <button onClick={() => setEditing(null)} className="text-fg-3 hover:text-fg">
