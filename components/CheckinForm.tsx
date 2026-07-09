@@ -37,6 +37,8 @@ interface CheckinFormProps {
   late?: boolean
   roster?: RosterEntry[]
   currentStations?: { callsign: string }[]
+  /** Callsigns already sitting in the uncommitted check-in queue */
+  queuedCallsigns?: string[]
   onQueue?: (entry: { callsign: string; firstName: string; lastName: string; stationType: string; location: string; quadrant: string; hasTraffic: boolean; hasAnnouncement: boolean; trafficText: string; announcementText: string; trafficTimestamp?: string; announcementTimestamp?: string; forceManual?: boolean }) => void
 }
 
@@ -52,6 +54,7 @@ export function CheckinForm({
   late = false,
   roster = [],
   currentStations = [],
+  queuedCallsigns = [],
   onQueue,
 }: CheckinFormProps) {
   const { appNow } = useAppState()
@@ -123,8 +126,9 @@ export function CheckinForm({
 
     const cs = callsign.trim().toUpperCase()
     const alreadyIn = currentStations.some(s => s.callsign.toUpperCase() === cs)
+    const alreadyQueued = queuedCallsigns.some(q => q.toUpperCase().trim() === cs)
 
-    if (alreadyIn && !dupeWarning) {
+    if ((alreadyIn || alreadyQueued) && !dupeWarning) {
       setDupeWarning(true)
       return
     }
@@ -398,7 +402,10 @@ export function CheckinForm({
       {dupeWarning && (
         <div className="bg-amber-950/40 border border-amber-700 rounded-lg p-3 space-y-2">
           <p className="text-amber-300 text-sm font-medium">
-            {callsign.trim().toUpperCase()} is already checked in.
+            {callsign.trim().toUpperCase()} is already{' '}
+            {currentStations.some(s => s.callsign.toUpperCase() === cs_)
+              ? 'checked in.'
+              : 'in the check-in queue.'}
           </p>
           <div className="flex gap-2">
             <Button
@@ -406,7 +413,9 @@ export function CheckinForm({
               size="sm"
               className="bg-amber-700 hover:bg-amber-600"
             >
-              Force Manual Check-in
+              {currentStations.some(s => s.callsign.toUpperCase() === cs_)
+                ? 'Force Manual Check-in'
+                : 'Queue Anyway'}
             </Button>
             <Button
               type="button"

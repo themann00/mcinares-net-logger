@@ -140,6 +140,8 @@ export default function NetPage() {
     net_controller: net?.net_controller || '',
     alt_net_controller: derivedCtx?.alt_net_controller,
     liaison: derivedCtx?.liaison,
+    nts_liaison: derivedCtx?.nts_liaison,
+    oes_station: derivedCtx?.oes_station,
     weather_status: weatherStatus,
     nws_bulletin: bulletin || null,
     station_count: stations.length,
@@ -767,7 +769,7 @@ export default function NetPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            {net.type === 'skywarn' && !net.closed && (
+            {!net.closed && (
               isNC ? (
                 <Button
                   size="sm"
@@ -1205,7 +1207,7 @@ export default function NetPage() {
 
           {sectionNav('bottom')}
 
-          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} netType={net.type} sirens={sirens} />
+          <RecentLog entries={logEntries} netId={netId} onUpdate={fetchAll} reversed stations={stations} roster={roster} netType={net.type} sirens={sirens} onFullLog={() => setFullLogOpen(true)} />
         </div>
 
         {/* Right: Tabs panel */}
@@ -1272,6 +1274,7 @@ export default function NetPage() {
                     late={net.type === 'ares' && section.id === 'late_checkins'}
                     roster={roster}
                     currentStations={stations}
+                    queuedCallsigns={checkinQueue.map(q => q.callsign)}
                     onQueue={useQueue ? addToQueue : undefined}
                   />
                   {(useQueue || checkinQueue.length > 0) && (

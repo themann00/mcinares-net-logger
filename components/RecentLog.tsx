@@ -32,9 +32,11 @@ interface RecentLogProps {
   roster?: { callsign: string; first_name?: string | null; last_name?: string | null; email?: string | null }[]
   netType?: NetType | null
   sirens?: SirenListItem[]
+  /** When set, a "Full Log" button appears in the header and calls this */
+  onFullLog?: () => void
 }
 
-export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [], roster = [], netType, sirens = [] }: RecentLogProps) {
+export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = false, stations = [], roster = [], netType, sirens = [], onFullLog }: RecentLogProps) {
   const [editingEntry, setEditingEntry] = useState<LogEntry | null>(null)
   const [highlighted, setHighlighted] = useState<Set<string>>(new Set())
 
@@ -51,7 +53,17 @@ export function RecentLog({ entries, netId, onUpdate, limit = 10, reversed = fal
   return (
     <>
       <div className="bg-surface-1/50 rounded-xl border border-surface-2 p-3">
-        <h3 className="text-fg-4 text-xs font-medium mb-2 uppercase tracking-wider">Recent Log</h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-fg-4 text-xs font-medium uppercase tracking-wider">Recent Log</h3>
+          {onFullLog && (
+            <button
+              onClick={onFullLog}
+              className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
+            >
+              Full Log
+            </button>
+          )}
+        </div>
         {highlighted.size > 0 && (
           <div className="flex items-center justify-between text-xs text-amber-300 bg-amber-950/30 border border-amber-800/40 rounded px-2 py-1 mb-2">
             <span>{highlighted.size} highlighted entr{highlighted.size === 1 ? 'y' : 'ies'} to review</span>

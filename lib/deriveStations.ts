@@ -89,6 +89,8 @@ export function deriveNetContext(entries: LogEntry[], net: { net_controller: str
   net_controller: string
   alt_net_controller: string | null
   liaison: string | null
+  nts_liaison: string | null
+  oes_station: string | null
   weather_status: 'approaching' | 'imminent' | null
   nws_bulletin: string | null
   started_at: string | null
@@ -106,10 +108,21 @@ export function deriveNetContext(entries: LogEntry[], net: { net_controller: str
     ? (liaisonEntry.metadata as Record<string, unknown>)?.callsign as string || liaisonEntry.content.replace(/^(?:NTS )?Liaison(?: station)?:\s*/i, '').trim()
     : null
 
+  // ARES logs its two preamble volunteer roles as separate liaison entries,
+  // told apart by content prefix.
+  const liaisonByPrefix = (prefix: RegExp): string | null => {
+    const e = entries.find(x => x.entry_type === 'liaison' && prefix.test(x.content))
+    return e ? e.content.replace(prefix, '').trim() || null : null
+  }
+  const ntsLiaison = liaisonByPrefix(/^NTS Liaison:\s*/i)
+  const oesStation = liaisonByPrefix(/^OES Station:\s*/i)
+
   return {
     net_controller: net.net_controller,
     alt_net_controller: altNc,
     liaison,
+    nts_liaison: ntsLiaison,
+    oes_station: oesStation,
     weather_status: null,
     nws_bulletin: null,
     started_at: openEntry?.timestamp || null,

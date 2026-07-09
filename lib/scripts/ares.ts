@@ -181,7 +181,17 @@ At this time if your callsign suffix matches Alpha through Hotel, A thru H, plea
           ? `Tonight we had ${ctx.station_count} station${ctx.station_count === 1 ? '' : 's'} check in, with ${ctx.traffic_count ?? 0} piece${ctx.traffic_count === 1 ? '' : 's'} of traffic and ${ctx.announcement_count ?? 0} announcement${ctx.announcement_count === 1 ? '' : 's'}.`
           : ''
 
-      return `I will now close the net by thanking the Indianapolis Repeater Association for the use of the repeater. I also would like to thank${ctx.alt_net_controller ? ` my alternate net control, ${ctx.alt_net_controller}${ctx.liaison ? ` and our OES station/NTS Liaison ${ctx.liaison},` : ','} as well as` : ''} all of you who participated tonight. We look forward to hearing from you again next week.
+      // Thank only the roles actually filled during the preamble; skip the
+      // clause entirely when none were.
+      const thanks: string[] = []
+      if (ctx.alt_net_controller) thanks.push(`my alternate net control, ${ctx.alt_net_controller}`)
+      if (ctx.nts_liaison) thanks.push(`our NTS Liaison, ${ctx.nts_liaison}`)
+      if (ctx.oes_station) thanks.push(`our OES station, ${ctx.oes_station}`)
+      const thanksClause = thanks.length
+        ? ` ${thanks.length > 1 ? `${thanks.slice(0, -1).join(', ')}, and ${thanks[thanks.length - 1]}` : thanks[0]}, as well as`
+        : ''
+
+      return `I will now close the net by thanking the Indianapolis Repeater Association for the use of the repeater. I also would like to thank${thanksClause} all of you who participated tonight. We look forward to hearing from you again next week.
 
 ${statsLine}
 

@@ -107,6 +107,8 @@ export interface NetContext {
   net_controller: string
   alt_net_controller?: string | null
   liaison?: string | null
+  nts_liaison?: string | null
+  oes_station?: string | null
   weather_status?: 'approaching' | 'imminent' | null
   nws_bulletin?: string | null
   last_week_count?: number
